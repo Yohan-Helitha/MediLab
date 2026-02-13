@@ -1,0 +1,38 @@
+// Test Type Controller
+// Handles CRUD operations for test type catalog
+
+export const createTestType = async (req, res, next) => {
+  // TODO: Implement test type creation
+};
+
+export const getAllTestTypes = async (req, res, next) => {
+  // TODO: Implement get all test types (with filtering)
+};
+
+export const getTestTypeById = async (req, res, next) => {
+  // TODO: Implement get single test type
+};
+
+export const updateTestType = async (req, res, next) => {
+  // TODO: Implement test type update
+};
+
+export const deleteTestType = async (req, res, next) => {
+  // TODO: Implement soft delete (set isActive = false)
+};
+
+export const getTestTypesByCategory = async (req, res, next) => {
+  // TODO: Implement get by category
+};
+
+export const getFormBasedTests = async (req, res, next) => {
+  // TODO: Implement get tests with entryMethod = 'form'
+};
+
+export const getUploadBasedTests = async (req, res, next) => {
+  // TODO: Implement get tests with entryMethod = 'upload'
+};
+
+export const getMonitoringTests = async (req, res, next) => {
+  // TODO: Implement get tests with isRoutineMonitoringRecommended = true
+};
