@@ -1,0 +1,13 @@
+{
+  "name": "medilab-backend",
+  "version": "1.0.0",
+  "description": "MediLab Backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
