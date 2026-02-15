@@ -17,7 +17,17 @@ app.get("/api/health", (req, res) => {
 	res.json({ status: "ok", env: config.nodeEnv });
 });
 
-// TODO: mount feature routes here, e.g.
+// Mount feature routes
+//patient module routes
+import memberRoutes from "./modules/patient/routes/memberRoutes.js";
+import householdRoutes from "./modules/patient/routes/householdRoutes.js";
+
+
+//patient module - api routes
+app.use("/api/members", memberRoutes);
+app.use("/api/households", householdRoutes);
+
+// TODO: mount other feature routes here, e.g.
 // import labRoutes from "./modules/lab/lab.routes.js";
 // app.use("/api/labs", labRoutes);
 
