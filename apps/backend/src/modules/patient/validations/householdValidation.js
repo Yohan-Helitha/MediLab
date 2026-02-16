@@ -1,10 +1,12 @@
 import { body, param } from "express-validator";
 
 export const validateHouseholdCreate = [
-  body("household_code")
+  body("household_id")
     .optional()
+    .matches(/^ANU-PADGNDIV-\d{5}$/)
+    .withMessage("Invalid household ID format. Expected format: ANU-PADGNDIV-NNNNN")
     .isLength({ max: 50 })
-    .withMessage("Household code must be less than 50 characters"),
+    .withMessage("Household ID must be less than 50 characters"),
   
   body("head_member_name")
     .notEmpty()
@@ -59,12 +61,24 @@ export const validateHouseholdCreate = [
 ];
 
 export const validateHouseholdUpdate = [
-  param("id").isMongoId().withMessage("Invalid household ID"),
+  param("id")
+    .custom((value) => {
+      // For updates: Accept old MongoDB ObjectId format (for existing data) and new custom format
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(value);
+      const isCustomFormat = /^ANU-PADGNDIV-\d{5}$/.test(value);
+      
+      if (isObjectId || isCustomFormat) {
+        return true;
+      }
+      throw new Error("Invalid household ID format. Expected format: ANU-PADGNDIV-NNNNN or existing ObjectId");
+    }),
   
-  body("household_code")
+  body("household_id")
     .optional()
+    .matches(/^ANU-PADGNDIV-\d{5}$/)
+    .withMessage("Invalid household ID format. Expected format: ANU-PADGNDIV-NNNNN")
     .isLength({ max: 50 })
-    .withMessage("Household code must be less than 50 characters"),
+    .withMessage("Household ID must be less than 50 characters"),
   
   body("head_member_name")
     .optional()
@@ -108,5 +122,15 @@ export const validateHouseholdUpdate = [
 ];
 
 export const validateHouseholdId = [
-  param("id").isMongoId().withMessage("Invalid household ID")
+  param("id")
+    .custom((value) => {
+      // For ID operations: Accept old MongoDB ObjectId format (for existing data) and new custom format
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(value);
+      const isCustomFormat = /^ANU-PADGNDIV-\d{5}$/.test(value);
+      
+      if (isObjectId || isCustomFormat) {
+        return true;
+      }
+      throw new Error("Invalid household ID format. Expected format: ANU-PADGNDIV-NNNNN or existing ObjectId");
+    })
 ];

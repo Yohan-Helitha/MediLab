@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const householdSchema = new mongoose.Schema({
-  household_code: {
+  household_id: {
     type: String,
     unique: true,
     maxlength: 50
@@ -57,24 +57,24 @@ const householdSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Pre-save middleware to auto-generate household_code
+// Pre-save middleware to auto-generate household_id
 householdSchema.pre('save', async function() {
-  // Only generate household_code if it's not already set (for new documents)
-  if (!this.household_code) {
-    // Find the latest household with the highest code
+  // Only generate household_id if it's not already set (for new documents)
+  if (!this.household_id) {
+    // Find the latest household with the highest ID
     const latestHousehold = await mongoose.model('Household').findOne({
-      household_code: { $regex: /^PADGNDIV-\d{3}$/ }
-    }).sort({ household_code: -1 }).exec();
+      household_id: { $regex: /^ANU-PADGNDIV-\d{5}$/ }
+    }).sort({ household_id: -1 }).exec();
     
     let nextNumber = 1;
-    if (latestHousehold && latestHousehold.household_code) {
+    if (latestHousehold && latestHousehold.household_id) {
       // Extract the numeric part and increment
-      const lastNumber = parseInt(latestHousehold.household_code.split('-')[1]);
+      const lastNumber = parseInt(latestHousehold.household_id.split('-')[2]);
       nextNumber = lastNumber + 1;
     }
     
-    // Format the household code with leading zeros
-    this.household_code = `PADGNDIV-${nextNumber.toString().padStart(3, '0')}`;
+    // Format the household ID with leading zeros
+    this.household_id = `ANU-PADGNDIV-${nextNumber.toString().padStart(5, '0')}`;
     
     // Ensure registration_date is set to current date/time
     if (!this.registration_date) {
