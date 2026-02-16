@@ -4,6 +4,9 @@ import cors from "cors";
 import morgan from "morgan";
 import config from "./config/environment.js";
 
+//booking routes
+import bookingRoutes from './modules/booking/booking.routes.js'
+
 const app = express();
 
 // Core middleware
@@ -18,6 +21,12 @@ app.get("/api/health", (req, res) => {
 });
 
 // TODO: mount feature routes here, e.g.
+//register booking routes
+
+app.use('/api/bookings', bookingRoutes);
+
+
+
 // import labRoutes from "./modules/lab/lab.routes.js";
 // app.use("/api/labs", labRoutes);
 
