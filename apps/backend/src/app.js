@@ -21,11 +21,12 @@ app.get("/api/health", (req, res) => {
 //patient module routes
 import memberRoutes from "./modules/patient/routes/memberRoutes.js";
 import householdRoutes from "./modules/patient/routes/householdRoutes.js";
-
+import healthDetailsRoutes from "./modules/patient/routes/healthDetailsRoutes.js";
 
 //patient module - api routes
 app.use("/api/members", memberRoutes);
 app.use("/api/households", householdRoutes);
+app.use("/api/health-details", healthDetailsRoutes);
 
 // TODO: mount other feature routes here, e.g.
 // import labRoutes from "./modules/lab/lab.routes.js";
