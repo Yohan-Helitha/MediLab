@@ -6,7 +6,6 @@ class HouseholdService {
     const skip = (page - 1) * limit;
     
     const households = await Household.find(filter)
-      .populate("registered_by_staff_id")
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ registration_date: -1 });
@@ -25,7 +24,22 @@ class HouseholdService {
   }
 
   async getHouseholdById(id) {
-    const household = await Household.findById(id).populate("registered_by_staff_id");
+    // Try to find by MongoDB _id first (for internal references)
+    let household = await Household.findById(id);
+    
+    // If not found and id doesn't look like ObjectId, try by custom household_id
+    if (!household && !/^[0-9a-fA-F]{24}$/.test(id)) {
+      household = await Household.findOne({ household_id: id });
+    }
+    
+    if (!household) {
+      throw new Error("Household not found");
+    }
+    return household;
+  }
+
+  async getHouseholdByHouseholdId(household_id) {
+    const household = await Household.findOne({ household_id });
     if (!household) {
       throw new Error("Household not found");
     }
@@ -35,7 +49,7 @@ class HouseholdService {
   async createHousehold(householdData) {
     const household = new Household(householdData);
     await household.save();
-    return await household.populate("registered_by_staff_id");
+    return household;
   }
 
   async updateHousehold(id, updateData) {
@@ -43,7 +57,7 @@ class HouseholdService {
       id,
       updateData,
       { new: true, runValidators: true }
-    ).populate("registered_by_staff_id");
+    );
     
     if (!household) {
       throw new Error("Household not found");
