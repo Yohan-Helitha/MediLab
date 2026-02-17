@@ -35,7 +35,9 @@ export const validateFamilyMemberCreate = [
 ];
 
 export const validateFamilyMemberUpdate = [
-  param("id").isMongoId().withMessage("Invalid family member ID"),
+  param("id")
+    .matches(/^FAM-ANU-PADGNDIV-\d{5}$/)
+    .withMessage("Invalid family member ID format. Expected format: FAM-ANU-PADGNDIV-NNNNN"),
   
   body("household_id")
     .optional()
@@ -66,5 +68,7 @@ export const validateFamilyMemberUpdate = [
 ];
 
 export const validateFamilyMemberId = [
-  param("id").isMongoId().withMessage("Invalid family member ID")
+  param("id")
+    .matches(/^FAM-ANU-PADGNDIV-\d{5}$/)
+    .withMessage("Invalid family member ID format. Expected format: FAM-ANU-PADGNDIV-NNNNN")
 ];

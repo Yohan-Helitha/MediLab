@@ -30,8 +30,8 @@ class FamilyMemberService {
     };
   }
 
-  async getFamilyMemberById(id) {
-    const familyMember = await FamilyMember.findById(id).populate({
+  async getFamilyMemberById(familyMemberId) {
+    const familyMember = await FamilyMember.findOne({ family_member_id: familyMemberId }).populate({
       path: 'household_id',
       model: 'Household',
       localField: 'household_id',
@@ -54,9 +54,9 @@ class FamilyMemberService {
     });
   }
 
-  async updateFamilyMember(id, updateData) {
-    const familyMember = await FamilyMember.findByIdAndUpdate(
-      id,
+  async updateFamilyMember(familyMemberId, updateData) {
+    const familyMember = await FamilyMember.findOneAndUpdate(
+      { family_member_id: familyMemberId },
       updateData,
       { new: true, runValidators: true }
     ).populate({
@@ -72,8 +72,8 @@ class FamilyMemberService {
     return familyMember;
   }
 
-  async deleteFamilyMember(id) {
-    const familyMember = await FamilyMember.findByIdAndDelete(id);
+  async deleteFamilyMember(familyMemberId) {
+    const familyMember = await FamilyMember.findOneAndDelete({ family_member_id: familyMemberId });
     if (!familyMember) {
       throw new Error("Family member not found");
     }
