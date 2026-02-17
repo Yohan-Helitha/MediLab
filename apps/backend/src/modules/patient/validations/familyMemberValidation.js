@@ -25,19 +25,13 @@ export const validateFamilyMemberCreate = [
     .notEmpty()
     .withMessage("Date of birth is required")
     .isISO8601()
-    .withMessage("Invalid date format"),
-  
-  body("relationship_to_head")
-    .notEmpty()
-    .withMessage("Relationship to head is required")
-    .isLength({ max: 50 })
-    .withMessage("Relationship to head must be less than 50 characters")
+    .withMessage("Invalid date format")
 ];
 
 export const validateFamilyMemberUpdate = [
   param("id")
-    .matches(/^FAM-ANU-PADGNDIV-\d{5}$/)
-    .withMessage("Invalid family member ID format. Expected format: FAM-ANU-PADGNDIV-NNNNN"),
+    .isMongoId()
+    .withMessage("Invalid family member ID"),
   
   body("household_id")
     .optional()
@@ -59,16 +53,11 @@ export const validateFamilyMemberUpdate = [
   body("date_of_birth")
     .optional()
     .isISO8601()
-    .withMessage("Invalid date format"),
-  
-  body("relationship_to_head")
-    .optional()
-    .isLength({ max: 50 })
-    .withMessage("Relationship to head must be less than 50 characters")
+    .withMessage("Invalid date format")
 ];
 
 export const validateFamilyMemberId = [
   param("id")
-    .matches(/^FAM-ANU-PADGNDIV-\d{5}$/)
-    .withMessage("Invalid family member ID format. Expected format: FAM-ANU-PADGNDIV-NNNNN")
+    .isMongoId()
+    .withMessage("Invalid family member ID")
 ];

@@ -24,11 +24,6 @@ const familyMemberSchema = new mongoose.Schema({
   date_of_birth: {
     type: Date,
     required: true
-  },
-  relationship_to_head: {
-    type: String,
-    required: true,
-    maxlength: 50
   }
 }, {
   timestamps: true
