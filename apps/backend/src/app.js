@@ -29,6 +29,8 @@ import pastMedicalHistoryRoutes from "./modules/patient/routes/pastMedicalHistor
 import emergencyContactRoutes from "./modules/patient/routes/emergencyContactRoutes.js";
 import familyMemberRoutes from "./modules/patient/routes/familyMemberRoutes.js";
 import familyRelationshipRoutes from "./modules/patient/routes/familyRelationshipRoutes.js";	
+import visitRoutes from "./modules/patient/routes/visitRoutes.js";
+import referralRoutes from "./modules/patient/routes/referralRoutes.js";
 
 //patient module - api routes
 app.use("/api/members", memberRoutes);
@@ -41,6 +43,8 @@ app.use("/api/past-medical-history", pastMedicalHistoryRoutes);
 app.use("/api/emergency-contacts", emergencyContactRoutes);
 app.use("/api/family-members", familyMemberRoutes);
 app.use("/api/family-relationships", familyRelationshipRoutes);
+app.use("/api/visits", visitRoutes);
+app.use("/api/referrals", referralRoutes);
 
 // TODO: mount other feature routes here, e.g.
 // import labRoutes from "./modules/lab/lab.routes.js";
