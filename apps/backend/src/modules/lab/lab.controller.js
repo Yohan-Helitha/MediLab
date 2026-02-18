@@ -10,10 +10,14 @@ async function createLab(req, res) {
   }
 }
 
-// Get all labs
+// Get all labs (with optional name filter)
 async function getLabs(req, res) {
   try {
-    const labs = await labService.getLabs();
+    const filter = {};
+    if (req.query.name) {
+      filter.name = req.query.name;
+    }
+    const labs = await labService.getLabs(filter);
     res.json(labs);
   } catch (error) {
     res.status(500).json({ error: error.message });

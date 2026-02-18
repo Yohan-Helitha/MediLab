@@ -7,9 +7,13 @@ async function createLab(labData) {
   return lab.save();
 }
 
-// Get all labs
-async function getLabs() {
-  return Lab.find();
+// Get all labs, with optional name filter
+async function getLabs(filter = {}) {
+  const query = {};
+  if (filter.name) {
+    query.name = { $regex: filter.name, $options: 'i' }; // case-insensitive search
+  }
+  return Lab.find(query);
 }
 
 // Get a single lab by ID
