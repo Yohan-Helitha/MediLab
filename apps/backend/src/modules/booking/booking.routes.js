@@ -2,8 +2,17 @@
 // modules/booking/booking.routes.js
 
 import express from 'express';
-import { createBooking } from './booking.controller.js';
-import { createBookingValidator } from './booking.validator.js';
+import {
+  createBookingController,
+  getBookings,
+  getBookingByPatientId,
+  getBookingByHealthCenterId,
+  getBookingByDate,
+  getBookingByCreatedBy,
+  getBookingByStatus,
+  getBookingByType,
+} from './booking.controller.js';
+import { createBookingValidation } from './booking.validation.js';
 import { protect } from '../../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -16,9 +25,20 @@ const router = express.Router();
 router.post(
   '/',
   protect,                   // authentication middleware
-  createBookingValidator,    // validation middleware
-  createBooking              // controller
+  createBookingValidation,   // validation middleware
+  createBookingController    // controller
 );
+
+// List bookings
+router.get('/', protect, getBookings);
+
+// Filtered booking fetches
+router.get('/patient/:patientProfileId', protect, getBookingByPatientId);
+router.get('/center/:healthCenterId', protect, getBookingByHealthCenterId);
+router.get('/date/:bookingDate', protect, getBookingByDate);
+router.get('/createdBy/:createdBy', protect, getBookingByCreatedBy);
+router.get('/status/:status', protect, getBookingByStatus);
+router.get('/type/:type', protect, getBookingByType);
 
 export default router;
 

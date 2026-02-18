@@ -3,9 +3,9 @@ import { body } from 'express-validator';
 import mongoose from 'mongoose';
 
 export const createBookingValidation = [
-    body('patientId')
-        .notEmpty().withMessage('Patient ID is required')
-        .custom(value => mongoose.Types.ObjectId.isValid(value)).withMessage('Invalid Patient ID'),
+    body('patientProfileId')
+        .notEmpty().withMessage('Patient Profile ID is required')
+        .custom(value => mongoose.Types.ObjectId.isValid(value)).withMessage('Invalid Patient Profile ID'),
 
     body('healthCenterId')
         .notEmpty().withMessage('Health Center is Required')

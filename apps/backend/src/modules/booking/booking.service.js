@@ -1,8 +1,8 @@
 // Booking service
-import Booking from './booking.model';
-import PatientProfile from '../patient/patient.model';
-import Lab from '../lab/lab.model';
-import TestType from '../testType/testType.model';
+import Booking from './booking.model.js';
+import PatientProfile from '../patient/patient.model.js';
+import Lab from '../lab/lab.model.js';
+import TestType from '../test/testType.model.js';
 
 export const createBooking = async (data, userId) => {
 
@@ -52,16 +52,18 @@ export const createBooking = async (data, userId) => {
     const booking = await Booking.create({
         patientProfileId,
         patientNameSnapshot: patient.fullName,
-        patientPhoneSnapshot: patient.phoneNumber,
+        patientPhoneSnapshot: patient.contactNumber,
         
         healthCenterId,
         diagnosticTestId,
         testNameSnapshot: diagnosticTest.name,
         centerNameSnapshot: healthCenter.name,
-        bookingDate,
+        bookingDate: new Date(bookingDate),
         timeSlot,
         bookingType,
         priorityLevel,
+        queueNumber,
+        estimatedWaitTimeMinutes,
 
         allergyFlag: patient.hasAllergies || false,
         chronicConditionFlag: patient.hasChronicConditions || false,
@@ -74,4 +76,55 @@ export const createBooking = async (data, userId) => {
 
     return booking;
 
+}
+
+export const getBookings = async (filter, pagination) => {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const query = {};
+
+    if (filter.healthCenterId) {
+        query.healthCenterId = filter.healthCenterId;
+    }
+
+    if (filter.bookingDate) {
+        const date = new Date(filter.bookingDate);
+        query.bookingDate = {
+            $gte: new Date(date.setHours(0, 0, 0, 0)),
+            $lte: new Date(date.setHours(23, 59, 59, 999))
+        };
+    }
+
+    if (filter.patientProfileId) {
+        query.patientProfileId = filter.patientProfileId;
+    }
+
+    if (filter.bookingType) {
+        query.bookingType = filter.bookingType;
+    }
+
+    if (filter.createdBy) {
+        query.createdBy = filter.createdBy;
+    }
+
+    if (filter.status) {
+        query.status = filter.status;
+    }
+
+
+    const bookings = await Booking.find(query).skip(skip).limit(limit)
+        .sort({ bookingDate: -1 })
+        .populate('patientProfileId', 'fullName contactNumber')
+        .populate('healthCenterId', 'name')
+        .populate('diagnosticTestId', 'name');
+
+    const total = await Booking.countDocuments(query);
+
+    return {
+        bookings,
+        total,
+        page,
+        limit
+    };
 }
