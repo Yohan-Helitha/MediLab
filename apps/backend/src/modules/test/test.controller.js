@@ -10,11 +10,29 @@ export const createTestType = async (req, res, next) => {
   };
 
 export const getAllTestTypes = async (req, res, next) => {
-  // TODO: Implement get all test types (with filtering)
+  try{
+    const filters ={};
+    if(req.query.category){
+      filters.category = req.query.category;
+    
+    }
+    const testType = await TestService.getAllTestTypes(filters);
+    res.status(201).json(testType);  
+  }catch(error){
+    res.status(400).json({error:error.message});
+  }
 };
 
 export const getTestTypeById = async (req, res, next) => {
-  // TODO: Implement get single test type
+  try{
+    const testType = await TestService.getTestTypeById(req.params.id);
+    if(!testType){
+      return res.status(404).json({error: "Test type not found"});
+    }
+    res.json(testType);
+  }catch(error){
+    res.status(400).json({error: error.message});
+  }
 };
 
 export const updateTestType = async (req, res, next) => {
