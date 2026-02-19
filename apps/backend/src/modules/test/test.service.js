@@ -1,39 +1,42 @@
 import TestType from "./testType.model.js";
 
-// Business logic for test type operations
-
 export const createTestType = async (testTypeData) => {
-  // TODO: Implement test type creation logic
+   const testType = new TestType(testTypeData);
+   return testType.save();
 };
 
 export const findAllTestTypes = async (filters = {}) => {
-  // TODO: Implement get all with filters
+   const query ={};
+    if (filters.category) {
+      query.category = {$regex:filters.category, $options: 'i'};;
+    }
+    return TestType.find(query);
 };
 
-export const findTestTypeById = async (id) => {
-  // TODO: Implement find by ID
+export const findTestTypeById = async (id) =>{
+  return TestType.findById(id);
 };
 
 export const updateTestType = async (id, updateData) => {
-  // TODO: Implement update logic
+  return TestType.findByIdAndUpdate(id, updateData, {new:true});
 };
 
 export const softDeleteTestType = async (id) => {
-  // TODO: Implement soft delete (set isActive = false)
+  return TestType.findByIdAndUpdate(id,{isActive:false},{new:true});
 };
 
 export const findByCategory = async (category) => {
-  // TODO: Implement find by category
+  return await TestType.find({category: {$regex:category,$options:'i'}});
 };
 
 export const findByEntryMethod = async (entryMethod) => {
-  // TODO: Implement find by entry method
+  return await TestType.find({entryMethod: {$regex:entryMethod,$options:'i'}});
 };
 
 export const findMonitoringTests = async () => {
-  // TODO: Implement find tests with routine monitoring
+  return await TestType.find({isMonitoringRecommended:true});
 };
 
 export const findByDiscriminatorType = async (discriminatorType) => {
-  // TODO: Implement find by discriminator type
+  return await TestType.find({discriminatorType: discriminatorType});
 };
