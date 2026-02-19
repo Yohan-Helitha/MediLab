@@ -1,9 +1,13 @@
-// Test Type Controller
-// Handles CRUD operations for test type catalog
+import TestService from './test.service.js';
 
 export const createTestType = async (req, res, next) => {
-  // TODO: Implement test type creation
-};
+  try{
+    const testType = await TestService.createTestType(req.body);
+    res.status(201).json(testType);
+  }catch(error){
+    res.status(400).json({error: error.message});
+  }
+  };
 
 export const getAllTestTypes = async (req, res, next) => {
   // TODO: Implement get all test types (with filtering)
