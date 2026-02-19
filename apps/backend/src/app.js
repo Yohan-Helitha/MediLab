@@ -31,4 +31,9 @@ app.use("/api/tests", testRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/notifications", notificationRoutes);
 
+// Error handling (must be after all routes)
+import { errorHandler, notFoundHandler } from "./core/error-handler.js";
+app.use(notFoundHandler); // 404 handler
+app.use(errorHandler); // Global error handler
+
 export default app;
