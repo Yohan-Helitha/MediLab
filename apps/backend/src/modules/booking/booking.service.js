@@ -40,14 +40,14 @@ export const createBooking = async (data, userId) => {
     let estimatedWaitTimeMinutes = null;
 
     if (bookingType === "WALK_IN") {
-    const count = await Booking.countDocuments({
-      healthCenterId,
-      bookingDate: new Date(bookingDate),
-      status: { $ne: "CANCELLED" }
-    });
+        const count = await Booking.countDocuments({
+            healthCenterId,
+            bookingDate: new Date(bookingDate),
+            status: { $ne: "CANCELLED" }
+        });
 
-    queueNumber = count + 1;
-  }
+        queueNumber = count + 1;
+    }
 
     const booking = await Booking.create({
         patientProfileId,
@@ -78,11 +78,17 @@ export const createBooking = async (data, userId) => {
 
 }
 
-export const getBookings = async (filter, pagination) => {
+export const getBookings = async (filter = {}, pagination = {}) => {
     const { page = 1, limit = 10 } = pagination;
     const skip = (page - 1) * limit;
 
     const query = {};
+    // Only active bookings by default
+    if (typeof filter.isActive === 'boolean') {
+        query.isActive = filter.isActive;
+    } else {
+        query.isActive = true;
+    }
 
     if (filter.healthCenterId) {
         query.healthCenterId = filter.healthCenterId;
@@ -128,3 +134,50 @@ export const getBookings = async (filter, pagination) => {
         limit
     };
 }
+
+export const updateBooking = async (bookingId, data) => {
+    // Allow updating selected fields only
+    const updatableFields = [
+        'bookingDate',
+        'timeSlot',
+        'bookingType',
+        'priorityLevel',
+        'status',
+        'paymentStatus',
+        'paymentMethod'
+    ];
+
+    const updateData = {};
+    updatableFields.forEach((field) => {
+        if (Object.prototype.hasOwnProperty.call(data, field)) {
+            updateData[field] = data[field];
+        }
+    });
+
+    if (updateData.bookingDate) {
+        updateData.bookingDate = new Date(updateData.bookingDate);
+    }
+
+    const booking = await Booking.findOneAndUpdate(
+        { _id: bookingId, isActive: true },
+        { $set: updateData },
+        { new: true }
+    );
+
+    return booking;
+};
+
+export const softDeleteBooking = async (bookingId) => {
+    const booking = await Booking.findOneAndUpdate(
+        { _id: bookingId, isActive: true },
+        { $set: { isActive: false } },
+        { new: true }
+    );
+
+    return booking;
+};
+
+export const hardDeleteBooking = async (bookingId) => {
+    const booking = await Booking.findByIdAndDelete(bookingId);
+    return booking;
+};

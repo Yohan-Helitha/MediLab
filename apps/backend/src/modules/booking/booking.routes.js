@@ -11,8 +11,11 @@ import {
   getBookingByCreatedBy,
   getBookingByStatus,
   getBookingByType,
+  updateBookingController,
+  softDeleteBookingController,
+  hardDeleteBookingController,
 } from './booking.controller.js';
-import { createBookingValidation } from './booking.validation.js';
+import { createBookingValidation, updateBookingValidation } from './booking.validation.js';
 import { protect } from '../../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -39,6 +42,15 @@ router.get('/date/:bookingDate', protect, getBookingByDate);
 router.get('/createdBy/:createdBy', protect, getBookingByCreatedBy);
 router.get('/status/:status', protect, getBookingByStatus);
 router.get('/type/:type', protect, getBookingByType);
+
+// Update booking
+router.put('/:id', protect, updateBookingValidation, updateBookingController);
+
+// Soft delete booking
+router.delete('/:id', protect, softDeleteBookingController);
+
+// Hard delete booking
+router.delete('/:id/hard', protect, hardDeleteBookingController);
 
 export default router;
 

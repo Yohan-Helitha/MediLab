@@ -1,6 +1,12 @@
 // Booking controller
 import { validationResult } from 'express-validator';
-import { createBooking, getBookings as getBookingsService } from './booking.service.js';
+import {
+    createBooking,
+    getBookings as getBookingsService,
+    updateBooking,
+    softDeleteBooking,
+    hardDeleteBooking
+} from './booking.service.js';
 
 export const createBookingController = async (req, res) => {
 
@@ -160,6 +166,87 @@ export const getBookingByType = async (req, res) => {
         });
     }
 
-
 }
+
+export const updateBookingController = async (req, res) => {
+
+    try {
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const booking = await updateBooking(req.params.id, req.body);
+
+        if (!booking) {
+            return res.status(404).json({
+                message: 'Booking not found'
+            });
+        }
+
+        res.json({
+            message: 'Booking updated successfully',
+            booking
+        });
+
+    } catch (error) {
+        console.error('Error updating booking:', error);
+        return res.status(400).json({
+            message: error.message
+        });
+    }
+
+};
+
+export const softDeleteBookingController = async (req, res) => {
+
+    try {
+
+        const booking = await softDeleteBooking(req.params.id);
+
+        if (!booking) {
+            return res.status(404).json({
+                message: 'Booking not found'
+            });
+        }
+
+        res.json({
+            message: 'Booking deleted successfully',
+            booking
+        });
+
+    } catch (error) {
+        console.error('Error soft deleting booking:', error);
+        return res.status(400).json({
+            message: error.message
+        });
+    }
+
+};
+
+export const hardDeleteBookingController = async (req, res) => {
+
+    try {
+
+        const booking = await hardDeleteBooking(req.params.id);
+
+        if (!booking) {
+            return res.status(404).json({
+                message: 'Booking not found'
+            });
+        }
+
+        res.json({
+            message: 'Booking permanently deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Error hard deleting booking:', error);
+        return res.status(400).json({
+            message: error.message
+        });
+    }
+
+};
 
