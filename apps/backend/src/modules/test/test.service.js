@@ -8,7 +8,7 @@ export const createTestType = async (testTypeData) => {
 export const findAllTestTypes = async (filters = {}) => {
    const query ={};
     if (filters.category) {
-      query.category = {$regex:filters.category, $options: 'i'};;
+      query.category = {$regex:filters.category, $options: 'i'};
     }
     return TestType.find(query);
 };
@@ -27,6 +27,10 @@ export const softDeleteTestType = async (id) => {
 
 export const findByCategory = async (category) => {
   return await TestType.find({category: {$regex:category,$options:'i'}});
+};
+
+export const hardDeleteTestType = async(id) =>{
+  return TestType.findByIdAndDelete(id);
 };
 
 export const findByEntryMethod = async (entryMethod) => {
