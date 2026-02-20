@@ -1,27 +1,76 @@
 import express from "express";
 import * as resultController from "./result.controller.js";
+import * as resultValidation from "./result.validation.js";
 
 const router = express.Router();
 
 // Create/Submit Routes
-router.post("/", resultController.submitTestResult);
+router.post(
+  "/",
+  resultValidation.submitResultValidation,
+  resultController.submitTestResult,
+);
 
-// Get Routes
-router.get("/:id", resultController.getTestResultById);
-router.get("/patient/:patientId", resultController.getPatientTestResults);
-router.get("/booking/:bookingId", resultController.getTestResultsByBooking);
+// Get Routes - More specific routes first, then generic /:id
+router.get(
+  "/patient/:patientId/unviewed",
+  resultValidation.patientIdParamValidation,
+  resultController.getUnviewedResults,
+);
+
+router.get(
+  "/patient/:patientId",
+  resultValidation.patientIdParamValidation,
+  resultValidation.resultQueryFiltersValidation,
+  resultController.getPatientTestResults,
+);
+
+router.get(
+  "/booking/:bookingId",
+  resultValidation.bookingIdParamValidation,
+  resultController.getTestResultsByBooking,
+);
+
 router.get(
   "/health-center/:healthCenterId",
+  resultValidation.healthCenterIdParamValidation,
+  resultValidation.resultQueryFiltersValidation,
   resultController.getResultsByHealthCenter,
 );
-router.get("/test-type/:testTypeId", resultController.getResultsByTestType);
-router.get("/patient/:patientId/unviewed", resultController.getUnviewedResults);
+
+router.get(
+  "/test-type/:testTypeId",
+  resultValidation.testTypeIdParamValidation,
+  resultController.getResultsByTestType,
+);
+
+// Generic ID route last to avoid conflicts
+router.get(
+  "/:id",
+  resultValidation.idParamValidation,
+  resultController.getTestResultById,
+);
 
 // Update Routes
-router.patch("/:id/status", resultController.updateTestResultStatus);
-router.patch("/:id/mark-viewed", resultController.markAsViewed);
+router.patch(
+  "/:id/status",
+  resultValidation.idParamValidation,
+  resultValidation.updateStatusValidation,
+  resultController.updateTestResultStatus,
+);
+
+router.patch(
+  "/:id/mark-viewed",
+  resultValidation.idParamValidation,
+  resultValidation.markViewedValidation,
+  resultController.markAsViewed,
+);
 
 // Delete Routes
-router.delete("/:id", resultController.deleteTestResult);
+router.delete(
+  "/:id",
+  resultValidation.idParamValidation,
+  resultController.deleteTestResult,
+);
 
 export default router;
