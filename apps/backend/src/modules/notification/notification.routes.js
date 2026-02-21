@@ -1,5 +1,6 @@
 import express from "express";
 import * as notificationController from "./notification.controller.js";
+import * as validation from "./notification.validation.js";
 
 const router = express.Router();
 
@@ -8,37 +9,70 @@ const router = express.Router();
 // Send notifications
 router.post(
   "/send/result-ready",
+  validation.sendResultReadyValidation,
   notificationController.sendResultReadyNotification,
 );
 router.post(
   "/send/unviewed-reminder",
   notificationController.sendUnviewedResultReminder,
 );
-router.post("/:id/resend", notificationController.resendNotification);
+router.post(
+  "/send/routine-reminder",
+  validation.sendRoutineReminderValidation,
+  notificationController.sendRoutineCheckupReminder,
+);
+router.post(
+  "/:id/resend",
+  validation.idParamValidation,
+  notificationController.resendNotification,
+);
 
 // Get notification logs
-router.get("/logs", notificationController.getNotificationHistory);
-router.get("/logs/:id", notificationController.getNotificationById);
+router.get(
+  "/patient/:patientId",
+  validation.patientIdParamValidation,
+  validation.notificationHistoryQueryValidation,
+  notificationController.getNotificationHistory,
+);
+router.get(
+  "/failed",
+  validation.failedNotificationsQueryValidation,
+  notificationController.getFailedNotifications,
+);
+router.get(
+  "/:id",
+  validation.idParamValidation,
+  notificationController.getNotificationById,
+);
 
 // ===== REMINDER SUBSCRIPTION ROUTES =====
 
 // Subscription management
-router.post("/subscriptions", notificationController.subscribeToReminder);
+router.post(
+  "/subscriptions",
+  validation.subscribeValidation,
+  notificationController.subscribeToReminder,
+);
 router.delete(
   "/subscriptions/:id",
+  validation.subscriptionIdParamValidation,
   notificationController.unsubscribeFromReminder,
 );
 router.get(
   "/subscriptions/patient/:patientId",
+  validation.patientIdParamValidation,
   notificationController.getPatientSubscriptions,
 );
-router.get("/subscriptions/:id", notificationController.getSubscriptionById);
-router.patch("/subscriptions/:id", notificationController.updateSubscription);
-
-// Cron job endpoint (should be protected/internal only)
-router.post(
-  "/cron/send-due-reminders",
-  notificationController.sendDueReminders,
+router.get(
+  "/subscriptions/:id",
+  validation.subscriptionIdParamValidation,
+  notificationController.getSubscriptionById,
+);
+router.put(
+  "/subscriptions/:id",
+  validation.subscriptionIdParamValidation,
+  validation.updateSubscriptionValidation,
+  notificationController.updateSubscription,
 );
 
 export default router;
