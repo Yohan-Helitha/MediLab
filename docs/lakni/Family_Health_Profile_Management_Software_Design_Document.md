@@ -35,7 +35,10 @@ This system serves as the **central patient information repository** that integr
 
 ### **Important Note:**
 
-> 🔑 **Only Health Officers log into this system.** Patients/family members are data subjects who provide information verbally during visits - they do not have login credentials or data entry permissions in the current system. Patient portal access is planned as a future enhancement.
+> 🔑 **The system has two interfaces:**
+>
+> - **Health Officer Interface:** For authorized health officers to enter and manage all patient data during field visits and clinical encounters
+> - **Patient Interface:** For patients/family members to log in, view their own health records, book appointments, view test results, and manage their profile information
 
 ---
 
@@ -120,32 +123,41 @@ This system serves as the **central patient information repository** that integr
 - Reviewing family medical history before test recommendations
 - Creating referrals for specialists
 
-### **4.2 Patients/Family Members (Data Subjects - NOT system users)**
+### **4.2 Patients/Family Members (System Users with Patient Portal Access)**
 
 **Roles:**
 
 - Registered household members
-- Individuals whose health data is recorded in the system
+- Individuals whose health data is managed in the system
+- Primary users of the Patient Interface
 
-**Current System Interaction:**
+**Patient Interface Access:**
 
-- ❌ **Do NOT have login credentials**
-- ❌ **Do NOT enter data themselves**
-- ❌ **Do NOT have direct system access**
-- ✅ Provide personal and medical information verbally to health officers
-- ✅ Receive printed/verbal confirmation of appointments and referrals
+- ✅ **Have login credentials** (registered patient accounts)
+- ✅ **Log into Patient Portal** with username/password or NIC-based authentication
+- ✅ **View their own health records** (read-only access)
+- ✅ **Book diagnostic test appointments** (self-service)
+- ✅ **View test results and reports**
+- ✅ **Update personal contact information**
+- ✅ **Manage emergency contacts**
+- ✅ **View upcoming appointments and referrals**
+- ✅ **Access family health summaries** (if household head)
 
-**Data Flow:**
+**Health Officer Data Entry:**
+
+- ✅ Provide medical information verbally to health officers during visits
+- ✅ Health officers enter clinical data (allergies, chronic diseases, medications, visit notes)
+- ✅ Receive notifications about appointments and referrals
+
+**Dual Data Flow:**
 
 ```
-Patient speaks → Health Officer listens → Health Officer logs in → Health Officer enters data → System saves
+Patient Portal Flow:
+Patient logs in → Views records / Books appointment → System updates
+
+Clinical Data Flow:
+Patient speaks → Health Officer listens → Health Officer logs in → Health Officer enters clinical data → System saves
 ```
-
-**Future Enhancement:**
-
-- 📱 Patient portal with read-only access to own records (planned)
-- 📱 Patient self-service appointment booking (planned)
-- 📱 Mobile app for viewing test results (planned)
 
 ### **4.3 System Administrators**
 
@@ -842,8 +854,8 @@ Manages patient referrals to specialists, hospitals, or diagnostic centers when 
 │                        PRESENTATION LAYER                        │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
 │  │ Health       │  │  Patient     │  │  Admin Dashboard     │  │
-│  │ Officer UI   │  │  Portal      │  │  (System Admin)      │  │
-│  │              │  │  (Future)    │  │                      │  │
+│  │ Officer UI   │  │  Portal UI   │  │  (System Admin)      │  │
+│  │              │  │              │  │                      │  │
 │  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
 │         │                 │                      │               │
 └─────────┼─────────────────┼──────────────────────┼───────────────┘
@@ -2092,7 +2104,7 @@ const createHousehold = async (req, res, next) => {
 - **SMS Gateway** - For appointment reminders and test result notifications
 - **Email Service** - For referral documents and health reports
 - **Cloud Storage (AWS S3 / Google Cloud Storage)** - For patient photos and medical documents
-- **ApiMedic Diagnosis API** - For symptom-based test recommendations (as mentioned in user's current doc)
+- **RapidAPI Medical Diagnosis** - For AI-powered symptom checking and test recommendations (Priaid Symptom Checker)
 
 ### **13.4 Development Dependencies**
 
