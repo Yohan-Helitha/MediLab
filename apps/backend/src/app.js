@@ -17,6 +17,13 @@ app.get("/api/health", (req, res) => {
 	res.json({ status: "ok", env: config.nodeEnv });
 });
 
+// Auth module routes
+import authRoutes from "./modules/auth/auth.routes.js";
+app.use("/api/auth", authRoutes);
+
+// Consultation module routes (AI Doctor)
+import consultationRoutes from "./modules/consultation/consultation.routes.js";
+app.use("/api/consultation", consultationRoutes);
 
 //patient module routes
 import memberRoutes from "./modules/patient/routes/memberRoutes.js";
