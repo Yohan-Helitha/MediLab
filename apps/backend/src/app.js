@@ -4,8 +4,9 @@ import cors from "cors";
 import morgan from "morgan";
 import config from "./config/environment.js";
 
-//booking routes
-import bookingRoutes from './modules/booking/booking.routes.js'
+// booking routes
+import bookingRoutes from "./modules/booking/booking.routes.js";
+import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 
 const app = express();
 
@@ -21,9 +22,10 @@ app.get("/api/health", (req, res) => {
 });
 
 // TODO: mount feature routes here, e.g.
-//register booking routes
+// register booking routes
 
-app.use('/api/bookings', bookingRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 
 

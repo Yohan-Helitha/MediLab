@@ -12,13 +12,28 @@ export const protect = (req, res, next) => {
     const patientProfileId = req.body?.patientProfileId;
 
     if (patientProfileId && mongoose.Types.ObjectId.isValid(patientProfileId)) {
-      req.user = { id: patientProfileId };
+      req.user = { id: patientProfileId, role: "Patient" };
     } else {
-      req.user = { id: new mongoose.Types.ObjectId().toString() };
+      req.user = {
+        id: new mongoose.Types.ObjectId().toString(),
+        // default non-admin role; real auth should overwrite this
+        role: "User",
+      };
     }
   }
 
   next();
 };
 
-export default { protect };
+// Basic ADMIN-only guard based on req.user.role
+export const adminOnly = (req, res, next) => {
+  const role = req.user?.role;
+
+  if (role === "Admin" || role === "ADMIN") {
+    return next();
+  }
+
+  return res.status(403).json({ message: "Admin access required" });
+};
+
+export default { protect, adminOnly };
