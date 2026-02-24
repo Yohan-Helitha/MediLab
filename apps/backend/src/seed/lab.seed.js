@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import connectDB from '../config/db.js';
 import Lab from '../modules/lab/lab.model.js';
 
 const labs = [
@@ -32,7 +33,7 @@ const labs = [
 ];
 
 async function seedLabs() {
-	await mongoose.connect('mongodb://localhost:27017/medilab');
+	await connectDB();
 	await Lab.deleteMany({});
 	await Lab.insertMany(labs);
 	console.log('Labs seeded!');

@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
+import connectDB from '../config/db.js';
 import TestInstruction from '../modules/lab/testInstruction.model.js';
 import TestType from '../modules/test/testType.model.js';
 
 async function seedTestInstructions() {
-	await mongoose.connect('mongodb://localhost:27017/medilab');
+	await connectDB();
 	const tests = await TestType.find();
 
 	const instructions = [

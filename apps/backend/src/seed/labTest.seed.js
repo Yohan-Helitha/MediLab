@@ -1,12 +1,22 @@
 import mongoose from 'mongoose';
+import connectDB from '../config/db.js';
 import LabTest from '../modules/lab/labTest.model.js';
 import Lab from '../modules/lab/lab.model.js';
 import TestType from '../modules/test/testType.model.js';
 
 async function seedLabTests() {
-	await mongoose.connect('mongodb://localhost:27017/medilab');
+	await connectDB();
 	const labs = await Lab.find();
 	const tests = await TestType.find();
+
+	if (labs.length < 2 || tests.length < 3) {
+		console.error(
+			`Not enough seed data: found ${labs.length} labs and ${tests.length} test types. ` +
+			`Run lab.seed.js and testType.seed.js first to create at least 2 labs and 3 test types.`
+		);
+		await mongoose.disconnect();
+		process.exit(1);
+	}
 
 	const labTests = [
 		{

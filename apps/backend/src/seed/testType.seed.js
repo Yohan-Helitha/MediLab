@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import connectDB from '../config/db.js';
 import TestType from '../modules/test/testType.model.js';
 
 const testTypes = [
@@ -9,16 +10,18 @@ const testTypes = [
 		description: 'Evaluates overall health and detects a wide range of disorders.',
 		entryMethod: 'form',
 		discriminatorType: 'BloodGlucose',
+		reportTemplate: '/templates/cbc-report-template.json',
 		isRoutineMonitoringRecommended: false,
 		isActive: true
 	},
 	{
 		name: 'Lipid Profile',
 		code: 'LIPID',
-		category: 'Biochemistry',
+		category: 'Blood Chemistry',
 		description: 'Measures cholesterol and triglycerides to assess cardiovascular risk.',
 		entryMethod: 'form',
 		discriminatorType: 'BloodGlucose',
+		reportTemplate: '/templates/lipid-profile-report-template.json',
 		isRoutineMonitoringRecommended: true,
 		recommendedFrequency: 'annually',
 		recommendedFrequencyInDays: 365,
@@ -27,10 +30,11 @@ const testTypes = [
 	{
 		name: 'Blood Glucose (Fasting)',
 		code: 'GLUCOSE',
-		category: 'Biochemistry',
+		category: 'Blood Chemistry',
 		description: 'Measures blood sugar levels after an overnight fast.',
 		entryMethod: 'form',
 		discriminatorType: 'BloodGlucose',
+		reportTemplate: '/templates/blood-glucose-fasting-report-template.json',
 		isRoutineMonitoringRecommended: true,
 		recommendedFrequency: 'quarterly',
 		recommendedFrequencyInDays: 90,
@@ -39,7 +43,7 @@ const testTypes = [
 ];
 
 async function seedTestTypes() {
-	await mongoose.connect('mongodb://localhost:27017/medilab');
+	await connectDB();
 	await TestType.deleteMany({});
 	await TestType.insertMany(testTypes);
 	console.log('Test types seeded!');
