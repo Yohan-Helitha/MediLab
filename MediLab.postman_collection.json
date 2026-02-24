@@ -14,7 +14,15 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "http://localhost:3000/api/labs", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "labs"] }
+            "url": { "raw": "http://localhost:5000/api/labs", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "labs"] }
+          }
+        },
+        {
+          "name": "Get Lab By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/labs/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "labs", "{{labId}}"] }
           }
         },
         {
@@ -26,7 +34,7 @@
               "mode": "raw",
               "raw": "{\n  \"name\": \"South Health Center\",\n  \"addressLine1\": \"321 South Rd\",\n  \"district\": \"South District\",\n  \"province\": \"Southern\",\n  \"phoneNumber\": \"+1 (555) 222-3333\",\n  \"operationalStatus\": \"OPEN\",\n  \"isActive\": true\n}"
             },
-            "url": { "raw": "http://localhost:3000/api/labs", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "labs"] }
+            "url": { "raw": "http://localhost:5000/api/labs", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "labs"] }
           }
         },
         {
@@ -38,7 +46,7 @@
               "mode": "raw",
               "raw": "{\n  \"name\": \"North Rural Center Updated\",\n  \"operationalStatus\": \"MAINTENANCE\"\n}"
             },
-            "url": { "raw": "http://localhost:3000/api/labs/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "labs", "{{labId}}"] }
+            "url": { "raw": "http://localhost:5000/api/labs/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "labs", "{{labId}}"] }
           }
         },
         {
@@ -46,7 +54,19 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": { "raw": "http://localhost:3000/api/labs/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "labs", "{{labId}}"] }
+            "url": { "raw": "http://localhost:5000/api/labs/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "labs", "{{labId}}"] }
+          }
+        },
+        {
+          "name": "Update Lab Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CLOSED\"\n}"
+            },
+            "url": { "raw": "http://localhost:5000/api/labs/{{labId}}/status", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "labs", "{{labId}}", "status"] }
           }
         }
       ]
@@ -59,7 +79,15 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "http://localhost:3000/api/test-types", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "test-types"] }
+            "url": { "raw": "http://localhost:5000/api/test-types", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types"] }
+          }
+        },
+        {
+          "name": "Get Test Type By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-types/{{testTypeId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types", "{{testTypeId}}"] }
           }
         },
         {
@@ -71,7 +99,67 @@
               "mode": "raw",
               "raw": "{\n  \"name\": \"Urinalysis\",\n  \"code\": \"URINE\",\n  \"category\": \"Clinical Pathology\",\n  \"description\": \"Urine test for various parameters.\",\n  \"entryMethod\": \"form\",\n  \"discriminatorType\": \"AutomatedReport\",\n  \"isRoutineMonitoringRecommended\": false,\n  \"isActive\": true\n}"
             },
-            "url": { "raw": "http://localhost:3000/api/test-types", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "test-types"] }
+            "url": { "raw": "http://localhost:5000/api/test-types", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types"] }
+          }
+        },
+        {
+          "name": "Update Test Type",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Urinalysis Updated\",\n  \"category\": \"Updated Category\"\n}"
+            },
+            "url": { "raw": "http://localhost:5000/api/test-types/{{testTypeId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types", "{{testTypeId}}"] }
+          }
+        },
+        {
+          "name": "Soft Delete Test Type",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-types/{{testTypeId}}/soft-delete", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types", "{{testTypeId}}", "soft-delete"] }
+          }
+        },
+        {
+          "name": "Hard Delete Test Type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-types/{{testTypeId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types", "{{testTypeId}}"] }
+          }
+        },
+        {
+          "name": "Get Test Types By Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-types/category/{{category}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types", "category", "{{category}}"] }
+          }
+        },
+        {
+          "name": "Get Form Based Tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-types/method/form", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types", "method", "form"] }
+          }
+        },
+        {
+          "name": "Get Upload Based Tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-types/method/upload", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types", "method", "upload"] }
+          }
+        },
+        {
+          "name": "Get Monitoring Tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-types/monitoring/recommended", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types", "monitoring", "recommended"] }
           }
         }
       ]
@@ -84,7 +172,31 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "http://localhost:3000/api/lab-tests/lab/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "lab-tests", "lab", "{{labId}}"] }
+            "url": { "raw": "http://localhost:5000/api/lab-tests/lab/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "lab-tests", "lab", "{{labId}}"] }
+          }
+        },
+        {
+          "name": "Get Tests by Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/lab-tests/status?status={{status}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "lab-tests", "status"], "query": [{"key": "status", "value": "AVAILABLE"}] }
+          }
+        },
+        {
+          "name": "Get Tests by Name (Search)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/lab-tests/search?name={{name}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "lab-tests", "search"], "query": [{"key": "name", "value": "Glucose"}] }
+          }
+        },
+        {
+          "name": "Get Test Availability By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/lab-tests/{{labTestId}}/availability", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "lab-tests", "{{labTestId}}", "availability"] }
           }
         },
         {
@@ -96,7 +208,7 @@
               "mode": "raw",
               "raw": "{\n  \"status\": \"UNAVAILABLE\"\n}"
             },
-            "url": { "raw": "http://localhost:3000/api/lab-tests/{{labTestId}}/status", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "lab-tests", "{{labTestId}}", "status"] }
+            "url": { "raw": "http://localhost:5000/api/lab-tests/{{labTestId}}/status", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "lab-tests", "{{labTestId}}", "status"] }
           }
         }
       ]
@@ -109,7 +221,39 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "http://localhost:3000/api/test-instructions", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "test-instructions"] }
+            "url": { "raw": "http://localhost:5000/api/test-instructions", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-instructions"] }
+          }
+        },
+        {
+          "name": "Get Test Instruction By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-instructions/{{id}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-instructions", "{{id}}"] }
+          }
+        },
+        {
+          "name": "Get Test Instruction By TestTypeId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-instructions/test-type/{{testTypeId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-instructions", "test-type", "{{testTypeId}}"] }
+          }
+        },
+        {
+          "name": "Get Test Instruction By DiagnosticTestId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-instructions/diagnostic-test/{{diagnosticTestId}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-instructions", "diagnostic-test", "{{diagnosticTestId}}"] }
+          }
+        },
+        {
+          "name": "Get Test Instruction By Language",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-instructions/language/{{testTypeId}}?language={{languageCode}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-instructions", "language", "{{testTypeId}}"], "query": [{"key": "language", "value": "en"}] }
           }
         },
         {
@@ -121,7 +265,27 @@
               "mode": "raw",
               "raw": "{\n  \"diagnosticTestId\": \"{{testTypeId}}\",\n  \"preTestInstructions\": [\"No special preparation needed.\"],\n  \"postTestInstructions\": [\"Apply pressure to the puncture site for 2-3 minutes.\"],\n  \"languageCode\": \"en\",\n  \"isActive\": true,\n  \"createdBy\": \"{{userId}}\"\n}"
             },
-            "url": { "raw": "http://localhost:3000/api/test-instructions", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "test-instructions"] }
+            "url": { "raw": "http://localhost:5000/api/test-instructions", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-instructions"] }
+          }
+        },
+        {
+          "name": "Update Test Instruction",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"preTestInstructions\": [\"Updated pre-instruction\"],\n  \"postTestInstructions\": [\"Updated post-instruction\"]\n}"
+            },
+            "url": { "raw": "http://localhost:5000/api/test-instructions/{{id}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-instructions", "{{id}}"] }
+          }
+        },
+        {
+          "name": "Delete Test Instruction",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "http://localhost:5000/api/test-instructions/{{id}}", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-instructions", "{{id}}"] }
           }
         }
       ]
