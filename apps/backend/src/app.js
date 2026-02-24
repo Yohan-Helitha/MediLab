@@ -8,6 +8,10 @@ import testRoutes from "./modules/test/test.routes.js";
 import labTestRoutes from "./modules/lab/labTest.routes.js";
 import testInstructionRoutes from "./modules/lab/testInstruction.routes.js";
 
+// booking routes
+import bookingRoutes from "./modules/booking/booking.routes.js";
+import inventoryRoutes from "./modules/inventory/inventory.routes.js";
+
 const app = express();
 
 // Core middleware
@@ -26,5 +30,16 @@ app.use("/api/test-instructions", testInstructionRoutes);
 app.get("/api/health", (req, res) => {
 	res.json({ status: "ok", env: config.nodeEnv });
 });
+
+// TODO: mount feature routes here, e.g.
+// register booking routes
+
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/inventory", inventoryRoutes);
+
+
+
+// import labRoutes from "./modules/lab/lab.routes.js";
+// app.use("/api/labs", labRoutes);
 
 export default app;

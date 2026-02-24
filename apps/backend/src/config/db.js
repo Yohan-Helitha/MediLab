@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 import config, { validateEnv } from "./environment.js";
 
+
 mongoose.set("strictQuery", true);
 
 const connectionOptions = {

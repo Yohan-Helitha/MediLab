@@ -1,0 +1,224 @@
+{
+  "info": {
+    "name": "MediLab - Booking & Inventory Integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Test the integration between booking creation and inventory reservation/deduction in MediLab backend."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patientProfileId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "healthCenterId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "diagnosticTestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "equipmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - Create Booking (triggers equipment reservation)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "bookings"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientProfileId\": \"{{patientProfileId}}\",\n  \"healthCenterId\": \"{{healthCenterId}}\",\n  \"diagnosticTestId\": \"{{diagnosticTestId}}\",\n  \"bookingDate\": \"{{bookingDate}}\",\n  \"timeSlot\": \"09:00-09:30\",\n  \"bookingType\": \"PRE_BOOKED\",\n  \"priorityLevel\": \"NORMAL\",\n  \"paymentMethod\": \"CASH\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test('Response contains booking object', function () {",
+              "  pm.expect(json).to.have.property('booking');",
+              "  pm.expect(json.booking).to.have.property('_id');",
+              "});",
+              "",
+              "// Store bookingId for subsequent inventory tests",
+              "pm.environment.set('bookingId', json.booking._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Deduct Inventory after Test Completion",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/inventory/deduct-after-completion/{{bookingId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "inventory", "deduct-after-completion", "{{bookingId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test('Response has deductedItems array', function () {",
+              "  pm.expect(json).to.have.property('deductedItems');",
+              "  pm.expect(json.deductedItems).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - Restock Equipment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/inventory/restock",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "inventory", "restock"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"healthCenterId\": \"{{healthCenterId}}\",\n  \"equipmentId\": \"{{equipmentId}}\",\n  \"quantity\": 10\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test('Response contains stock object', function () {",
+              "  pm.expect(json).to.have.property('stock');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 - Direct Reserve Equipment for Booking (optional)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/inventory/reserve",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "inventory", "reserve"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"testTypeId\": \"{{diagnosticTestId}}\",\n  \"healthCenterId\": \"{{healthCenterId}}\",\n  \"bookingId\": \"{{bookingId}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test('Response has reservedItems array', function () {",
+              "  pm.expect(json).to.have.property('reservedItems');",
+              "  pm.expect(json.reservedItems).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
