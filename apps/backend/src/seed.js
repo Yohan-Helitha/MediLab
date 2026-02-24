@@ -7,6 +7,7 @@ import Lab from "./modules/lab/lab.model.js";
 import TestType from "./modules/test/testType.model.js";
 import Booking from "./modules/booking/booking.model.js";
 import { createBooking } from "./modules/booking/booking.service.js";
+import { seedInventory } from "./modules/inventory/inventory.seed.js";
 
 async function seed() {
   try {
@@ -121,6 +122,13 @@ async function seed() {
         sampleType: "Venous",
       },
       reportTemplate: "templates/cbc-report",
+    });
+
+    // Seed inventory (equipment, requirements, stock) before creating bookings
+    await seedInventory({
+      labs: [lab1, lab2],
+      testTypes: [testType1, testType2],
+      createdBy: healthOfficer._id,
     });
 
     console.log("[seed] Creating bookings using booking service...");
