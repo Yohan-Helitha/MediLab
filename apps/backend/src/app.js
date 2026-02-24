@@ -3,28 +3,19 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import config from "./config/environment.js";
+import labRoutes from "./modules/lab/lab.routes.js";
+import testRoutes from "./modules/test/test.routes.js";
+import labTestRoutes from "./modules/lab/labTest.routes.js";
+import testInstructionRoutes from "./modules/lab/testInstruction.routes.js";
 
-const app = express();
+// booking routes
+import bookingRoutes from "./modules/booking/booking.routes.js";
+import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 
-// Core middleware
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.use(morgan(config.isDev ? "dev" : "combined"));
-
-// Health check
-app.get("/api/health", (req, res) => {
-	res.json({ status: "ok", env: config.nodeEnv });
-});
-
-// Auth module routes
+//patient module
 import authRoutes from "./modules/auth/auth.routes.js";
-app.use("/api/auth", authRoutes);
-
 // Consultation module routes (AI Doctor)
 import consultationRoutes from "./modules/consultation/consultation.routes.js";
-app.use("/api/consultation", consultationRoutes);
-
 //patient module routes
 import memberRoutes from "./modules/patient/routes/memberRoutes.js";
 import householdRoutes from "./modules/patient/routes/householdRoutes.js";
@@ -38,6 +29,33 @@ import familyMemberRoutes from "./modules/patient/routes/familyMemberRoutes.js";
 import familyRelationshipRoutes from "./modules/patient/routes/familyRelationshipRoutes.js";	
 import visitRoutes from "./modules/patient/routes/visitRoutes.js";
 import referralRoutes from "./modules/patient/routes/referralRoutes.js";
+
+const app = express();
+
+// Core middleware
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+app.use(morgan(config.isDev ? "dev" : "combined"));
+
+// Feature routes
+app.use("/api/labs", labRoutes);
+app.use("/api/test-types", testRoutes);
+app.use("/api/lab-tests", labTestRoutes);
+app.use("/api/test-instructions", testInstructionRoutes);
+
+// Health check
+app.get("/api/health", (req, res) => {
+	res.json({ status: "ok", env: config.nodeEnv });
+});
+
+// Auth module routes
+
+app.use("/api/auth", authRoutes);
+
+
+app.use("/api/consultation", consultationRoutes);
+
 
 //patient module - api routes
 app.use("/api/members", memberRoutes);
@@ -54,6 +72,14 @@ app.use("/api/visits", visitRoutes);
 app.use("/api/referrals", referralRoutes);
 
 // TODO: mount other feature routes here, e.g.
+// TODO: mount feature routes here, e.g.
+// register booking routes
+
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/inventory", inventoryRoutes);
+
+
+
 // import labRoutes from "./modules/lab/lab.routes.js";
 // app.use("/api/labs", labRoutes);
 

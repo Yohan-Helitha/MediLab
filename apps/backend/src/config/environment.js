@@ -3,12 +3,11 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// Resolve project root .env (one level above /apps)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Look for .env file in the root directory with absolute path to avoid confusion
 const envPath = path.resolve(__dirname, "../../../../.env");
-console.log(`[Debug] Loading .env from: ${envPath}`);
+
 dotenv.config({ path: envPath });
 
 const env = process.env;
