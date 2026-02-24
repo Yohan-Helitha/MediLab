@@ -1,20 +1,64 @@
-// Validation schemas for test type operations
-// Using express-validator or Joi (to be implemented)
+const Joi = require('joi');
 
-export const createTestTypeValidation = [
-  // TODO: Add validation rules
-  // - name: required, string, max 200
-  // - code: required, string, uppercase, max 20
-  // - category: required, enum
-  // - entryMethod: required, enum
-  // - discriminatorType: required, enum
-  // - etc.
+const createTestTypeValidation = [
+  (req, res, next) => {
+    const schema = Joi.object({
+      name: Joi.string().min(3).max(200).required(),
+      code: Joi.string().uppercase().max(20).required(),
+      category: Joi.string().min(3).max(50).required(),
+      entryMethod: Joi.string().valid('Form', 'Upload').required(),
+      discriminatorType: Joi.string().min(3).max(50).required(),
+      description: Joi.string().min(10).max(500).required(),
+      price: Joi.number().min(0).required(),
+      resultTime: Joi.string().pattern(/^\d+\s*hours$/).required(),
+      isMonitoringRecommended: Joi.boolean(),
+      isActive: Joi.boolean()
+    });
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    next();
+  }
 ];
 
-export const updateTestTypeValidation = [
-  // TODO: Add validation rules for update
+const updateTestTypeValidation = [
+  (req, res, next) => {
+    const schema = Joi.object({
+      name: Joi.string().min(3).max(200),
+      code: Joi.string().uppercase().max(20),
+      category: Joi.string().min(3).max(50),
+      entryMethod: Joi.string().valid('Form', 'Upload'),
+      discriminatorType: Joi.string().min(3).max(50),
+      description: Joi.string().min(10).max(500),
+      price: Joi.number().min(0),
+      resultTime: Joi.string().pattern(/^\d+\s*hours$/),
+      isMonitoringRecommended: Joi.boolean(),
+      isActive: Joi.boolean()
+    });
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    next();
+  }
 ];
 
-export const idParamValidation = [
-  // TODO: Validate MongoDB ObjectId parameter
+const idParamValidation = [
+  (req, res, next) => {
+    const schema = Joi.object({
+      id: Joi.string().length(24).hex().required()
+    });
+    const { error } = schema.validate({ id: req.params.id });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    next();
+  }
 ];
+
+module.exports = {
+  createTestTypeValidation,
+  updateTestTypeValidation,
+  idParamValidation,
+};
