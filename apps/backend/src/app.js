@@ -12,6 +12,24 @@ import testInstructionRoutes from "./modules/lab/testInstruction.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 
+//patient module
+import authRoutes from "./modules/auth/auth.routes.js";
+// Consultation module routes (AI Doctor)
+import consultationRoutes from "./modules/consultation/consultation.routes.js";
+//patient module routes
+import memberRoutes from "./modules/patient/routes/memberRoutes.js";
+import householdRoutes from "./modules/patient/routes/householdRoutes.js";
+import healthDetailsRoutes from "./modules/patient/routes/healthDetailsRoutes.js";
+import allergyRoutes from "./modules/patient/routes/allergyRoutes.js";
+import chronicDiseaseRoutes from "./modules/patient/routes/chronicDiseaseRoutes.js";
+import medicationRoutes from "./modules/patient/routes/medicationRoutes.js";
+import pastMedicalHistoryRoutes from "./modules/patient/routes/pastMedicalHistoryRoutes.js";
+import emergencyContactRoutes from "./modules/patient/routes/emergencyContactRoutes.js";
+import familyMemberRoutes from "./modules/patient/routes/familyMemberRoutes.js";
+import familyRelationshipRoutes from "./modules/patient/routes/familyRelationshipRoutes.js";	
+import visitRoutes from "./modules/patient/routes/visitRoutes.js";
+import referralRoutes from "./modules/patient/routes/referralRoutes.js";
+
 const app = express();
 
 // Core middleware
@@ -31,6 +49,29 @@ app.get("/api/health", (req, res) => {
 	res.json({ status: "ok", env: config.nodeEnv });
 });
 
+// Auth module routes
+
+app.use("/api/auth", authRoutes);
+
+
+app.use("/api/consultation", consultationRoutes);
+
+
+//patient module - api routes
+app.use("/api/members", memberRoutes);
+app.use("/api/households", householdRoutes);
+app.use("/api/health-details", healthDetailsRoutes);
+app.use("/api/allergies", allergyRoutes);
+app.use("/api/chronic-diseases", chronicDiseaseRoutes);
+app.use("/api/medications", medicationRoutes);
+app.use("/api/past-medical-history", pastMedicalHistoryRoutes);
+app.use("/api/emergency-contacts", emergencyContactRoutes);
+app.use("/api/family-members", familyMemberRoutes);
+app.use("/api/family-relationships", familyRelationshipRoutes);
+app.use("/api/visits", visitRoutes);
+app.use("/api/referrals", referralRoutes);
+
+// TODO: mount other feature routes here, e.g.
 // TODO: mount feature routes here, e.g.
 // register booking routes
 
