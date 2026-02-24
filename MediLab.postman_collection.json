@@ -1,0 +1,130 @@
+{
+  "info": {
+    "name": "MediLab API",
+    "_postman_id": "medilab-collection-001",
+    "description": "Test cases for Lab Registration, Test Management, Test Availability, and Test Instructions",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Lab Management",
+      "item": [
+        {
+          "name": "Get All Labs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:3000/api/labs", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "labs"] }
+          }
+        },
+        {
+          "name": "Create Lab",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"South Health Center\",\n  \"addressLine1\": \"321 South Rd\",\n  \"district\": \"South District\",\n  \"province\": \"Southern\",\n  \"phoneNumber\": \"+1 (555) 222-3333\",\n  \"operationalStatus\": \"OPEN\",\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "http://localhost:3000/api/labs", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "labs"] }
+          }
+        },
+        {
+          "name": "Update Lab",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"North Rural Center Updated\",\n  \"operationalStatus\": \"MAINTENANCE\"\n}"
+            },
+            "url": { "raw": "http://localhost:3000/api/labs/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "labs", "{{labId}}"] }
+          }
+        },
+        {
+          "name": "Delete Lab",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "http://localhost:3000/api/labs/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "labs", "{{labId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Test Management",
+      "item": [
+        {
+          "name": "Get All Test Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:3000/api/test-types", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "test-types"] }
+          }
+        },
+        {
+          "name": "Create Test Type",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Urinalysis\",\n  \"code\": \"URINE\",\n  \"category\": \"Clinical Pathology\",\n  \"description\": \"Urine test for various parameters.\",\n  \"entryMethod\": \"form\",\n  \"discriminatorType\": \"AutomatedReport\",\n  \"isRoutineMonitoringRecommended\": false,\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "http://localhost:3000/api/test-types", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "test-types"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Test Availability",
+      "item": [
+        {
+          "name": "Get Tests by Lab",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:3000/api/lab-tests/lab/{{labId}}", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "lab-tests", "lab", "{{labId}}"] }
+          }
+        },
+        {
+          "name": "Update Test Availability Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"UNAVAILABLE\"\n}"
+            },
+            "url": { "raw": "http://localhost:3000/api/lab-tests/{{labTestId}}/status", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "lab-tests", "{{labTestId}}", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Test Instructions",
+      "item": [
+        {
+          "name": "Get All Test Instructions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:3000/api/test-instructions", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "test-instructions"] }
+          }
+        },
+        {
+          "name": "Create Test Instruction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diagnosticTestId\": \"{{testTypeId}}\",\n  \"preTestInstructions\": [\"No special preparation needed.\"],\n  \"postTestInstructions\": [\"Apply pressure to the puncture site for 2-3 minutes.\"],\n  \"languageCode\": \"en\",\n  \"isActive\": true,\n  \"createdBy\": \"{{userId}}\"\n}"
+            },
+            "url": { "raw": "http://localhost:3000/api/test-instructions", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "test-instructions"] }
+          }
+        }
+      ]
+    }
+  ]
+}
