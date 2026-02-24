@@ -39,6 +39,16 @@ const testTypes = [
 		recommendedFrequency: 'quarterly',
 		recommendedFrequencyInDays: 90,
 		isActive: true
+	},
+	{
+		name: 'Chest X-Ray',
+		code: 'CXR',
+		category: 'Imaging',
+		description: 'Chest X-Ray image upload for radiology reporting.',
+		entryMethod: 'upload',
+		discriminatorType: 'XRay',
+		isRoutineMonitoringRecommended: false,
+		isActive: true
 	}
 ];
 

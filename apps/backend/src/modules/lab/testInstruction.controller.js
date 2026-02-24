@@ -5,6 +5,11 @@ export const createTestInstruction = async (req, res, next) => {
         const testInstruction = await testInstructionService.createTestInstruction(req.body);
         res.status(201).json(testInstruction);
     }catch(error){
+        if (error.code === 11000) {
+            return res.status(409).json({
+                error: "Instructions already exist for this test and language. Use update or a different languageCode."
+            });
+        }
         res.status(400).json({error:error.message});
     }
 };
@@ -53,9 +58,9 @@ export const getTestInstructionById = async (req, res, next) => {
 };
 export const updateTestInstructions = async (req, res, next) => {
     try{
-        const testInstruction = await testInstructionService.updateTestInstruction(req.params.testTypeId, req.body);
+        const testInstruction = await testInstructionService.updateTestInstruction(req.params.id, req.body);
         if(!testInstruction){
-            return res.status(204).json({error: "Test instructions are not found "});
+            return res.status(404).json({error: "Test instructions are not found"});
         }
         res.json(testInstruction);
 
@@ -87,7 +92,7 @@ export const getTestInstructionByDiagnosticTestId = async (req, res, next) => {
 };
 export const deleteTestInstructions = async (req, res, next) =>{
     try{
-        const testInstruction = await testInstructionService.deleteTestInstruction(req.params.testTypeId);
+        const testInstruction = await testInstructionService.deleteTestInstruction(req.params.id);
         if(!testInstruction){
             return res.status(404).json({error: "Test instructions are not found"});
         }

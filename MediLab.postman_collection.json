@@ -97,7 +97,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Urinalysis\",\n  \"code\": \"URINE\",\n  \"category\": \"Clinical Pathology\",\n  \"description\": \"Urine test for various parameters.\",\n  \"entryMethod\": \"form\",\n  \"discriminatorType\": \"AutomatedReport\",\n  \"isRoutineMonitoringRecommended\": false,\n  \"isActive\": true\n}"
+              "raw": "{\n  \"name\": \"Urinalysis\",\n  \"code\": \"URINE\",\n  \"category\": \"Clinical Pathology\",\n  \"description\": \"Urine test for various parameters.\",\n  \"entryMethod\": \"form\",\n  \"discriminatorType\": \"AutomatedReport\",\n  \"reportTemplate\": \"/templates/urinalysis-report-template.json\",\n  \"isRoutineMonitoringRecommended\": false,\n  \"isActive\": true\n}"
             },
             "url": { "raw": "http://localhost:5000/api/test-types", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "test-types"] }
           }

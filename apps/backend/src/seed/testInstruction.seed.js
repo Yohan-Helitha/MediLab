@@ -7,6 +7,15 @@ async function seedTestInstructions() {
 	await connectDB();
 	const tests = await TestType.find();
 
+	if (tests.length < 4) {
+		console.error(
+			`Not enough test types found: ${tests.length}. ` +
+			`Run testType.seed.js first so at least 4 test types exist before seeding instructions.`
+		);
+		await mongoose.disconnect();
+		process.exit(1);
+	}
+
 	const instructions = [
 		{
 			diagnosticTestId: tests[0]._id,
@@ -31,6 +40,34 @@ async function seedTestInstructions() {
 			postTestInstructions: [
 				'You may resume normal eating after the blood draw.',
 				'Keep the bandage on for at least 30 minutes. Report any excessive bruising to the lab.'
+			],
+			languageCode: 'en',
+			isActive: true,
+			createdBy: new mongoose.Types.ObjectId()
+		},
+		{
+			diagnosticTestId: tests[2]._id,
+			preTestInstructions: [
+				'Fast for at least 8 hours before the blood glucose test.',
+				'Avoid sugary drinks and strenuous exercise the day before the test.'
+			],
+			postTestInstructions: [
+				'You may eat and drink normally after the test unless your doctor advises otherwise.',
+				'If you feel dizzy or lightheaded, sit down and inform the staff.'
+			],
+			languageCode: 'en',
+			isActive: true,
+			createdBy: new mongoose.Types.ObjectId()
+		},
+		{
+			diagnosticTestId: tests[3]._id,
+			preTestInstructions: [
+				'Remove any metal objects from the chest area before the X-ray.',
+				'Inform the radiographer if you are pregnant or suspect you may be.'
+			],
+			postTestInstructions: [
+				'No special care is needed after a standard chest X-ray.',
+				'Follow up with your doctor to discuss the report and findings.'
 			],
 			languageCode: 'en',
 			isActive: true,
