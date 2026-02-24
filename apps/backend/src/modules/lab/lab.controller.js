@@ -1,17 +1,15 @@
-const labService = require('./lab.service');
+import * as labService from './lab.service.js';
 
-// Create a new lab
-async function createLab(req, res) {
+export const createLab = async (req, res) => {
   try {
     const lab = await labService.createLab(req.body);
     res.status(201).json(lab);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
-}
+};
 
-// Get all labs (with optional name filter)
-async function getLabs(req, res) {
+export const getLabs = async (req, res) => {
   try {
     const filter = {};
     if (req.query.name) {
@@ -22,10 +20,9 @@ async function getLabs(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
+};
 
-// Get a single lab by ID
-async function getLabById(req, res) {
+export const getLabById = async (req, res) => {
   try {
     const lab = await labService.getLabById(req.params.id);
     if (!lab) return res.status(404).json({ error: 'Lab not found' });
@@ -33,10 +30,9 @@ async function getLabById(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
+};
 
-// Update lab details
-async function updateLab(req, res) {
+export const updateLab = async (req, res) => {
   try {
     const lab = await labService.updateLab(req.params.id, req.body);
     if (!lab) return res.status(404).json({ error: 'Lab not found' });
@@ -44,10 +40,9 @@ async function updateLab(req, res) {
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
-}
+};
 
-// Delete a lab (hard delete)
-async function deleteLab(req, res) {
+export const deleteLab = async (req, res) => {
   try {
     const lab = await labService.deleteLab(req.params.id);
     if (!lab) return res.status(404).json({ error: 'Lab not found' });
@@ -55,10 +50,9 @@ async function deleteLab(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
+};
 
-// Update lab status (soft delete/activate)
-async function updateLabStatus(req, res) {
+export const updateLabStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const lab = await labService.updateLabStatus(req.params.id, status);
@@ -67,13 +61,6 @@ async function updateLabStatus(req, res) {
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
-}
-
-module.exports = {
-  createLab,
-  getLabs,
-  getLabById,
-  updateLab,
-  deleteLab,
-  updateLabStatus,
 };
+
+

@@ -1,50 +1,36 @@
-// Lab service
-const Lab = require('./lab.model');
+import Lab from './lab.model.js';
 
-// Create a new lab
-async function createLab(labData) {
+export const createLab = async (labData) => {
   const lab = new Lab(labData);
   return lab.save();
-}
+};
 
-// Get all labs, with optional name filter
-async function getLabs(filter = {}) {
+export const getLabs = async (filter = {}) => {
   const query = {};
   if (filter.name) {
-    query.name = { $regex: filter.name, $options: 'i' }; // case-insensitive search
+    query.name = { $regex: filter.name, $options: 'i' };
   }
   return Lab.find(query);
-}
+};
 
-// Get a single lab by ID
-async function getLabById(id) {
+export const getLabById = async (id) => {
   return Lab.findById(id);
-}
+};
 
-// Update lab details
-async function updateLab(id, updateData) {
+export const updateLab = async (id, updateData) => {
   return Lab.findByIdAndUpdate(id, updateData, { new: true });
-}
+};
 
-// Delete a lab (hard delete)
-async function deleteLab(id) {
+export const deleteLab = async (id) => {
   return Lab.findByIdAndDelete(id);
-}
+};
 
-// Update lab status (soft delete/activate)
-async function updateLabStatus(id, status) {
+export const updateLabStatus = async (id, status) => {
   return Lab.findByIdAndUpdate(
     id,
     { status },
     { new: true }
   );
-}
-
-module.exports = {
-  createLab,
-  getLabs,
-  getLabById,
-  updateLab,
-  deleteLab,
-  updateLabStatus,
 };
+
+
