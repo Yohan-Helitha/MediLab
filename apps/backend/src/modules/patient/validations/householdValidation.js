@@ -17,13 +17,13 @@ export const validateHouseholdCreate = [
   body("primary_contact_number")
     .notEmpty()
     .withMessage("Primary contact number is required")
-    .isLength({ max: 20 })
-    .withMessage("Primary contact number must be less than 20 characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Primary contact number must be exactly 10 digits with no symbols or letters"),
   
   body("secondary_contact_number")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Secondary contact number must be less than 20 characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Secondary contact number must be exactly 10 digits with no symbols or letters"),
   
   body("address")
     .notEmpty()
@@ -87,13 +87,13 @@ export const validateHouseholdUpdate = [
   
   body("primary_contact_number")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Primary contact number must be less than 20 characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Primary contact number must be exactly 10 digits with no symbols or letters"),
   
   body("secondary_contact_number")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Secondary contact number must be less than 20 characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Secondary contact number must be exactly 10 digits with no symbols or letters"),
   
   body("village_name")
     .optional()

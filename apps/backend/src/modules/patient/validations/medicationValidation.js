@@ -1,5 +1,13 @@
 import { body, param } from "express-validator";
 
+/**
+ * Medication Validation Rules
+ * 
+ * Note: Prescription photo file size validation (10MB limit) should be handled separately 
+ * in the controller using multer middleware with file size limits.
+ * Example: multer({ limits: { fileSize: 10 * 1024 * 1024 } })
+ */
+
 export const validateMedicationCreate = [
   body("member_id")
     .notEmpty()
@@ -38,13 +46,30 @@ export const validateMedicationCreate = [
   body("start_date")
     .notEmpty()
     .withMessage("Start date is required")
-    .isISO8601()
-    .withMessage("Invalid date format (use YYYY-MM-DD or ISO8601)"),
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Start date must be in YYYY-MM-DD format")
+    .custom((value) => {
+      const inputDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+      
+      if (inputDate > today) {
+        throw new Error('Start date cannot be a future date');
+      }
+      
+      // Check if it's a valid date
+      if (isNaN(inputDate.getTime())) {
+        throw new Error('Invalid date');
+      }
+      
+      return true;
+    }),
   
   body("prescription_photo")
     .optional()
     .isLength({ max: 255 })
     .withMessage("Prescription photo path must be less than 255 characters")
+    // Note: File size validation (10MB limit) handled in multer middleware
 ];
 
 export const validateMedicationUpdate = [
@@ -81,13 +106,32 @@ export const validateMedicationUpdate = [
   
   body("start_date")
     .optional()
-    .isISO8601()
-    .withMessage("Invalid date format (use YYYY-MM-DD or ISO8601)"),
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Start date must be in YYYY-MM-DD format")
+    .custom((value) => {
+      if (value) {
+        const inputDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+        
+        if (inputDate > today) {
+          throw new Error('Start date cannot be a future date');
+        }
+        
+        // Check if it's a valid date
+        if (isNaN(inputDate.getTime())) {
+          throw new Error('Invalid date');
+        }
+      }
+      
+      return true;
+    }),
   
   body("prescription_photo")
     .optional()
     .isLength({ max: 255 })
     .withMessage("Prescription photo path must be less than 255 characters")
+    // Note: File size validation (10MB limit) handled in multer middleware
 ];
 
 export const validateMedicationId = [

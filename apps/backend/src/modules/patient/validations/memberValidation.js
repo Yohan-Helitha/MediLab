@@ -1,5 +1,13 @@
 import { body, param } from "express-validator";
 
+/**
+ * Member Validation Rules
+ * 
+ * Note: Photo file size validation (10MB limit) should be handled separately 
+ * in the controller using multer middleware with file size limits.
+ * Example: multer({ limits: { fileSize: 10 * 1024 * 1024 } })
+ */
+
 export const validateMemberCreate = [
   body("household_id")
     .notEmpty()
@@ -30,8 +38,8 @@ export const validateMemberCreate = [
   body("contact_number")
     .notEmpty()
     .withMessage("Contact number is required")
-    .isLength({ max: 20 })
-    .withMessage("Contact number must be less than 20 characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Contact number must be exactly 10 digits with no symbols or letters"),
   
   body("nic")
     .optional()
@@ -50,8 +58,21 @@ export const validateMemberCreate = [
         throw new Error('NIC is required for members above 18 years of age. You can use "N/A" if NIC is not available.');
       }
       
-      if (value && value.length > 20) {
-        throw new Error('NIC must be less than 20 characters');
+      // Validate NIC format if provided
+      if (value && value !== 'N/A') {
+        // Type 1: 9 digits + uppercase V (e.g., 123456789V)
+        const oldNicFormat = /^[0-9]{9}V$/;
+        // Type 2: 12 digits (e.g., 200012345678)
+        const newNicFormat = /^[0-9]{12}$/;
+        
+        if (!oldNicFormat.test(value) && !newNicFormat.test(value)) {
+          throw new Error('NIC must be either 9 digits followed by uppercase "V" (e.g., 123456789V) or 12 digits (e.g., 200012345678). No spacing, symbols, or lowercase letters allowed.');
+        }
+        
+        // Check if lowercase 'v' was used
+        if (value.endsWith('v')) {
+          throw new Error('NIC must use uppercase "V", not lowercase "v"');
+        }
       }
       
       return true;
@@ -60,20 +81,39 @@ export const validateMemberCreate = [
   body("password_hash")
     .notEmpty()
     .withMessage("Password is required")
-    .isLength({ max: 255 })
-    .withMessage("Password must be less than 255 characters"),
+    .isLength({ min: 8, max: 255 })
+    .withMessage("Password must be at least 8 characters and less than 255 characters")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@#_])[a-zA-Z0-9@#_]+$/)
+    .withMessage("Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@, #, or _)"),
   
   body("date_of_birth")
     .notEmpty()
     .withMessage("Date of birth is required")
-    .isISO8601()
-    .withMessage("Invalid date format"),
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Date of birth must be in YYYY-MM-DD format")
+    .custom((value) => {
+      const inputDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+      
+      if (inputDate > today) {
+        throw new Error('Date of birth cannot be a future date');
+      }
+      
+      // Check if it's a valid date
+      if (isNaN(inputDate.getTime())) {
+        throw new Error('Invalid date');
+      }
+      
+      return true;
+    }),
   
   body("gender")
     .notEmpty()
     .withMessage("Gender is required")
-    .isLength({ max: 20 })
-    .withMessage("Gender must be less than 20 characters"),
+    .isIn(['male', 'female', 'Male', 'Female'])
+    .withMessage("Gender must be either 'male' or 'female'")
+    .customSanitizer(value => value.toLowerCase()),
   
   body("gn_division")
     .notEmpty()
@@ -143,8 +183,8 @@ export const validateMemberUpdate = [
   
   body("contact_number")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Contact number must be less than 20 characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Contact number must be exactly 10 digits with no symbols or letters"),
   
   body("nic")
     .optional()
@@ -161,8 +201,21 @@ export const validateMemberUpdate = [
         }
       }
       
-      if (value && value.length > 20) {
-        throw new Error('NIC must be less than 20 characters');
+      // Validate NIC format if provided
+      if (value && value !== 'N/A') {
+        // Type 1: 9 digits + uppercase V (e.g., 123456789V)
+        const oldNicFormat = /^[0-9]{9}V$/;
+        // Type 2: 12 digits (e.g., 200012345678)
+        const newNicFormat = /^[0-9]{12}$/;
+        
+        if (!oldNicFormat.test(value) && !newNicFormat.test(value)) {
+          throw new Error('NIC must be either 9 digits followed by uppercase "V" (e.g., 123456789V) or 12 digits (e.g., 200012345678). No spacing, symbols, or lowercase letters allowed.');
+        }
+        
+        // Check if lowercase 'v' was used
+        if (value.endsWith('v')) {
+          throw new Error('NIC must use uppercase "V", not lowercase "v"');
+        }
       }
       
       return true;
@@ -170,18 +223,39 @@ export const validateMemberUpdate = [
   
   body("password_hash")
     .optional()
-    .isLength({ max: 255 })
-    .withMessage("Password must be less than 255 characters"),
+    .isLength({ min: 8, max: 255 })
+    .withMessage("Password must be at least 8 characters and less than 255 characters")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@#_])[a-zA-Z0-9@#_]+$/)
+    .withMessage("Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@, #, or _)"),
   
   body("date_of_birth")
     .optional()
-    .isISO8601()
-    .withMessage("Invalid date format"),
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Date of birth must be in YYYY-MM-DD format")
+    .custom((value) => {
+      if (value) {
+        const inputDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+        
+        if (inputDate > today) {
+          throw new Error('Date of birth cannot be a future date');
+        }
+        
+        // Check if it's a valid date
+        if (isNaN(inputDate.getTime())) {
+          throw new Error('Invalid date');
+        }
+      }
+      
+      return true;
+    }),
   
   body("gender")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Gender must be less than 20 characters"),
+    .isIn(['male', 'female', 'Male', 'Female'])
+    .withMessage("Gender must be either 'male' or 'female'")
+    .customSanitizer(value => value ? value.toLowerCase() : value),
   
   body("gn_division")
     .optional()

@@ -22,17 +22,13 @@ export const validateEmergencyContactCreate = [
   body("primary_phone")
     .notEmpty()
     .withMessage("Primary phone is required")
-    .isLength({ max: 20 })
-    .withMessage("Primary phone must be less than 20 characters")
-    .matches(/^[0-9+\-\s()]+$/)
-    .withMessage("Primary phone must contain only valid phone number characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Primary phone must be exactly 10 digits with no symbols or letters"),
   
   body("secondary_phone")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Secondary phone must be less than 20 characters")
-    .matches(/^[0-9+\-\s()]*$/)
-    .withMessage("Secondary phone must contain only valid phone number characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Secondary phone must be exactly 10 digits with no symbols or letters"),
   
   body("contact_priority")
     .notEmpty()
@@ -43,16 +39,18 @@ export const validateEmergencyContactCreate = [
   body("available_24_7")
     .optional()
     .isBoolean()
-    .withMessage("Available 24/7 must be boolean"),
+    .withMessage("Available 24/7 must be either true (yes) or false (no)"),
   
   body("best_time_to_contact")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Best time to contact must be less than 20 characters"),
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .withMessage("Best time to contact must be a valid time in HH:MM format (e.g., 09:00, 14:30)"),
   
   body("address")
     .notEmpty()
-    .withMessage("Address is required"),
+    .withMessage("Address is required")
+    .isLength({ max: 150 })
+    .withMessage("Address must be less than 150 characters"),
   
   body("gn_division")
     .notEmpty()
@@ -66,17 +64,17 @@ export const validateEmergencyContactCreate = [
   body("receive_medical_results")
     .optional()
     .isBoolean()
-    .withMessage("Receive medical results must be boolean"),
+    .withMessage("Receive medical results must be either true (yes) or false (no)"),
   
   body("decision_permission")
     .optional()
     .isBoolean()
-    .withMessage("Decision permission must be boolean"),
+    .withMessage("Decision permission must be either true (yes) or false (no)"),
   
   body("collect_reports_permission")
     .optional()
     .isBoolean()
-    .withMessage("Collect reports permission must be boolean")
+    .withMessage("Collect reports permission must be either true (yes) or false (no)")
 ];
 
 export const validateEmergencyContactUpdate = [
@@ -105,17 +103,13 @@ export const validateEmergencyContactUpdate = [
     .optional()
     .notEmpty()
     .withMessage("Primary phone cannot be empty")
-    .isLength({ max: 20 })
-    .withMessage("Primary phone must be less than 20 characters")
-    .matches(/^[0-9+\-\s()]+$/)
-    .withMessage("Primary phone must contain only valid phone number characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Primary phone must be exactly 10 digits with no symbols or letters"),
   
   body("secondary_phone")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Secondary phone must be less than 20 characters")
-    .matches(/^[0-9+\-\s()]*$/)
-    .withMessage("Secondary phone must contain only valid phone number characters"),
+    .matches(/^[0-9]{10}$/)
+    .withMessage("Secondary phone must be exactly 10 digits with no symbols or letters"),
   
   body("contact_priority")
     .optional()
@@ -125,17 +119,19 @@ export const validateEmergencyContactUpdate = [
   body("available_24_7")
     .optional()
     .isBoolean()
-    .withMessage("Available 24/7 must be boolean"),
+    .withMessage("Available 24/7 must be either true (yes) or false (no)"),
   
   body("best_time_to_contact")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Best time to contact must be less than 20 characters"),
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .withMessage("Best time to contact must be a valid time in HH:MM format (e.g., 09:00, 14:30)"),
   
   body("address")
     .optional()
     .notEmpty()
-    .withMessage("Address cannot be empty"),
+    .withMessage("Address cannot be empty")
+    .isLength({ max: 150 })
+    .withMessage("Address must be less than 150 characters"),
   
   body("gn_division")
     .optional()
@@ -150,17 +146,17 @@ export const validateEmergencyContactUpdate = [
   body("receive_medical_results")
     .optional()
     .isBoolean()
-    .withMessage("Receive medical results must be boolean"),
+    .withMessage("Receive medical results must be either true (yes) or false (no)"),
   
   body("decision_permission")
     .optional()
     .isBoolean()
-    .withMessage("Decision permission must be boolean"),
+    .withMessage("Decision permission must be either true (yes) or false (no)"),
   
   body("collect_reports_permission")
     .optional()
     .isBoolean()
-    .withMessage("Collect reports permission must be boolean")
+    .withMessage("Collect reports permission must be either true (yes) or false (no)")
 ];
 
 export const validateEmergencyContactId = [

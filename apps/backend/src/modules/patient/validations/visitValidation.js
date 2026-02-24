@@ -4,24 +4,36 @@ export const validateVisitCreate = [
   body("member_id")
     .notEmpty()
     .withMessage("Member ID is required")
-    .isString()
-    .withMessage("Member ID must be a string")
+    .matches(/^MEM-ANU-PADGNDIV-\d{4}-\d{5}$/)
+    .withMessage("Invalid member ID format. Expected: MEM-ANU-PADGNDIV-YYYY-NNNNN")
     .isLength({ max: 50 })
     .withMessage("Member ID must be less than 50 characters"),
   
   body("household_id")
     .notEmpty()
     .withMessage("Household ID is required")
-    .isString()
-    .withMessage("Household ID must be a string")
+    .matches(/^ANU-PADGNDIV-\d{5}$/)
+    .withMessage("Invalid household ID format. Expected: ANU-PADGNDIV-NNNNN")
     .isLength({ max: 50 })
     .withMessage("Household ID must be less than 50 characters"),
   
   body("visit_date")
     .notEmpty()
     .withMessage("Visit date is required")
-    .isISO8601()
-    .withMessage("Invalid date format"),
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Visit date must be in YYYY-MM-DD format")
+    .custom((value) => {
+      const inputDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (isNaN(inputDate.getTime())) {
+        throw new Error('Invalid date');
+      }
+      if (inputDate < today) {
+        throw new Error('Visit date cannot be in the past; must be today or a future date');
+      }
+      return true;
+    }),
   
   body("visit_type")
     .notEmpty()
@@ -46,16 +58,23 @@ export const validateVisitCreate = [
   
   body("follow_up_date")
     .optional()
-    .isISO8601()
-    .withMessage("Invalid follow up date format"),
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Follow up date must be in YYYY-MM-DD format")
+    .custom((value) => {
+      if (value) {
+        const inputDate = new Date(value);
+        if (isNaN(inputDate.getTime())) {
+          throw new Error('Invalid follow up date');
+        }
+      }
+      return true;
+    }),
   
   body("created_by_staff_id")
     .notEmpty()
     .withMessage("Created by staff ID is required")
-    .isString()
-    .withMessage("Staff ID must be a string")
-    .isLength({ max: 20 })
-    .withMessage("Staff ID must be less than 20 characters")
+    .matches(/^HO-\d{4}-\d{3}$/)
+    .withMessage("Invalid staff ID format. Expected format: HO-YYYY-XXX"),
 ];
 
 export const validateVisitUpdate = [
@@ -65,22 +84,36 @@ export const validateVisitUpdate = [
   
   body("member_id")
     .optional()
-    .isString()
-    .withMessage("Member ID must be a string")
+    .matches(/^MEM-ANU-PADGNDIV-\d{4}-\d{5}$/)
+    .withMessage("Invalid member ID format. Expected: MEM-ANU-PADGNDIV-YYYY-NNNNN")
     .isLength({ max: 50 })
     .withMessage("Member ID must be less than 50 characters"),
   
   body("household_id")
     .optional()
-    .isString()
-    .withMessage("Household ID must be a string")
+    .matches(/^ANU-PADGNDIV-\d{5}$/)
+    .withMessage("Invalid household ID format. Expected: ANU-PADGNDIV-NNNNN")
     .isLength({ max: 50 })
     .withMessage("Household ID must be less than 50 characters"),
   
   body("visit_date")
     .optional()
-    .isISO8601()
-    .withMessage("Invalid date format"),
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Visit date must be in YYYY-MM-DD format")
+    .custom((value) => {
+      if (value) {
+        const inputDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (isNaN(inputDate.getTime())) {
+          throw new Error('Invalid date');
+        }
+        if (inputDate < today) {
+          throw new Error('Visit date cannot be in the past; must be today or a future date');
+        }
+      }
+      return true;
+    }),
   
   body("visit_type")
     .optional()
@@ -103,15 +136,22 @@ export const validateVisitUpdate = [
   
   body("follow_up_date")
     .optional()
-    .isISO8601()
-    .withMessage("Invalid follow up date format"),
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Follow up date must be in YYYY-MM-DD format")
+    .custom((value) => {
+      if (value) {
+        const inputDate = new Date(value);
+        if (isNaN(inputDate.getTime())) {
+          throw new Error('Invalid follow up date');
+        }
+      }
+      return true;
+    }),
   
   body("created_by_staff_id")
     .optional()
-    .isString()
-    .withMessage("Staff ID must be a string")
-    .isLength({ max: 20 })
-    .withMessage("Staff ID must be less than 20 characters")
+    .matches(/^HO-\d{4}-\d{3}$/)
+    .withMessage("Invalid staff ID format. Expected format: HO-YYYY-XXX")
 ];
 
 export const validateVisitId = [

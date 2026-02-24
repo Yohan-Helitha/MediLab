@@ -6,6 +6,8 @@ export const validateReferralCreate = [
     .withMessage("Visit ID is required")
     .isString()
     .withMessage("Visit ID must be a string")
+    .matches(/^VIS-ANU-\d{4}-\d{5}$/)
+    .withMessage("Invalid visit ID format. Expected format: VIS-ANU-YYYY-NNNNN")
     .isLength({ max: 50 })
     .withMessage("Visit ID must be less than 50 characters"),
   
@@ -46,6 +48,8 @@ export const validateReferralUpdate = [
     .optional()
     .isString()
     .withMessage("Visit ID must be a string")
+    .matches(/^VIS-ANU-\d{4}-\d{5}$/)
+    .withMessage("Invalid visit ID format. Expected format: VIS-ANU-YYYY-NNNNN")
     .isLength({ max: 50 })
     .withMessage("Visit ID must be less than 50 characters"),
   
@@ -86,4 +90,8 @@ export const validateVisitId = [
     .withMessage("Visit ID is required")
     .isString()
     .withMessage("Visit ID must be a string")
+    .matches(/^VIS-ANU-\d{4}-\d{5}$/)
+    .withMessage("Invalid visit ID format. Expected format: VIS-ANU-YYYY-NNNNN")
+    .isLength({ max: 50 })
+    .withMessage("Visit ID must be less than 50 characters")
 ];

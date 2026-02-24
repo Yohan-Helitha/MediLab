@@ -18,14 +18,31 @@ export const validateFamilyMemberCreate = [
   body("gender")
     .notEmpty()
     .withMessage("Gender is required")
-    .isLength({ max: 20 })
-    .withMessage("Gender must be less than 20 characters"),
+    .isIn(['male', 'female', 'Male', 'Female'])
+    .withMessage("Gender must be either 'male' or 'female'")
+    .customSanitizer(value => value.toLowerCase()),
   
   body("date_of_birth")
     .notEmpty()
     .withMessage("Date of birth is required")
-    .isISO8601()
-    .withMessage("Invalid date format")
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Date of birth must be in YYYY-MM-DD format")
+    .custom((value) => {
+      const inputDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+      
+      if (inputDate > today) {
+        throw new Error('Date of birth cannot be a future date');
+      }
+      
+      // Check if it's a valid date
+      if (isNaN(inputDate.getTime())) {
+        throw new Error('Invalid date');
+      }
+      
+      return true;
+    })
 ];
 
 export const validateFamilyMemberUpdate = [
@@ -47,13 +64,32 @@ export const validateFamilyMemberUpdate = [
   
   body("gender")
     .optional()
-    .isLength({ max: 20 })
-    .withMessage("Gender must be less than 20 characters"),
+    .isIn(['male', 'female', 'Male', 'Female'])
+    .withMessage("Gender must be either 'male' or 'female'")
+    .customSanitizer(value => value ? value.toLowerCase() : value),
   
   body("date_of_birth")
     .optional()
-    .isISO8601()
-    .withMessage("Invalid date format")
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("Date of birth must be in YYYY-MM-DD format")
+    .custom((value) => {
+      if (value) {
+        const inputDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+        
+        if (inputDate > today) {
+          throw new Error('Date of birth cannot be a future date');
+        }
+        
+        // Check if it's a valid date
+        if (isNaN(inputDate.getTime())) {
+          throw new Error('Invalid date');
+        }
+      }
+      
+      return true;
+    })
 ];
 
 export const validateFamilyMemberId = [

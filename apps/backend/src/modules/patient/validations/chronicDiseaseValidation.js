@@ -17,12 +17,12 @@ export const validateChronicDiseaseCreate = [
   body("since_year")
     .optional()
     .isInt({ min: 1900, max: new Date().getFullYear() })
-    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()}`),
+    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()} (past years and current year only, no future years)`),
   
   body("currently_on_medication")
     .optional()
     .isBoolean()
-    .withMessage("Currently on medication must be a boolean value")
+    .withMessage("Currently on medication must be either true (yes) or false (no)")
 ];
 
 export const validateChronicDiseaseUpdate = [
@@ -42,12 +42,12 @@ export const validateChronicDiseaseUpdate = [
   body("since_year")
     .optional()
     .isInt({ min: 1900, max: new Date().getFullYear() })
-    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()}`),
+    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()} (past years and current year only, no future years)`),
   
   body("currently_on_medication")
     .optional()
     .isBoolean()
-    .withMessage("Currently on medication must be a boolean value")
+    .withMessage("Currently on medication must be either true (yes) or false (no)")
 ];
 
 export const validateChronicDiseaseId = [

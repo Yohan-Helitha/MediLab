@@ -10,7 +10,7 @@ export const validatePastMedicalHistoryCreate = [
   body("surgeries")
     .optional()
     .isBoolean()
-    .withMessage("Surgeries must be a boolean value"),
+    .withMessage("Surgeries must be either true (yes) or false (no)"),
   
   body("hospital_admissions")
     .optional()
@@ -52,7 +52,7 @@ export const validatePastMedicalHistoryUpdate = [
   body("surgeries")
     .optional()
     .isBoolean()
-    .withMessage("Surgeries must be a boolean value"),
+    .withMessage("Surgeries must be either true (yes) or false (no)"),
   
   body("hospital_admissions")
     .optional()

@@ -39,8 +39,8 @@ export const validateAllergyCreate = [
   
   body("since_year")
     .optional()
-    .isInt({ min: 1900, max: new Date().getFullYear() })
-    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()}`)
+    .isInt({ min: 1900, max: new Date().getFullYear() - 1 })
+    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear() - 1} (past years only)`)
 ];
 
 export const validateAllergyUpdate = [
@@ -79,8 +79,8 @@ export const validateAllergyUpdate = [
   
   body("since_year")
     .optional()
-    .isInt({ min: 1900, max: new Date().getFullYear() })
-    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()}`)
+    .isInt({ min: 1900, max: new Date().getFullYear() - 1 })
+    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear() - 1} (past years only)`)
 ];
 
 export const validateAllergyId = [
