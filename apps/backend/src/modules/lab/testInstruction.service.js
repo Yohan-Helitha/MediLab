@@ -1,4 +1,4 @@
-import TestInstruction from "./testInstruction.model";
+import TestInstruction from "./testInstruction.model.js";
 
 export const createTestInstruction = async (data) =>{
     const testInstruction = new TestInstruction(data);

@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as labController from './lab.controller.js';
+
 const router = express.Router();
-const labController = require('./lab.controller');
 
 // Create a new lab
 router.post('/', labController.createLab);
@@ -20,4 +21,4 @@ router.delete('/:id', labController.deleteLab);
 // Soft delete (deactivate/activate lab)
 router.patch('/:id/status', labController.updateLabStatus);
 
-module.exports = router;
+export default router;

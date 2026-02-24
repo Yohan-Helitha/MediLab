@@ -8,7 +8,8 @@ router.post("/", testController.createTestType);
 router.get("/", testController.getAllTestTypes);
 router.get("/:id", testController.getTestTypeById);
 router.put("/:id", testController.updateTestType);
-router.delete("/:id", testController.deleteTestType);
+router.patch("/:id/soft-delete", testController.softDeleteTestType);
+router.delete("/:id", testController.hardDeleteTestType);
 
 // Filter Routes
 router.get("/category/:category", testController.getTestTypesByCategory);
