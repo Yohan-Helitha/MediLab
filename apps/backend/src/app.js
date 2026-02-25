@@ -15,7 +15,7 @@ import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 //patient module
 import authRoutes from "./modules/auth/auth.routes.js";
 // Consultation module routes (AI Doctor)
-import consultationRoutes from "./modules/consultation/consultation.routes.js";
+//import consultationRoutes from "./modules/consultation/consultation.routes.js";
 //patient module routes
 import memberRoutes from "./modules/patient/routes/memberRoutes.js";
 import householdRoutes from "./modules/patient/routes/householdRoutes.js";
@@ -54,7 +54,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 
-app.use("/api/consultation", consultationRoutes);
+//app.use("/api/consultation", consultationRoutes);
 
 
 //patient module - api routes

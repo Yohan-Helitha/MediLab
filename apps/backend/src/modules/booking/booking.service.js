@@ -1,6 +1,6 @@
 // Booking service
 import Booking from './booking.model.js';
-import PatientProfile from '../patient/patient.model.js';
+import Member from '../patient/models/Member.js';
 import Lab from '../lab/lab.model.js';
 import TestType from '../test/testType.model.js';
 import { reserveEquipement } from '../inventory/inventory.service.js';
@@ -19,8 +19,8 @@ export const createBooking = async (data, userId) => {
         paymentMethod
     } = data;
 
-    // Fetch patient profile
-    const patient = await PatientProfile.findById(patientProfileId);
+    // Fetch patient (Member) by MongoDB _id
+    const patient = await Member.findById(patientProfileId);
     if (!patient) {
         throw new Error('Patient not found');
     }
@@ -52,8 +52,9 @@ export const createBooking = async (data, userId) => {
 
     const booking = await Booking.create({
         patientProfileId,
-        patientNameSnapshot: patient.fullName,
-        patientPhoneSnapshot: patient.contactNumber,
+        // Member schema uses snake_case field names
+        patientNameSnapshot: patient.full_name,
+        patientPhoneSnapshot: patient.contact_number,
         
         healthCenterId,
         diagnosticTestId,
@@ -128,7 +129,8 @@ export const getBookings = async (filter = {}, pagination = {}) => {
 
     const bookings = await Booking.find(query).skip(skip).limit(limit)
         .sort({ bookingDate: -1 })
-        .populate('patientProfileId', 'fullName contactNumber')
+        // Populate Member document; Member also uses full_name/contact_number
+        .populate('patientProfileId', 'full_name contact_number')
         .populate('healthCenterId', 'name')
         .populate('diagnosticTestId', 'name');
 
