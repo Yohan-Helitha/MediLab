@@ -5,11 +5,6 @@ export const createTestInstruction = async (req, res, next) => {
         const testInstruction = await testInstructionService.createTestInstruction(req.body);
         res.status(201).json(testInstruction);
     }catch(error){
-        if (error.code === 11000) {
-            return res.status(409).json({
-                error: "Instructions already exist for this test and language. Use update or a different languageCode."
-            });
-        }
         res.status(400).json({error:error.message});
     }
 };

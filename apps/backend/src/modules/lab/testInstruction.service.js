@@ -1,8 +1,14 @@
 import TestInstruction from "./testInstruction.model.js";
 
-export const createTestInstruction = async (data) =>{
-    const testInstruction = new TestInstruction(data);
-    return testInstruction.save();
+// Create or update instructions per (diagnosticTestId, languageCode)
+// This lets clients POST for an existing test/language and have it overwrite
+// the previous instructions instead of failing with a duplicate key error.
+export const createTestInstruction = async (data) => {
+    return TestInstruction.findOneAndUpdate(
+        { diagnosticTestId: data.diagnosticTestId, languageCode: data.languageCode },
+        data,
+        { new: true, upsert: true }
+    );
 };
 export const findTestInstructionByTestTypeId = async (testTypeId) => {
     return TestInstruction.findOne({ diagnosticTestId: testTypeId });
@@ -38,10 +44,9 @@ export const getAllTestInstructions = async (filters = {}) => {
     return TestInstruction.find(query)
         .populate(populateOptions)
         .then(results => {
-            if (filters.testName) {
-                return results.filter(instr => instr.diagnosticTestId);
-            }
-            return results;
+            // Always drop instructions whose linked test type no longer exists
+            const withValidTest = results.filter(instr => instr.diagnosticTestId);
+            return withValidTest;
         });
 };
 export const getTestInstructionById = async (id) => {
