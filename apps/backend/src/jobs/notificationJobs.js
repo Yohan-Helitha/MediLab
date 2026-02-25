@@ -100,31 +100,29 @@ export const sendUnviewedResultReminders = async () => {
  * Setup cron jobs (to be called on server startup)
  * Uses node-cron for scheduling
  */
-export const setupScheduledJobs = () => {
-  // Note: To use this with cron, install: npm install node-cron
-  // Then uncomment and use:
+export const setupScheduledJobs = async () => {
+  try {
+    // Dynamically import node-cron
+    const cron = (await import("node-cron")).default;
 
-  /*
-  import cron from 'node-cron';
-  
-  // Run sendDueReminders every day at 8:00 AM
-  cron.schedule('0 8 * * *', async () => {
-    console.log('⏰ Cron: Sending due reminders');
-    await sendDueReminders();
-  });
-  
-  // Run sendUnviewedResultReminders every day at 10:00 AM
-  cron.schedule('0 10 * * *', async () => {
-    console.log('⏰ Cron: Sending unviewed result reminders');
-    await sendUnviewedResultReminders();
-  });
-  
-  console.log('✅ Scheduled jobs initialized');
-  */
+    // Run sendDueReminders every day at 8:00 AM
+    cron.schedule("0 8 * * *", async () => {
+      console.log("⏰ Cron: Sending due reminders");
+      await sendDueReminders();
+    });
 
-  console.log(
-    "⚠️  Scheduled jobs setup skipped. Install node-cron and uncomment code to enable.",
-  );
+    // Run sendUnviewedResultReminders every day at 10:00 AM
+    cron.schedule("0 10 * * *", async () => {
+      console.log("⏰ Cron: Sending unviewed result reminders");
+      await sendUnviewedResultReminders();
+    });
+
+    console.log("✅ Scheduled notification jobs initialized");
+    console.log("   - Due reminders: Daily at 8:00 AM");
+    console.log("   - Unviewed result reminders: Daily at 10:00 AM");
+  } catch (error) {
+    console.error("❌ Failed to setup scheduled jobs:", error.message);
+  }
 };
 
 export default {
