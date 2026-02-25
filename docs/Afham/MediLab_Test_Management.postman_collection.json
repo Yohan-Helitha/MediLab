@@ -1,0 +1,892 @@
+{
+  "info": {
+    "_postman_id": "test-management-component",
+    "name": "MediLab - Test Management Component",
+    "description": "API Documentation for Test Management Component including TestType Management, TestResult Management, and Notification Management.\n\n**Component Owner**: Afham\n**Last Updated**: February 25, 2026\n**Base URL**: http://localhost:5000/api\n\n## Overview\nThis collection covers all endpoints for:\n- **TestType Management** (9 endpoints): Test catalog/configuration CRUD operations\n- **TestResult Management** (10 endpoints): Test result submission and retrieval with discriminator pattern (8 test types)\n- **Notification Management** (11 endpoints): SMS/Email notifications and reminder subscriptions\n\n## Total Endpoints: 30\n\n## Authentication\nMost endpoints will require JWT authentication after merging auth from main branch.\nAdd Bearer token to Authorization header: `Authorization: Bearer <token>`\n\n## Environment Variables\n- `base_url`: http://localhost:5000/api\n- `twilio_enabled`: Check .env for Twilio credentials\n- `sendgrid_enabled`: Check .env for SendGrid credentials",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TestType Management",
+      "description": "Test catalog/configuration CRUD operations. Manage available test types, categories, pricing, and test configurations.",
+      "item": [
+        {
+          "name": "Create Test Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Blood Glucose Test\",\n  \"code\": \"GLU-001\",\n  \"category\": \"blood test\",\n  \"description\": \"Measures blood sugar levels to diagnose and monitor diabetes\",\n  \"price\": 25.00,\n  \"testMethod\": \"form\",\n  \"sampleType\": \"Blood\",\n  \"preparationInstructions\": \"Fast for 8 hours before the test\",\n  \"resultDeliveryTime\": 24,\n  \"isPrescriptionRequired\": false,\n  \"isRoutineMonitoring\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tests",
+              "host": ["{{base_url}}"],
+              "path": ["tests"]
+            },
+            "description": "Create a new test type in the catalog. Requires all mandatory fields including name, code, category, and price."
+          },
+          "response": [
+            {
+              "name": "Success - Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/tests",
+                  "host": ["{{base_url}}"],
+                  "path": ["tests"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Test type created successfully\",\n  \"testType\": {\n    \"_id\": \"65f1234567890abcdef12345\",\n    \"name\": \"Blood Glucose Test\",\n    \"code\": \"GLU-001\",\n    \"category\": \"blood test\",\n    \"description\": \"Measures blood sugar levels to diagnose and monitor diabetes\",\n    \"price\": 25,\n    \"testMethod\": \"form\",\n    \"sampleType\": \"Blood\",\n    \"preparationInstructions\": \"Fast for 8 hours before the test\",\n    \"resultDeliveryTime\": 24,\n    \"isPrescriptionRequired\": false,\n    \"isRoutineMonitoring\": true,\n    \"isActive\": true,\n    \"createdAt\": \"2026-02-25T12:00:00.000Z\",\n    \"updatedAt\": \"2026-02-25T12:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Test Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tests?category=blood test&isActive=true&page=1&limit=10&sort=-createdAt",
+              "host": ["{{base_url}}"],
+              "path": ["tests"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "blood test",
+                  "description": "Filter by category"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "description": "Filter by active status"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Results per page"
+                },
+                {
+                  "key": "sort",
+                  "value": "-createdAt",
+                  "description": "Sort field (prefix with - for descending)"
+                }
+              ]
+            },
+            "description": "Get paginated list of test types with optional filters. Supports filtering by category, active status, and sorting."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Test Type by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["tests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "Get detailed information about a specific test type by its ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Test Type",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 30.00,\n  \"description\": \"Updated: Measures blood sugar levels for diabetes diagnosis and monitoring\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["tests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "Update an existing test type. Supports partial updates."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Test Type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["tests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "Soft delete a test type by setting isActive to false. Test type is not physically removed from database."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Test Types by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tests/category/:category",
+              "host": ["{{base_url}}"],
+              "path": ["tests", "category", ":category"],
+              "variable": [
+                {
+                  "key": "category",
+                  "value": "blood test"
+                }
+              ]
+            },
+            "description": "Get all test types filtered by category. Categories: 'blood test', 'imaging', 'monitoring', 'other'."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Form-Based Tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tests/method/form",
+              "host": ["{{base_url}}"],
+              "path": ["tests", "method", "form"]
+            },
+            "description": "Get all test types that use form-based data entry (e.g., Blood Glucose, Blood Pressure, Pregnancy Test)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Upload-Based Tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tests/method/upload",
+              "host": ["{{base_url}}"],
+              "path": ["tests", "method", "upload"]
+            },
+            "description": "Get all test types that require file upload (e.g., X-Ray, ECG, Ultrasound reports)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Monitoring Tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tests/monitoring/recommended",
+              "host": ["{{base_url}}"],
+              "path": ["tests", "monitoring", "recommended"]
+            },
+            "description": "Get test types recommended for routine monitoring (isRoutineMonitoring = true)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TestResult Management",
+      "description": "Test result submission and retrieval with discriminator pattern supporting 8 test types: Blood Glucose, Hemoglobin, Blood Pressure, Pregnancy, X-Ray, ECG, Ultrasound, Automated Report.",
+      "item": [
+        {
+          "name": "Submit Test Result",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientProfile\": \"65f1234567890abcdef12345\",\n  \"testType\": \"65f1234567890abcdef67890\",\n  \"healthCenter\": \"65f1234567890abcdef11111\",\n  \"booking\": \"65f1234567890abcdef22222\",\n  \"testDate\": \"2026-02-25T10:00:00.000Z\",\n  \"resultStatus\": \"completed\",\n  \"resultType\": \"BloodGlucose\",\n  \"resultData\": {\n    \"glucoseLevel\": 110,\n    \"fastingStatus\": \"fasting\",\n    \"testingCondition\": \"morning\",\n    \"interpretation\": \"Normal fasting glucose level\",\n    \"notes\": \"Patient fasted for 10 hours\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results",
+              "host": ["{{base_url}}"],
+              "path": ["results"]
+            },
+            "description": "Submit a new test result. Uses discriminator pattern - resultType determines which model is used. Supported types: BloodGlucose, Hemoglobin, BloodPressure, Pregnancy, XRay, ECG, Ultrasound, AutomatedReport."
+          },
+          "response": [
+            {
+              "name": "Success - Blood Glucose Result",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/results",
+                  "host": ["{{base_url}}"],
+                  "path": ["results"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Test result submitted successfully\",\n  \"result\": {\n    \"_id\": \"65f1234567890abcdef99999\",\n    \"patientProfile\": \"65f1234567890abcdef12345\",\n    \"testType\": \"65f1234567890abcdef67890\",\n    \"healthCenter\": \"65f1234567890abcdef11111\",\n    \"booking\": \"65f1234567890abcdef22222\",\n    \"testDate\": \"2026-02-25T10:00:00.000Z\",\n    \"resultStatus\": \"completed\",\n    \"resultType\": \"BloodGlucose\",\n    \"resultData\": {\n      \"glucoseLevel\": 110,\n      \"fastingStatus\": \"fasting\",\n      \"testingCondition\": \"morning\",\n      \"interpretation\": \"Normal fasting glucose level\",\n      \"notes\": \"Patient fasted for 10 hours\"\n    },\n    \"isViewed\": false,\n    \"createdAt\": \"2026-02-25T12:00:00.000Z\",\n    \"updatedAt\": \"2026-02-25T12:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Test Result by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/results/:id",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "Get detailed information about a specific test result by ID. Returns populated patient, testType, healthCenter, and booking data."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Test Results",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/results/patient/:patientId?resultStatus=completed&resultType=BloodGlucose&page=1&limit=10&sort=-testDate",
+              "host": ["{{base_url}}"],
+              "path": ["results", "patient", ":patientId"],
+              "query": [
+                {
+                  "key": "resultStatus",
+                  "value": "completed",
+                  "description": "Filter by status: pending, in_progress, completed, cancelled"
+                },
+                {
+                  "key": "resultType",
+                  "value": "BloodGlucose",
+                  "description": "Filter by result type"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sort",
+                  "value": "-testDate",
+                  "description": "Sort by field"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "Get all test results for a specific patient with optional filters and pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unviewed Patient Results",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/results/patient/:patientId/unviewed",
+              "host": ["{{base_url}}"],
+              "path": ["results", "patient", ":patientId", "unviewed"],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "Get all unviewed test results for a patient. Used for notification triggers."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Results by Booking",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/results/booking/:bookingId",
+              "host": ["{{base_url}}"],
+              "path": ["results", "booking", ":bookingId"],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "65f1234567890abcdef22222"
+                }
+              ]
+            },
+            "description": "Get all test results associated with a specific booking."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Results by Health Center",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/results/health-center/:healthCenterId?resultStatus=completed&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["results", "health-center", ":healthCenterId"],
+              "query": [
+                {
+                  "key": "resultStatus",
+                  "value": "completed"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "healthCenterId",
+                  "value": "65f1234567890abcdef11111"
+                }
+              ]
+            },
+            "description": "Get all test results from a specific health center/lab with filters and pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Results by Test Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/results/test-type/:testTypeId",
+              "host": ["{{base_url}}"],
+              "path": ["results", "test-type", ":testTypeId"],
+              "variable": [
+                {
+                  "key": "testTypeId",
+                  "value": "65f1234567890abcdef67890"
+                }
+              ]
+            },
+            "description": "Get all results for a specific test type (e.g., all Blood Glucose results)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Result Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resultStatus\": \"completed\",\n  \"notes\": \"Result finalized and reviewed by lab technician\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "Update the status of a test result. Valid statuses: pending, in_progress, completed, cancelled."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Result as Viewed",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"viewedBy\": \"patient\",\n  \"viewedAt\": \"2026-02-25T14:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results/:id/mark-viewed",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "mark-viewed"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "Mark a test result as viewed by the patient. Sets isViewed to true and records viewedAt timestamp."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Test Result",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/results/:id",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "Delete a test result by ID. This is a hard delete and cannot be undone."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notification Management",
+      "description": "SMS and Email notification system with reminder subscriptions. Integrates with Twilio (SMS) and SendGrid (Email). Includes notification logs and scheduled job support.",
+      "item": [
+        {
+          "name": "Send Result Ready Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientProfile\": \"65f1234567890abcdef12345\",\n  \"testResult\": \"65f1234567890abcdef99999\",\n  \"notificationMethod\": \"both\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send/result-ready",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send", "result-ready"]
+            },
+            "description": "Send notification to patient that their test result is ready. Supports SMS, Email, or both. Requires Twilio/SendGrid configuration."
+          },
+          "response": [
+            {
+              "name": "Success - Both SMS and Email Sent",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/notifications/send/result-ready",
+                  "host": ["{{base_url}}"],
+                  "path": ["notifications", "send", "result-ready"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notifications sent successfully\",\n  \"notifications\": [\n    {\n      \"_id\": \"65f1234567890abcdefaaaaa\",\n      \"type\": \"sms\",\n      \"recipient\": \"+1234567890\",\n      \"patientProfile\": \"65f1234567890abcdef12345\",\n      \"status\": \"sent\",\n      \"subject\": \"Test Result Ready\",\n      \"message\": \"Your test result is now available. Log in to view your report.\",\n      \"messageSid\": \"SM1234567890abcdef\",\n      \"provider\": \"twilio\",\n      \"sentAt\": \"2026-02-25T12:00:00.000Z\"\n    },\n    {\n      \"_id\": \"65f1234567890abcdefbbbbb\",\n      \"type\": \"email\",\n      \"recipient\": \"patient@example.com\",\n      \"patientProfile\": \"65f1234567890abcdef12345\",\n      \"status\": \"sent\",\n      \"subject\": \"Your Test Result is Ready - MediLab\",\n      \"message\": \"Your test result is now available...\",\n      \"messageId\": \"abc123xyz\",\n      \"provider\": \"sendgrid\",\n      \"sentAt\": \"2026-02-25T12:00:01.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Unviewed Result Reminder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send/unviewed-reminder",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send", "unviewed-reminder"]
+            },
+            "description": "Batch job: Send reminders to all patients with unviewed test results older than 3 days. Typically triggered by scheduled job."
+          },
+          "response": []
+        },
+        {
+          "name": "Send Routine Checkup Reminder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientProfile\": \"65f1234567890abcdef12345\",\n  \"testType\": \"65f1234567890abcdef67890\",\n  \"recommendedDate\": \"2026-03-15T00:00:00.000Z\",\n  \"notificationMethod\": \"both\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send/routine-reminder",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send", "routine-reminder"]
+            },
+            "description": "Send routine checkup reminder to patient for a specific test type. Used for monitoring tests (e.g., Blood Glucose for diabetics)."
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Notification",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/:id/resend",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", ":id", "resend"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefaaaaa"
+                }
+              ]
+            },
+            "description": "Resend a previously failed or sent notification. Creates a new notification log entry."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Notification by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/:id",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefaaaaa"
+                }
+              ]
+            },
+            "description": "Get detailed information about a specific notification by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Notification History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/patient/:patientId?type=sms&status=sent&page=1&limit=10&sort=-sentAt",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "patient", ":patientId"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "sms",
+                  "description": "Filter by type: sms, email"
+                },
+                {
+                  "key": "status",
+                  "value": "sent",
+                  "description": "Filter by status: sent, failed, pending"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sort",
+                  "value": "-sentAt"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "Get notification history for a specific patient with filters and pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Failed Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/failed?type=sms&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "failed"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "sms",
+                  "description": "Filter by type"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get all failed notifications for troubleshooting and retry. Useful for monitoring notification delivery issues."
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe to Reminder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientProfile\": \"65f1234567890abcdef12345\",\n  \"testType\": \"65f1234567890abcdef67890\",\n  \"frequency\": \"monthly\",\n  \"nextReminderDate\": \"2026-03-25T09:00:00.000Z\",\n  \"notificationMethod\": \"both\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions"]
+            },
+            "description": "Subscribe patient to routine reminder for a specific test type. Frequency options: daily, weekly, monthly, quarterly."
+          },
+          "response": [
+            {
+              "name": "Success - Subscription Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/notifications/subscriptions",
+                  "host": ["{{base_url}}"],
+                  "path": ["notifications", "subscriptions"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reminder subscription created successfully\",\n  \"subscription\": {\n    \"_id\": \"65f1234567890abcdefccccc\",\n    \"patientProfile\": \"65f1234567890abcdef12345\",\n    \"testType\": \"65f1234567890abcdef67890\",\n    \"frequency\": \"monthly\",\n    \"nextReminderDate\": \"2026-03-25T09:00:00.000Z\",\n    \"lastReminderDate\": null,\n    \"notificationMethod\": \"both\",\n    \"isActive\": true,\n    \"createdAt\": \"2026-02-25T12:00:00.000Z\",\n    \"updatedAt\": \"2026-02-25T12:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Patient Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions/patient/:patientId",
+              "host": ["{{base_url}}"],
+              "path": [
+                "notifications",
+                "subscriptions",
+                "patient",
+                ":patientId"
+              ],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "Get all reminder subscriptions for a specific patient."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefccccc"
+                }
+              ]
+            },
+            "description": "Get detailed information about a specific subscription by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"frequency\": \"weekly\",\n  \"nextReminderDate\": \"2026-03-01T09:00:00.000Z\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefccccc"
+                }
+              ]
+            },
+            "description": "Update an existing reminder subscription. Can change frequency, next reminder date, or active status."
+          },
+          "response": []
+        },
+        {
+          "name": "Unsubscribe from Reminder",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefccccc"
+                }
+              ]
+            },
+            "description": "Unsubscribe patient from routine reminder by deleting the subscription."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "your-jwt-token-here",
+      "type": "string"
+    }
+  ]
+}
