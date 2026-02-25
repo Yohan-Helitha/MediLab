@@ -7,6 +7,7 @@ import XRayResult from "./discriminators/xray.result.js";
 import ECGResult from "./discriminators/ecg.result.js";
 import UltrasoundResult from "./discriminators/ultrasound.result.js";
 import AutomatedReportResult from "./discriminators/automatedReport.result.js";
+import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
 
 // Business logic for test result operations
 
@@ -147,7 +148,15 @@ export const findResultByBooking = async (bookingId) => {
  * @returns {Promise<Object>} Updated test result
  */
 export const updateResultStatus = async (id, status, changedBy) => {
-  const result = await TestResult.findById(id);
+  const result = await TestResult.findById(id)
+    .populate("patientProfileId", "fullName dateOfBirth gender contactNumber")
+    .populate("testTypeId", "name code")
+    .populate(
+      "healthCenterId",
+      "name addressLine1 addressLine2 district province phoneNumber email",
+    )
+    .populate("testingPersonnelId", "fullName name")
+    .populate("bookingId", "bookingDate");
 
   if (!result) {
     const error = new Error("Test result not found");
@@ -164,6 +173,18 @@ export const updateResultStatus = async (id, status, changedBy) => {
     changedBy,
     changedAt: new Date(),
   });
+
+  // Generate PDF report when status is released
+  if (status === "released" && !result.generatedReportPath) {
+    try {
+      const pdfPath = await generateTestResultPDF(result);
+      result.generatedReportPath = pdfPath;
+      result.releasedAt = new Date();
+    } catch (pdfError) {
+      console.error("Error generating PDF report:", pdfError);
+      // Continue without PDF - don't block status update
+    }
+  }
 
   await result.save();
 

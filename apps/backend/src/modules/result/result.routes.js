@@ -44,6 +44,13 @@ router.get(
   resultController.getResultsByTestType,
 );
 
+// Download PDF route - must come before generic /:id
+router.get(
+  "/:id/download",
+  resultValidation.idParamValidation,
+  resultController.downloadTestResultPDF,
+);
+
 // Generic ID route last to avoid conflicts
 router.get(
   "/:id",

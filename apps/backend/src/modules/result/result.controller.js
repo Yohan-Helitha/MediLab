@@ -1,6 +1,8 @@
 import { validationResult } from "express-validator";
 import * as resultService from "./result.service.js";
 import TestType from "../test/testType.model.js";
+import fs from "fs";
+import path from "path";
 
 // Test Result Controller
 // Handles test result submission, viewing, and management
@@ -368,6 +370,77 @@ export const deleteTestResult = async (req, res, next) => {
       success: true,
       message: "Test result deleted successfully",
       data: result,
+    });
+  } catch (error) {
+    if (error.statusCode === 404) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Download test result PDF report
+ * GET /api/results/:id/download
+ */
+export const downloadTestResultPDF = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const result = await resultService.findTestResultById(req.params.id);
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: "Test result not found",
+      });
+    }
+
+    // Check if PDF has been generated
+    if (!result.generatedReportPath) {
+      return res.status(404).json({
+        success: false,
+        message: "PDF report not yet generated. Result must be released first.",
+      });
+    }
+
+    // Check if file exists
+    if (!fs.existsSync(result.generatedReportPath)) {
+      return res.status(404).json({
+        success: false,
+        message: "PDF report file not found on server",
+      });
+    }
+
+    // Get filename for download
+    const fileName = path.basename(result.generatedReportPath);
+
+    // Set headers for PDF download
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+
+    // Stream the PDF file
+    const fileStream = fs.createReadStream(result.generatedReportPath);
+    fileStream.pipe(res);
+
+    fileStream.on("error", (error) => {
+      console.error("Error streaming PDF:", error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: "Error streaming PDF file",
+        });
+      }
     });
   } catch (error) {
     if (error.statusCode === 404) {
