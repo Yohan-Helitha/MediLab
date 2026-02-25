@@ -288,6 +288,77 @@ export const sendRoutineCheckupReminderEmail = async (data) => {
 };
 
 /**
+ * Send unviewed result reminder email
+ * @param {Object} data - Email data { to, patientName, testName, releasedDate, daysUnviewed, loginUrl }
+ * @returns {Promise<Object>} Result of email sending
+ */
+export const sendUnviewedResultReminderEmail = async (data) => {
+  const { to, patientName, testName, releasedDate, daysUnviewed, loginUrl } =
+    data;
+
+  const subject = "Reminder: Your Test Results are Still Unviewed - MediLab";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+    .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
+    .button { display: inline-block; padding: 12px 30px; background-color: #e74c3c; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
+    .warning-box { background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
+    .details { background-color: white; padding: 15px; border-left: 4px solid #e74c3c; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚠️ MediLab Rural Health System</h1>
+    </div>
+    <div class="content">
+      <h2>Dear ${patientName},</h2>
+      
+      <div class="warning-box">
+        <p><strong>⚠️ Important Reminder:</strong></p>
+        <p>Your test results have been available for <strong>${daysUnviewed} days</strong> but have not been viewed yet.</p>
+      </div>
+      
+      <p>We noticed that you haven't checked your test results. Your health is important to us, and reviewing your results is an essential part of your healthcare.</p>
+      
+      <div class="details">
+        <p><strong>Test:</strong> ${testName}</p>
+        <p><strong>Released Date:</strong> ${releasedDate}</p>
+        <p><strong>Days Unviewed:</strong> ${daysUnviewed} days</p>
+      </div>
+      
+      <p>Please take a moment to login and review your test results:</p>
+      
+      <p style="text-align: center;">
+        <a href="${loginUrl}" class="button">View My Results Now</a>
+      </p>
+      
+      <p>If you have concerns or questions about your results, please contact your healthcare provider or visit your health center.</p>
+      
+      <p>Your health matters!</p>
+      <p><strong>MediLab Rural Health System</strong></p>
+    </div>
+    <div class="footer">
+      <p>This is an automated reminder. Please do not reply to this email.</p>
+      <p>© 2026 MediLab. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return await sendEmailWithRetry(to, subject, html);
+};
+
+/**
  * Validate email address format
  * @param {string} email - Email address to validate
  * @returns {boolean} True if valid email format
@@ -315,6 +386,7 @@ export default {
   sendEmailWithRetry,
   sendResultReadyEmail,
   sendRoutineCheckupReminderEmail,
+  sendUnviewedResultReminderEmail,
   isValidEmail,
   isSendGridConfigured,
 };

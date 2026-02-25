@@ -1,11 +1,13 @@
 import NotificationLog from "./notificationLog.model.js";
 import ReminderSubscription from "./reminderSubscription.model.js";
+import TestResult from "../result/testResult.model.js";
 import TestType from "../test/testType.model.js";
 import { sendSMSWithRetry } from "../../config/twilio.js";
 import {
   sendEmailWithRetry,
   sendResultReadyEmail,
   sendRoutineCheckupReminderEmail,
+  sendUnviewedResultReminderEmail,
 } from "../../config/sendgrid.js";
 import config from "../../config/environment.js";
 
@@ -167,6 +169,188 @@ export const sendResultReadyNotification = async (data) => {
   }
 
   return results;
+};
+
+/**
+ * Send unviewed result reminder notification (SMS + Email)
+ * @param {Object} data - Notification data { testResult, patient, testType, healthCenter, daysUnviewed }
+ * @returns {Promise<Object>} { sms: result, email: result }
+ */
+export const sendUnviewedResultReminder = async (data) => {
+  const { testResult, patient, testType, healthCenter, daysUnviewed } = data;
+
+  const results = {
+    sms: null,
+    email: null,
+  };
+
+  // Prepare SMS message
+  const smsMessage = `MediLab Reminder: Your ${testType.name} results (released ${daysUnviewed} days ago) have not been viewed. Please login to check: ${config.appUrl} - ${healthCenter.name}`;
+
+  // Send SMS if patient has phone number
+  if (patient.contactNumber) {
+    const smsResult = await sendSMSWithRetry(patient.contactNumber, smsMessage);
+
+    // Log SMS notification
+    await createNotificationLog({
+      patientProfileId: patient._id,
+      type: "unviewed_result_reminder",
+      channel: "sms",
+      recipient: patient.contactNumber,
+      status: smsResult.success ? "sent" : "failed",
+      errorMessage: smsResult.error || null,
+      messageContent: smsMessage,
+      testResultId: testResult._id,
+      sentAt: new Date(),
+      apiResponse: smsResult,
+    });
+
+    results.sms = smsResult;
+  }
+
+  // Send Email if patient has email
+  if (patient.email) {
+    const emailData = {
+      to: patient.email,
+      patientName: `${patient.firstName} ${patient.lastName}`,
+      testName: testType.name,
+      releasedDate: testResult.releasedAt.toLocaleDateString(),
+      daysUnviewed: daysUnviewed,
+      loginUrl: `${config.frontendUrl}/login`,
+    };
+
+    const emailResult = await sendUnviewedResultReminderEmail(emailData);
+
+    // Log email notification
+    await createNotificationLog({
+      patientProfileId: patient._id,
+      type: "unviewed_result_reminder",
+      channel: "email",
+      recipient: patient.email,
+      status: emailResult.success ? "sent" : "failed",
+      errorMessage: emailResult.error || null,
+      messageContent: `Unviewed Results Reminder: ${testType.name}`,
+      testResultId: testResult._id,
+      sentAt: new Date(),
+      apiResponse: emailResult,
+    });
+
+    results.email = emailResult;
+  }
+
+  return results;
+};
+
+/**
+ * Find unviewed test results (released more than X days ago with no views)
+ * @param {number} daysThreshold - Number of days after release to consider unviewed (default: 3)
+ * @param {number} maxReminders - Maximum reminders already sent (default: 2)
+ * @returns {Promise<Array>} Array of unviewed test results with patient and test type data
+ */
+export const findUnviewedResults = async (
+  daysThreshold = 3,
+  maxReminders = 2,
+) => {
+  // Calculate cutoff date (X days ago)
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysThreshold);
+
+  // Find released results with empty viewedBy array
+  const unviewedResults = await TestResult.find({
+    currentStatus: "released",
+    releasedAt: { $lte: cutoffDate },
+    viewedBy: { $size: 0 },
+  })
+    .populate("patientProfileId", "firstName lastName email contactNumber")
+    .populate("testTypeId", "name code")
+    .populate("healthCenterId", "name")
+    .sort({ releasedAt: 1 }); // Oldest first
+
+  // Filter by reminder count (check notification log)
+  const filteredResults = [];
+
+  for (const result of unviewedResults) {
+    // Count how many unviewed reminders already sent for this result
+    const reminderCount = await NotificationLog.countDocuments({
+      testResultId: result._id,
+      type: "unviewed_result_reminder",
+    });
+
+    // Only include if less than max reminders sent
+    if (reminderCount < maxReminders) {
+      // Calculate days unviewed
+      const daysUnviewed = Math.floor(
+        (new Date() - result.releasedAt) / (1000 * 60 * 60 * 24),
+      );
+
+      filteredResults.push({
+        testResult: result,
+        patient: result.patientProfileId,
+        testType: result.testTypeId,
+        healthCenter: result.healthCenterId,
+        daysUnviewed: daysUnviewed,
+        remindersSent: reminderCount,
+      });
+    }
+  }
+
+  return filteredResults;
+};
+
+/**
+ * Resend a failed notification
+ * @param {string} notificationId - Notification log ID
+ * @returns {Promise<Object>} Result of resending
+ */
+export const resendNotification = async (notificationId) => {
+  const notification = await NotificationLog.findById(notificationId)
+    .populate("patientProfileId")
+    .populate("testResultId");
+
+  if (!notification) {
+    const error = new Error("Notification not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (notification.status !== "failed") {
+    const error = new Error("Can only resend failed notifications");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { type, channel, recipient, messageContent, patientProfileId } =
+    notification;
+
+  let result;
+
+  // Resend based on channel
+  if (channel === "sms") {
+    result = await sendSMSWithRetry(recipient, messageContent);
+  } else if (channel === "email") {
+    // Extract content and resend
+    result = await sendEmailWithRetry(
+      recipient,
+      messageContent,
+      `<p>${messageContent}</p>`,
+    );
+  }
+
+  // Create new notification log for the resend attempt
+  await createNotificationLog({
+    patientProfileId: patientProfileId._id,
+    type: type,
+    channel: channel,
+    recipient: recipient,
+    status: result.success ? "sent" : "failed",
+    errorMessage: result.error || null,
+    messageContent: messageContent,
+    testResultId: notification.testResultId?._id || null,
+    sentAt: new Date(),
+    apiResponse: result,
+  });
+
+  return result;
 };
 
 /**

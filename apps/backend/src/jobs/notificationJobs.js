@@ -75,17 +75,52 @@ export const sendUnviewedResultReminders = async () => {
   console.log("🔔 Running scheduled job: Send unviewed result reminders");
 
   try {
-    // TODO: Implement logic to find and remind patients about unviewed results
-    // 1. Find test results released more than 3 days ago
-    // 2. Check if patient has viewed them (viewedBy array)
-    // 3. Send reminder notification
-    // 4. Track reminder count to avoid spamming (max 2 reminders)
+    // Find test results released more than 3 days ago with no views
+    const unviewedResults = await notificationService.findUnviewedResults(3, 2);
 
-    console.log("🔔 Job completed");
+    console.log(
+      `🔍 Found ${unviewedResults.length} unviewed results to remind`,
+    );
+
+    let successCount = 0;
+    let failCount = 0;
+
+    // Send reminder for each unviewed result
+    for (const data of unviewedResults) {
+      try {
+        const results =
+          await notificationService.sendUnviewedResultReminder(data);
+
+        // Check if at least one notification sent successfully
+        if (results.sms?.success || results.email?.success) {
+          successCount++;
+          console.log(
+            `✅ Reminder sent for result ${data.testResult._id} (${data.daysUnviewed} days unviewed)`,
+          );
+        } else {
+          failCount++;
+          console.log(
+            `❌ Failed to send reminder for result ${data.testResult._id}`,
+          );
+        }
+      } catch (error) {
+        failCount++;
+        console.error(
+          `❌ Error sending reminder for result ${data.testResult._id}:`,
+          error.message,
+        );
+      }
+    }
+
+    console.log(
+      `🔔 Unviewed reminders job completed: ${successCount} sent, ${failCount} failed`,
+    );
 
     return {
       success: true,
-      message: "Feature not yet implemented",
+      totalFound: unviewedResults.length,
+      sent: successCount,
+      failed: failCount,
     };
   } catch (error) {
     console.error("❌ Error in sendUnviewedResultReminders job:", error);

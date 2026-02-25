@@ -49,15 +49,50 @@ export const sendResultReadyNotification = async (req, res, next) => {
 /**
  * Send unviewed result reminder (for results not viewed within X days)
  * POST /api/notifications/send/unviewed-reminder
+ * Body: { daysThreshold: 3, maxReminders: 2 } (optional, defaults provided)
  */
 export const sendUnviewedResultReminder = async (req, res, next) => {
   try {
-    // TODO: Implement logic to find unviewed results and send reminders
-    // This would typically be called by a scheduled job
+    const daysThreshold = parseInt(req.body.daysThreshold) || 3;
+    const maxReminders = parseInt(req.body.maxReminders) || 2;
+
+    // Find unviewed results
+    const unviewedResults = await notificationService.findUnviewedResults(
+      daysThreshold,
+      maxReminders,
+    );
+
+    let successCount = 0;
+    let failCount = 0;
+
+    // Send reminder for each unviewed result
+    for (const data of unviewedResults) {
+      try {
+        const results =
+          await notificationService.sendUnviewedResultReminder(data);
+
+        if (results.sms?.success || results.email?.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        failCount++;
+        console.error(
+          `Error sending reminder for result ${data.testResult._id}:`,
+          error.message,
+        );
+      }
+    }
 
     res.status(200).json({
       success: true,
       message: "Unviewed result reminders sent",
+      data: {
+        totalFound: unviewedResults.length,
+        sent: successCount,
+        failed: failCount,
+      },
     });
   } catch (error) {
     next(error);
@@ -144,11 +179,13 @@ export const resendNotification = async (req, res, next) => {
       });
     }
 
-    // TODO: Implement resend logic based on notification type and channel
+    // Resend the notification
+    const result = await notificationService.resendNotification(id);
 
     res.status(200).json({
       success: true,
       message: "Notification resent successfully",
+      data: result,
     });
   } catch (error) {
     next(error);
