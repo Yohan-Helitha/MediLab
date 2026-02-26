@@ -25,28 +25,46 @@ Both services offer **FREE tiers** suitable for development and testing.
    - Password
 4. Click **"Start your free trial"**
 
-### Step 2: Verify Phone Number
+### Step 2: Verify Email Address
+
+1. Check your email inbox for **"Twilio Email Verification"**
+2. Click the verification link in the email
+3. This will activate your Twilio account
+
+### Step 3: Verify Phone Number
 
 1. Enter your phone number (will receive verification code)
 2. Enter the 6-digit code sent to your phone
 3. Complete the verification
 
-### Step 3: Get Credentials
+### Step 4: Create Account (Subaccount)
 
-1. After login, you'll see the **Twilio Console Dashboard**
-2. Find your credentials (located in the middle of the dashboard):
+**Note**: Twilio now uses an organization structure with subaccounts.
+
+1. After verification, you'll see the **Console Dashboard**
+2. If prompted to "Create Account", click it
+3. Enter **Account Friendly Name**: `MediLab` (or any name you prefer)
+4. Click **"Create"**
+5. You'll now see your new account dashboard with credentials
+
+### Step 5: Get Credentials
+
+1. After creating the account, you'll see the **Account Dashboard**
+2. Find your credentials (usually in the center or right side):
    - **Account SID**: looks like `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
    - **Auth Token**: Click "show" to reveal, looks like `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 3. Copy these values - you'll need them for `.env` file
 
-### Step 4: Get a Phone Number
+**Note**: Make sure you're looking at **Account SID** (starts with `AC`), NOT Organization SID.
+
+### Step 6: Get a Phone Number
 
 1. Click **"Get a Twilio phone number"** button (on the dashboard)
 2. Twilio will assign you a free trial number automatically
 3. Click **"Choose this Number"**
 4. Your number format: `+1234567890` (includes country code)
 
-### Step 5: Update `.env` File
+### Step 7: Update `.env` File
 
 ```env
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -65,7 +83,26 @@ TWILIO_PHONE_NUMBER=+1234567890
 
 1. Go to **Phone Numbers** > **Verified Caller IDs**
 2. Click **"Add a new number"**
-3. Enter phone number and verify with code
+3. Enter phone number in international format (e.g., `+94771234567` for Sri Lanka)
+4. Click **"Verify"** and wait for verification code via SMS
+5. Enter the 6-digit code received
+
+**Sri Lankan Phone Numbers:**
+
+- ✅ **Supported**: All Sri Lankan mobile operators (Dialog, Mobitel, Hutch, Airtel)
+- ✅ **Format**: `+94` (country code) + mobile number without leading `0`
+  - Example: `0771234567` → `+94771234567`
+  - Example: `0112345678` → `+94112345678`
+- ⚠️ **Trial Limitation**: Can only send SMS to verified numbers
+- ✅ **Upgrade to Paid**: No restrictions - send to any Sri Lankan number without verification
+
+**Testing with Patient Profiles:**
+
+- Use your verified phone number(s) as patient phone numbers in test data
+- Example: Create patient profile with your number `+94771234567`
+- This way you'll receive actual SMS notifications during testing
+- You can verify 2-3 numbers (yours, teammate's) for testing multiple patient scenarios
+- **Note**: If you can only see one verified number, try adding more via "Verified Caller IDs" (trial accounts usually allow up to 10)
 
 ---
 
@@ -116,7 +153,13 @@ SENDGRID_FROM_NAME=MediLab
 ### Important Notes
 
 - **SENDGRID_FROM_EMAIL**: Must be the same email you used to sign up (it's pre-verified)
+  - Example: If you signed up with `mohamed_afham@outlook.com`, use that email
+  - No additional verification needed - your signup email is automatically verified
 - **SENDGRID_FROM_NAME**: Display name patients will see (e.g., "MediLab Notifications")
+- **Domain Verification**: NOT required for development/testing (can skip completely)
+  - If SendGrid asks to "Authenticate Your Domain", you can skip this step
+  - Domain verification is only for production apps with high email volume
+  - Your personal email works perfectly for testing and evaluation
 
 ### Free Tier Limitations
 
@@ -125,11 +168,20 @@ SENDGRID_FROM_NAME=MediLab
 - No credit card required
 - To send more emails, upgrade to paid plan
 
-### (Optional) Verify Additional Email Addresses
+### (Optional) Domain Authentication - FOR PRODUCTION ONLY
 
-1. Go to **Settings** > **Sender Authentication**
-2. Click **"Verify a Single Sender"**
-3. Fill in details and verify via email
+**Skip this for development/testing!**
+
+- SendGrid may prompt you to "Authenticate Your Domain"
+- This is ONLY needed for production apps sending thousands of emails
+- Benefits: Better email deliverability, custom sender domain (noreply@yourdomain.com)
+- For your evaluation: Use your personal verified email - works perfectly
+
+**If you want to set it up later (production):**
+
+1. Go to **Settings** > **Sender Authentication** > **Authenticate Your Domain**
+2. Follow DNS configuration steps (requires domain registrar access)
+3. Verify DNS records (can take 24-48 hours)
 
 ---
 
