@@ -8,6 +8,8 @@ import ECGResult from "./discriminators/ecg.result.js";
 import UltrasoundResult from "./discriminators/ultrasound.result.js";
 import AutomatedReportResult from "./discriminators/automatedReport.result.js";
 import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
+import fs from "fs";
+import Booking from "../booking/booking.model.js";
 
 // Business logic for test result operations
 
@@ -20,9 +22,10 @@ import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
 export const createTestResult = async (discriminatorType, resultData) => {
   const ResultModel = getDiscriminatorModel(discriminatorType);
 
-  // Check if booking already has a result
+  // Check if booking already has a result (including soft-deleted ones)
   const existingResult = await TestResult.findOne({
     bookingId: resultData.bookingId,
+    isDeleted: false, // Only check active (non-deleted) results
   });
 
   if (existingResult) {
@@ -58,7 +61,7 @@ export const createTestResult = async (discriminatorType, resultData) => {
  * @returns {Promise<Object>} Test result with populated fields
  */
 export const findTestResultById = async (id) => {
-  const result = await TestResult.findById(id)
+  const result = await TestResult.findOne({ _id: id, isDeleted: false })
     .populate("patientProfileId", "firstName lastName contactNumber")
     .populate("testTypeId", "name code category discriminatorType")
     .populate("healthCenterId", "name location")
@@ -68,7 +71,7 @@ export const findTestResultById = async (id) => {
     .populate("viewedBy.userId", "firstName lastName");
 
   if (!result) {
-    const error = new Error("Test result not found");
+    const error = new Error("Test result not found or has been deleted");
     error.statusCode = 404;
     throw error;
   }
@@ -83,7 +86,7 @@ export const findTestResultById = async (id) => {
  * @returns {Promise<Array>} Array of test results
  */
 export const findResultsByPatient = async (patientProfileId, filters = {}) => {
-  const query = { patientProfileId };
+  const query = { patientProfileId, isDeleted: false }; // Exclude soft-deleted results
 
   // Apply filters
   if (filters.status) {
@@ -125,14 +128,16 @@ export const findResultsByPatient = async (patientProfileId, filters = {}) => {
  * @returns {Promise<Object>} Test result
  */
 export const findResultByBooking = async (bookingId) => {
-  const result = await TestResult.findOne({ bookingId })
+  const result = await TestResult.findOne({ bookingId, isDeleted: false })
     .populate("patientProfileId", "firstName lastName contactNumber")
     .populate("testTypeId", "name code category discriminatorType")
     .populate("healthCenterId", "name location")
     .populate("enteredBy", "firstName lastName");
 
   if (!result) {
-    const error = new Error("Test result not found for this booking");
+    const error = new Error(
+      "Test result not found for this booking or has been deleted",
+    );
     error.statusCode = 404;
     throw error;
   }
@@ -148,7 +153,7 @@ export const findResultByBooking = async (bookingId) => {
  * @returns {Promise<Object>} Updated test result
  */
 export const updateResultStatus = async (id, status, changedBy) => {
-  const result = await TestResult.findById(id)
+  const result = await TestResult.findOne({ _id: id, isDeleted: false })
     .populate("patientProfileId", "fullName dateOfBirth gender contactNumber")
     .populate("testTypeId", "name code")
     .populate(
@@ -159,7 +164,7 @@ export const updateResultStatus = async (id, status, changedBy) => {
     .populate("bookingId", "bookingDate");
 
   if (!result) {
-    const error = new Error("Test result not found");
+    const error = new Error("Test result not found or has been deleted");
     error.statusCode = 404;
     throw error;
   }
@@ -198,10 +203,10 @@ export const updateResultStatus = async (id, status, changedBy) => {
  * @returns {Promise<Object>} Updated test result
  */
 export const addViewedByEntry = async (id, userId) => {
-  const result = await TestResult.findById(id);
+  const result = await TestResult.findOne({ _id: id, isDeleted: false });
 
   if (!result) {
-    const error = new Error("Test result not found");
+    const error = new Error("Test result not found or has been deleted");
     error.statusCode = 404;
     throw error;
   }
@@ -232,6 +237,7 @@ export const findUnviewedResultsByPatient = async (patientProfileId) => {
   // This would typically check if the patient's user ID is in viewedBy array
   const results = await TestResult.find({
     patientProfileId,
+    isDeleted: false, // Exclude soft-deleted results
     // You might need to get the user ID from patientProfileId
     // For now, we'll return all results and filter in controller if needed
   })
@@ -252,7 +258,7 @@ export const findResultsByHealthCenter = async (
   healthCenterId,
   filters = {},
 ) => {
-  const query = { healthCenterId };
+  const query = { healthCenterId, isDeleted: false }; // Exclude soft-deleted results
 
   // Apply filters
   if (filters.status) {
@@ -295,7 +301,7 @@ export const findResultsByHealthCenter = async (
  * @returns {Promise<Array>} Array of test results
  */
 export const findResultsByTestType = async (testTypeId) => {
-  const results = await TestResult.find({ testTypeId })
+  const results = await TestResult.find({ testTypeId, isDeleted: false })
     .populate("patientProfileId", "firstName lastName")
     .populate("healthCenterId", "name")
     .sort({ releasedAt: -1 })
@@ -305,12 +311,64 @@ export const findResultsByTestType = async (testTypeId) => {
 };
 
 /**
- * Delete a test result (soft delete by setting status)
+ * Soft delete a test result (primary method - recommended)
+ * Marks result as deleted but preserves data for audit trail
  * @param {String} id - Test result ID
- * @returns {Promise<Object>} Deleted result
+ * @param {String} deleteReason - Reason for deletion (minimum 10 characters)
+ * @param {String} deletedBy - User ID performing the deletion
+ * @returns {Promise<Object>} Updated result with deletion metadata
  */
-export const deleteTestResult = async (id) => {
-  const result = await TestResult.findByIdAndDelete(id);
+export const softDeleteTestResult = async (id, deleteReason, deletedBy) => {
+  // Find the result (must not already be deleted)
+  const result = await TestResult.findOne({ _id: id, isDeleted: false });
+
+  if (!result) {
+    const error = new Error("Test result not found or already deleted");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Update deletion fields
+  result.isDeleted = true;
+  result.deletedAt = new Date();
+  result.deletedBy = deletedBy;
+  result.deleteReason = deleteReason;
+
+  await result.save();
+
+  // Log for audit purposes
+  console.log(`✨ SOFT DELETE AUDIT LOG:
+    - Result ID: ${id}
+    - Deleted By: ${deletedBy}
+    - Reason: ${deleteReason}
+    - Timestamp: ${new Date().toISOString()}
+    - Patient: ${result.patientProfileId}
+    - Test Type: ${result.testTypeId}
+    - Status: Marked as deleted (can be recovered)
+  `);
+
+  return {
+    success: true,
+    deletedId: id,
+    deleteReason,
+    deletedBy,
+    deletedAt: result.deletedAt,
+    message:
+      "Test result marked as deleted successfully. Data preserved for audit trail.",
+  };
+};
+
+/**
+ * Hard delete a test result (admin-only - permanent removal)
+ * Permanently removes result from database and deletes associated files
+ * @param {String} id - Test result ID
+ * @param {String} deleteReason - Reason for permanent deletion
+ * @param {String} deletedBy - Admin user ID performing the deletion
+ * @returns {Promise<Object>} Deletion confirmation
+ */
+export const hardDeleteTestResult = async (id, deleteReason, deletedBy) => {
+  // Find the result (can be already soft-deleted)
+  const result = await TestResult.findById(id).populate("bookingId");
 
   if (!result) {
     const error = new Error("Test result not found");
@@ -318,7 +376,62 @@ export const deleteTestResult = async (id) => {
     throw error;
   }
 
-  return result;
+  // Log deletion BEFORE removing from database (critical for audit)
+  console.log(`🗑️ PERMANENT DELETE AUDIT LOG:
+    ═══════════════════════════════════════════════════════════
+    - Result ID: ${id}
+    - Deleted By (Admin): ${deletedBy}
+    - Reason: ${deleteReason}
+    - Timestamp: ${new Date().toISOString()}
+    - Patient: ${result.patientProfileId}
+    - Test Type: ${result.testTypeId}
+    - Booking ID: ${result.bookingId?._id}
+    - PDF Path: ${result.generatedReportPath || "None"}
+    - Status: PERMANENTLY REMOVED FROM DATABASE
+    - WARNING: This action CANNOT be undone
+    ═══════════════════════════════════════════════════════════
+  `);
+
+  // Delete associated PDF file if exists
+  if (result.generatedReportPath && fs.existsSync(result.generatedReportPath)) {
+    try {
+      fs.unlinkSync(result.generatedReportPath);
+      console.log(`📄 Deleted PDF file: ${result.generatedReportPath}`);
+    } catch (fileError) {
+      console.error(`⚠️ Error deleting PDF file: ${fileError.message}`);
+      // Continue with database deletion even if file deletion fails
+    }
+  }
+
+  // Revert booking status to "processing" (if booking exists)
+  if (result.bookingId) {
+    try {
+      await Booking.findByIdAndUpdate(result.bookingId._id, {
+        status: "processing",
+      });
+      console.log(
+        `🔄 Reverted booking ${result.bookingId._id} to "processing" status`,
+      );
+    } catch (bookingError) {
+      console.error(`⚠️ Error updating booking: ${bookingError.message}`);
+      // Continue with deletion
+    }
+  }
+
+  // Permanently delete from database
+  await TestResult.findByIdAndDelete(id);
+
+  console.log(`✅ Result ${id} permanently deleted from database`);
+
+  return {
+    success: true,
+    deletedId: id,
+    deleteReason,
+    deletedBy,
+    deletedAt: new Date(),
+    message:
+      "Test result permanently deleted. This action cannot be undone. Deletion logged to system logs.",
+  };
 };
 
 /**

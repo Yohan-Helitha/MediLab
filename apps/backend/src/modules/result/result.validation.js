@@ -640,3 +640,39 @@ export const resultQueryFiltersValidation = [
     .isInt({ min: 1 })
     .withMessage("Page must be at least 1"),
 ];
+
+// Validation for soft delete (primary method)
+export const softDeleteValidation = [
+  param("id").isMongoId().withMessage("Invalid test result ID format"),
+
+  body("deleteReason")
+    .notEmpty()
+    .withMessage("Deletion reason is required")
+    .isString()
+    .withMessage("Deletion reason must be a string")
+    .trim()
+    .isLength({ min: 10, max: 500 })
+    .withMessage("Deletion reason must be between 10 and 500 characters")
+    .matches(/^[a-zA-Z0-9\s\.,;:()\-'"!?]+$/)
+    .withMessage(
+      "Deletion reason contains invalid characters. Use only letters, numbers, and basic punctuation.",
+    ),
+];
+
+// Validation for hard delete (admin-only permanent deletion)
+export const hardDeleteValidation = [
+  param("id").isMongoId().withMessage("Invalid test result ID format"),
+
+  body("deleteReason")
+    .notEmpty()
+    .withMessage("Deletion reason is required for permanent deletion")
+    .isString()
+    .withMessage("Deletion reason must be a string")
+    .trim()
+    .isLength({ min: 10, max: 500 })
+    .withMessage("Deletion reason must be between 10 and 500 characters")
+    .matches(/^[a-zA-Z0-9\s\.,;:()\-'"!?]+$/)
+    .withMessage(
+      "Deletion reason contains invalid characters. Use only letters, numbers, and basic punctuation.",
+    ),
+];

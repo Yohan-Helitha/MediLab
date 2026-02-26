@@ -263,37 +263,76 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 
 #### FR-3.1.5: Delete Test Results
 
-**Description:** Lab staff shall be able to permanently delete test results when necessary (e.g., incorrect booking, duplicate entry, test cancellation).
+**Description:** Lab staff shall be able to delete test results when necessary (e.g., incorrect booking, duplicate entry, test cancellation). System supports both soft deletion (recommended) and hard deletion (admin-only) approaches.
 
 **Permissions:**
 
-- Lab Staff / Health Center Admin only
-- System Administrator
+- Lab Staff (any health officer role) - Soft delete only
+- System Administrator - Both soft delete and hard delete
 
-**Deletion Type:**
+**Deletion Types:**
 
-- **Hard Delete:** Result permanently removed from database
+**Primary Method: Soft Delete (Recommended)**
+
+- Result marked as deleted in database (`isDeleted: true`)
+- Record remains in database for audit trail
+- Deletion reason and metadata stored permanently
+- Result hidden from normal queries and patient view
+- Can be recovered by administrator if needed
+- Maintains full audit compliance
+
+**Secondary Method: Hard Delete (Admin-Only)**
+
+- Result permanently removed from database
 - Associated files permanently deleted from storage
 - Cannot be recovered after deletion
+- Used only for true data cleanup scenarios
+- Deletion details logged to system logs before removal
 
-**Flow:**
+**Soft Delete Flow (Primary):**
 
 1. Lab staff selects result to delete
 2. System requests confirmation and reason
-3. Lab staff provides deletion reason (required)
-4. System displays warning: "This action cannot be undone. Are you sure?"
+3. Lab staff provides deletion reason (required, minimum 10 characters)
+4. System displays warning: "This result will be marked as deleted. It will no longer be visible but will remain in the database for audit purposes."
 5. Lab staff confirms deletion
-6. System permanently deletes result record from database
-7. System permanently deletes associated files from storage
-8. Result removed from patient view
-9. Booking status reverted to "processing" to allow re-entry if needed
+6. System updates result record:
+   - Sets `isDeleted = true`
+   - Records `deletedAt` timestamp
+   - Records `deletedBy` (user ID)
+   - Stores `deleteReason`
+7. Result hidden from patient view and normal queries
+8. Booking status optionally reverted to "processing" to allow re-entry
+
+**Hard Delete Flow (Admin-Only):**
+
+1. System administrator selects result for permanent deletion
+2. System requests confirmation and reason
+3. Admin provides deletion reason (required, minimum 10 characters)
+4. System displays strong warning: "PERMANENT DELETION: This action cannot be undone. The result and all associated data will be permanently removed from the database."
+5. Admin confirms permanent deletion
+6. System logs deletion details (result ID, admin ID, reason, timestamp) to system logs
+7. System permanently deletes result record from database
+8. System permanently deletes associated PDF files from storage
+9. Result completely removed from system
+10. Booking status reverted to "processing" if applicable
+
+**Data Fields (Added to TestResult Model):**
+
+- `isDeleted` (Boolean, default: false) - Soft deletion flag
+- `deletedAt` (Date) - Timestamp of deletion
+- `deletedBy` (ObjectId, ref: 'HealthOfficer') - User who performed deletion
+- `deleteReason` (String, min: 10 chars) - Mandatory reason for deletion
 
 **Constraints:**
 
 - Deletion reason mandatory (minimum 10 characters)
 - Requires confirmation dialog
-- Cannot be undone once deleted
-- Deletion action logged in system logs for audit purposes
+- Soft delete: Can be recovered by administrator
+- Hard delete: Cannot be undone once deleted
+- All normal queries automatically filter out soft-deleted results (`isDeleted: false`)
+- Hard delete requires System Administrator role only
+- Deletion metadata preserved permanently for audit purposes (soft delete)
 
 ---
 

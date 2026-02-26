@@ -350,10 +350,11 @@ export const getResultsByTestType = async (req, res, next) => {
 };
 
 /**
- * Delete test result
+ * Soft delete test result (primary method - recommended)
  * DELETE /api/results/:id
+ * Body: { deleteReason }
  */
-export const deleteTestResult = async (req, res, next) => {
+export const softDeleteTestResult = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -364,11 +365,25 @@ export const deleteTestResult = async (req, res, next) => {
       });
     }
 
-    const result = await resultService.deleteTestResult(req.params.id);
+    const { deleteReason } = req.body;
+    const deletedBy = req.user?.id; // From auth middleware
+
+    if (!deletedBy) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required to delete results",
+      });
+    }
+
+    const result = await resultService.softDeleteTestResult(
+      req.params.id,
+      deleteReason,
+      deletedBy,
+    );
 
     res.status(200).json({
       success: true,
-      message: "Test result deleted successfully",
+      message: "Test result marked as deleted successfully",
       data: result,
     });
   } catch (error) {
@@ -381,6 +396,68 @@ export const deleteTestResult = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Hard delete test result (admin-only - permanent deletion)
+ * DELETE /api/results/:id/permanent
+ * Body: { deleteReason }
+ */
+export const hardDeleteTestResult = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const { deleteReason } = req.body;
+    const deletedBy = req.user?.id; // From auth middleware (must be admin)
+
+    if (!deletedBy) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required to delete results",
+      });
+    }
+
+    // Additional admin check (middleware should handle this, but double-check)
+    if (req.user?.role !== "Admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only system administrators can permanently delete results",
+      });
+    }
+
+    const result = await resultService.hardDeleteTestResult(
+      req.params.id,
+      deleteReason,
+      deletedBy,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Test result permanently deleted",
+      data: result,
+    });
+  } catch (error) {
+    if (error.statusCode === 404) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Legacy delete function (deprecated - use softDeleteTestResult instead)
+ * Keeping for backward compatibility
+ */
+export const deleteTestResult = softDeleteTestResult;
 
 /**
  * Download test result PDF report

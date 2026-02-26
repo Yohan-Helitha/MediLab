@@ -116,6 +116,25 @@ const testResultBaseSchema = new Schema(
       index: true,
     },
     viewedBy: [ViewedBySchema],
+
+    // Soft deletion fields (for audit trail and compliance)
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true, // For efficient filtering of deleted records
+    },
+    deletedAt: {
+      type: Date,
+    },
+    deletedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "HealthOfficer", // Only health officers can delete
+    },
+    deleteReason: {
+      type: String,
+      minlength: 10,
+      trim: true,
+    },
   },
   {
     discriminatorKey: "testType",
@@ -132,6 +151,7 @@ testResultBaseSchema.index({
   releasedAt: -1,
 });
 testResultBaseSchema.index({ testTypeId: 1, releasedAt: -1 });
+testResultBaseSchema.index({ isDeleted: 1, releasedAt: -1 }); // For filtering deleted records
 
 const TestResult = mongoose.model("TestResult", testResultBaseSchema);
 

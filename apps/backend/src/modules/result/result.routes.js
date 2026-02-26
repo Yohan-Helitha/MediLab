@@ -74,10 +74,26 @@ router.patch(
 );
 
 // Delete Routes
+// TODO: After auth merge, add authentication middleware:
+// - Soft delete: authenticate, isHealthOfficer (any lab staff)
+// - Hard delete: authenticate, checkRole(['Admin']) (admin-only)
+
+// Hard delete route - MUST come before generic /:id route to avoid conflicts
+router.delete(
+  "/:id/permanent",
+  // authenticate,  // TODO: Uncomment after auth merge
+  // checkRole(['Admin']),  // TODO: Uncomment after auth merge
+  resultValidation.hardDeleteValidation,
+  resultController.hardDeleteTestResult,
+);
+
+// Soft delete route (primary method - recommended)
 router.delete(
   "/:id",
-  resultValidation.idParamValidation,
-  resultController.deleteTestResult,
+  // authenticate,  // TODO: Uncomment after auth merge
+  // isHealthOfficer,  // TODO: Uncomment after auth merge (any health officer can soft delete)
+  resultValidation.softDeleteValidation,
+  resultController.softDeleteTestResult,
 );
 
 export default router;
