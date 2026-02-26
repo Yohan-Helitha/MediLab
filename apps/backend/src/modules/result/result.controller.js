@@ -80,6 +80,23 @@ export const getTestResultById = async (req, res, next) => {
 
     const result = await resultService.findTestResultById(req.params.id);
 
+    // AUTHORIZATION: Patients can only view their own released results
+    if (req.user.userType === "patient") {
+      if (result.patientProfileId.toString() !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. You can only view your own test results.",
+        });
+      }
+
+      if (result.status !== "released") {
+        return res.status(403).json({
+          success: false,
+          message: "This test result has not been released yet.",
+        });
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Test result retrieved successfully",
@@ -112,6 +129,16 @@ export const getPatientTestResults = async (req, res, next) => {
       });
     }
 
+    const { patientId } = req.params;
+
+    // AUTHORIZATION: Patients can only view their own results
+    if (req.user.userType === "patient" && req.user.id !== patientId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only view your own test results.",
+      });
+    }
+
     const filters = {
       status: req.query.status,
       testTypeId: req.query.testTypeId,
@@ -121,8 +148,13 @@ export const getPatientTestResults = async (req, res, next) => {
       page: req.query.page,
     };
 
+    // Patients can only see released results
+    if (req.user.userType === "patient") {
+      filters.status = "released";
+    }
+
     const results = await resultService.findResultsByPatient(
-      req.params.patientId,
+      patientId,
       filters,
     );
 
@@ -230,7 +262,27 @@ export const markAsViewed = async (req, res, next) => {
 
     const { userId } = req.body;
 
+    // AUTHORIZATION: Patients can only mark their own results as viewed
+    if (req.user.userType === "patient" && req.user.id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Access denied. You can only mark your own test results as viewed.",
+      });
+    }
+
     const result = await resultService.addViewedByEntry(req.params.id, userId);
+
+    // Double-check ownership after fetching result
+    if (
+      req.user.userType === "patient" &&
+      result.patientProfileId.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. This test result does not belong to you.",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -263,9 +315,17 @@ export const getUnviewedResults = async (req, res, next) => {
       });
     }
 
-    const results = await resultService.findUnviewedResultsByPatient(
-      req.params.patientId,
-    );
+    const { patientId } = req.params;
+
+    // AUTHORIZATION: Patients can only view their own unviewed results
+    if (req.user.userType === "patient" && req.user.id !== patientId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only view your own test results.",
+      });
+    }
+
+    const results = await resultService.findUnviewedResultsByPatient(patientId);
 
     res.status(200).json({
       success: true,
@@ -481,6 +541,24 @@ export const downloadTestResultPDF = async (req, res, next) => {
         success: false,
         message: "Test result not found",
       });
+    }
+
+    // AUTHORIZATION: Patients can only download their own released results
+    if (req.user.userType === "patient") {
+      if (result.patientProfileId.toString() !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Access denied. You can only download your own test results.",
+        });
+      }
+
+      if (result.status !== "released") {
+        return res.status(403).json({
+          success: false,
+          message: "This test result has not been released yet.",
+        });
+      }
     }
 
     // Check if PDF has been generated

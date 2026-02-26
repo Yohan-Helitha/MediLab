@@ -1,0 +1,785 @@
+{
+  "info": {
+    "_postman_id": "test-management-complete-verified",
+    "name": "MediLab - Test Management (Verified)",
+    "description": "Complete API documentation for Test Management Component - All endpoints verified against backend implementation.\n\n**Component Owner**: Afham\n**Created**: February 26, 2026\n**Base URL**: http://localhost:5000/api\n\n## Authentication Required\nAll 22 Test Management endpoints require JWT Bearer token authentication.\n\n### Login Endpoints:\n- **Patient Login**: POST /api/auth/patient/login\n- **Health Officer Login**: POST /api/auth/health-officer/login\n\n### Authorization:\n- **Patients**: View own released results, manage own subscriptions\n- **Health Officers**: Submit results, send notifications, view all data\n- **Admins**: All Health Officer permissions + permanent delete\n\n## Total Endpoints: 24\n- Authentication: 2 endpoints\n- TestResult Management: 10 endpoints  \n- Notification Management: 12 endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Login endpoints to obtain JWT tokens. Both endpoints are public (no authentication required).",
+      "item": [
+        {
+          "name": "Patient Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"M001\",\n  \"password\": \"Patient@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/patient/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "patient", "login"]
+            },
+            "description": "**Access**: Public\n**Validation**: validatePatientLogin\n\nLogin as patient to receive JWT token with patient permissions.\n\n**Request Body**:\n- `identifier` (string, required): Can be member_id, nic, or contact_number\n- `password` (string, required): Patient password\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"patient\": {...},\n    \"token\": \"<jwt_token>\"\n  }\n}\n```\n\n**Token Payload**:\n```json\n{\n  \"id\": \"<patient_profile_id>\",\n  \"userType\": \"patient\",\n  \"member_id\": \"M001\",\n  \"full_name\": \"John Doe\"\n}\n```\n\n**Next Step**: Copy `data.token` and save as `{{patient_token}}`"
+          },
+          "response": []
+        },
+        {
+          "name": "Health Officer Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"EMP001\",\n  \"password\": \"HealthOfficer@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/health-officer/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "health-officer", "login"]
+            },
+            "description": "**Access**: Public\n**Validation**: validateHealthOfficerLogin\n\nLogin as health officer to receive JWT token with health officer permissions.\n\n**Request Body**:\n- `identifier` (string, required): Can be employeeId, email, or username\n- `password` (string, required): Health officer password\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"healthOfficer\": {...},\n    \"token\": \"<jwt_token>\"\n  }\n}\n```\n\n**Token Payload**:\n```json\n{\n  \"id\": \"<health_officer_id>\",\n  \"userType\": \"healthOfficer\",\n  \"role\": \"Lab_Technician\",\n  \"employeeId\": \"EMP001\",\n  \"fullName\": \"Dr. Jane Smith\"\n}\n```\n\n**Available Roles**: MOH, PHI, Nurse, Admin, Lab_Technician, Doctor\n\n**Next Step**: Copy `data.token` and save as `{{health_officer_token}}` or `{{admin_token}}`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TestResult Management",
+      "description": "Submit and manage test results with discriminator pattern supporting 8 test types.\n\n**All endpoints require JWT authentication.**",
+      "item": [
+        {
+          "name": "Submit Test Result",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"65f1234567890abcdef22222\",\n  \"patientProfileId\": \"65f1234567890abcdef12345\",\n  \"testTypeId\": \"65f1234567890abcdef67890\",\n  \"healthCenterId\": \"65f1234567890abcdef11111\",\n  \"enteredBy\": \"65f1234567890abcdef33333\",\n  \"currentStatus\": \"processing\",\n  \"observations\": \"Blood glucose test performed after 10-hour fasting period.\",\n  \"testType\": \"Fasting\",\n  \"glucoseLevel\": 95,\n  \"unit\": \"mg/dL\",\n  \"sampleType\": \"Venous Blood\",\n  \"sampleQuality\": \"Good\",\n  \"sampleCollectionTime\": \"2026-02-26T08:00:00.000Z\",\n  \"fastingDuration\": 10,\n  \"interpretation\": \"Normal fasting glucose level\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results",
+              "host": ["{{base_url}}"],
+              "path": ["results"]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: submitResultValidation + discriminator-specific validation\n\nSubmit a new test result. The testTypeId determines which discriminator model is used.\n\n**Base Required Fields**:\n- `bookingId` (MongoId, required)\n- `patientProfileId` (MongoId, required)\n- `testTypeId` (MongoId, required) - Determines discriminator type\n- `healthCenterId` (MongoId, required)\n- `enteredBy` (MongoId, required) - Health officer submitting\n- `observations` (string, optional, max 1000 chars)\n- `currentStatus` (enum, optional): sample_received | processing | released (default: sample_received)\n- `releasedAt` (ISO8601, optional)\n\n**Blood Glucose Discriminator** (example shown):\n- `testType` (enum, required): Fasting | Random | Postprandial | HbA1c\n- `glucoseLevel` (number, required): 0-600\n- `unit` (enum, required): mg/dL | mmol/L\n- `sampleType` (enum, required): Venous Blood | Capillary Blood\n- `sampleQuality` (enum, required): Good | Hemolyzed | Lipemic | Clotted\n- `sampleCollectionTime` (ISO8601, required)\n- `fastingDuration` (integer, optional): 0-24 hours\n- `interpretation` (string, optional, max 500 chars)\n\n**Other Discriminator Types**:\n- **Hemoglobin**: hemoglobinLevel, unit, sampleType, sampleCollectionTime\n- **Blood Pressure**: systolicBP, diastolicBP, pulseRate, patientPosition, armUsed, cuffSize, patientState, measurementTime, method\n- **Pregnancy**: result, testType, hcgLevel?, hcgUnit?, method, sampleType, sampleQuality, sampleCollectionTime\n- **X-Ray**: uploadedFiles[], bodyPart, clinicalIndication, views[], findings, impression, interpretation\n- **ECG**: uploadedFiles[], ecgType, clinicalIndication, heartRate?, rhythm?, findings, interpretation\n- **Ultrasound**: uploadedFiles[], studyType, clinicalIndication, findings, impression, interpretation\n- **Automated Report**: uploadedFiles[1], testPanelName, testCategory, sampleType, sampleCollectionTime, analysisCompletedTime\n\n**Response** (201 Created):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result submitted successfully\",\n  \"result\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Test Result by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/:id",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient (own released) OR Health Officer (all)\n**Middleware**: authenticate\n**Validation**: idParamValidation\n\nGet detailed information about a specific test result with populated references.\n\n**Patient Access**:\n- Can only view if `result.patientProfileId === req.user.id`\n- Can only view if `result.currentStatus === 'released'`\n\n**Health Officer Access**:\n- Can view any result regardless of status\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"result\": {...}\n}\n```\n\nResult includes populated: patientProfile, testType, healthCenter, booking, enteredBy"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Test Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/patient/:patientId?status=released&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["results", "patient", ":patientId"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "released",
+                  "description": "Filter: sample_received | processing | released"
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "ISO8601 date",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "ISO8601 date",
+                  "disabled": true
+                },
+                {
+                  "key": "testTypeId",
+                  "value": "",
+                  "description": "Filter by test type",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Min: 1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Min: 1, Max: 100"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient (own released) OR Health Officer (all)\n**Middleware**: authenticate\n**Validation**: patientIdParamValidation + resultQueryFiltersValidation\n\nGet all test results for a specific patient with optional filters.\n\n**Patient Access**:\n- URL `patientId` must match `req.user.id`\n- Only returns `status='released'` results (forced filter)\n\n**Health Officer Access**:\n- Can access any patient's results\n- Can filter by any status\n\n**Query Parameters**:\n- `status` (enum, optional): sample_received | processing | released\n- `startDate` (ISO8601, optional)\n- `endDate` (ISO8601, optional)\n- `testTypeId` (MongoId, optional)\n- `page` (integer, optional, min 1)\n- `limit` (integer, optional, min 1, max 100)\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"results\": [...],\n  \"pagination\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unviewed Patient Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/patient/:patientId/unviewed",
+              "host": ["{{base_url}}"],
+              "path": ["results", "patient", ":patientId", "unviewed"],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: patientIdParamValidation\n\nGet all unviewed test results for the authenticated patient. Used for notification triggers.\n\n**Authorization**:\n- URL `patientId` must match `req.user.id`\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"results\": [...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Results by Booking",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/booking/:bookingId",
+              "host": ["{{base_url}}"],
+              "path": ["results", "booking", ":bookingId"],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "65f1234567890abcdef22222"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: bookingIdParamValidation\n\nGet all test results associated with a specific booking.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"results\": [...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Results by Health Center",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/health-center/:healthCenterId?status=released&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["results", "health-center", ":healthCenterId"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "released"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "healthCenterId",
+                  "value": "65f1234567890abcdef11111"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: healthCenterIdParamValidation + resultQueryFiltersValidation\n\nGet all test results from a specific health center with filters.\n\n**Query Parameters**: Same as \"Get Patient Test Results\"\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"results\": [...],\n  \"pagination\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Results by Test Type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/test-type/:testTypeId",
+              "host": ["{{base_url}}"],
+              "path": ["results", "test-type", ":testTypeId"],
+              "variable": [
+                {
+                  "key": "testTypeId",
+                  "value": "65f1234567890abcdef67890"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: testTypeIdParamValidation\n\nGet all results for a specific test type (e.g., all Blood Glucose results).\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"results\": [...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Result Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"released\",\n  \"changedBy\": \"65f1234567890abcdef33333\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: idParamValidation + updateStatusValidation\n\nUpdate the processing status of a test result.\n\n**Request Body**:\n- `status` (enum, required): sample_received | processing | released\n- `changedBy` (MongoId, required): Health officer ID making the change\n\n**Status Flow**: sample_received → processing → released\n\n**Note**: When status changes to 'released', `releasedAt` timestamp is automatically set.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result status updated successfully\",\n  \"result\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Result as Viewed",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"65f1234567890abcdef12345\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results/:id/mark-viewed",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "mark-viewed"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: idParamValidation + markViewedValidation\n\nMark a test result as viewed by the patient. Records viewing timestamp.\n\n**Request Body**:\n- `userId` (MongoId, required): Patient ID (must match `req.user.id`)\n\n**Authorization Logic**:\n1. Request body `userId` must match `req.user.id`\n2. Result fetched by ID\n3. Result's `patientProfileId` must match `req.user.id`\n4. Result must have `currentStatus === 'released'`\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result marked as viewed\",\n  \"result\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Test Result (Soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleteReason\": \"Duplicate entry - correct result submitted separately\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results/:id",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: softDeleteValidation\n\nSoft delete a test result. Sets deleted flag but preserves data for audit trails.\n\n**Request Body**:\n- `deleteReason` (string, required): Reason for deletion\n\n**Note**: This is the recommended deletion method. For permanent deletion (Admin only), use DELETE /results/:id/permanent\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result deleted successfully\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notification Management",
+      "description": "SMS and Email notification system with reminder subscriptions.\n\n**All endpoints require JWT authentication.**",
+      "item": [
+        {
+          "name": "Send Result Ready Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"testResult\": {\n    \"_id\": \"65f1234567890abcdef99999\"\n  },\n  \"patient\": {\n    \"_id\": \"65f1234567890abcdef12345\",\n    \"contactNumber\": \"+94712345678\",\n    \"email\": \"patient@example.com\"\n  },\n  \"testType\": {\n    \"_id\": \"65f1234567890abcdef55555\",\n    \"name\": \"Blood Glucose Test\"\n  },\n  \"healthCenter\": {\n    \"name\": \"Central Medical Laboratory\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send/result-ready",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send", "result-ready"]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: sendResultReadyValidation\n\nSend notification to patient that their test result is ready. Attempts both SMS and Email if provided.\n\n**Request Body** (Nested Objects):\n- `testResult` (object, required):\n  - `_id` (MongoId, required): Test result ID\n  \n- `patient` (object, required):\n  - `_id` (MongoId, required): Patient profile ID\n  - `contactNumber` (string, optional): For SMS (must provide at least one: contactNumber or email)\n  - `email` (email, optional): For email (must provide at least one: contactNumber or email)\n  \n- `testType` (object, required):\n  - `_id` (MongoId, required): Test type ID\n  - `name` (string, required): Test type name for notification content\n  \n- `healthCenter` (object, required):\n  - `name` (string, required): Health center name for notification content\n\n**Requirements**: Twilio (SMS) and/or SendGrid (Email) configured in .env\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Notifications sent successfully\",\n  \"notifications\": [\n    {\n      \"_id\": \"...\",\n      \"type\": \"result_ready\",\n      \"channel\": \"sms\",\n      \"recipient\": \"+94712345678\",\n      \"status\": \"sent\",\n      \"sentAt\": \"...\"\n    },\n    {\n      \"_id\": \"...\",\n      \"type\": \"result_ready\",\n      \"channel\": \"email\",\n      \"recipient\": \"patient@example.com\",\n      \"status\": \"sent\",\n      \"sentAt\": \"...\"\n    }\n  ]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Unviewed Result Reminder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send/unviewed-reminder",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send", "unviewed-reminder"]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: None (no body required)\n\nBatch job to send reminders to all patients with unviewed test results older than 3 days.\n\n**Request Body**: Empty (no validation)\n\n**Use Case**: Triggered by scheduled job or manual execution by lab staff.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Reminder notifications sent\",\n  \"summary\": {\n    \"totalPatients\": 5,\n    \"notificationsSent\": 10,\n    \"notificationsFailed\": 0\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Routine Checkup Reminder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionId\": \"65f1234567890abcdefccccc\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send/routine-reminder",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send", "routine-reminder"]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: sendRoutineReminderValidation\n\nSend routine checkup reminder to patient based on their subscription settings.\n\n**Request Body**:\n- `subscriptionId` (MongoId, required): ID of the patient's subscription record\n\n**Backend Process**:\n1. Fetches subscription with populated patient, testType\n2. Retrieves patient contact info\n3. Sends notification via configured channels\n4. Updates subscription's lastReminderDate\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Routine reminder sent successfully\",\n  \"notifications\": [...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/:id/resend",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", ":id", "resend"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefaaaaa"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: idParamValidation\n\nResend a previously sent or failed notification. Creates a new notification log entry.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Notification resent successfully\",\n  \"notification\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Notification by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/:id",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefaaaaa"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: idParamValidation\n\nGet detailed information about a specific notification by ID.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"notification\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Notification History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/patient/:patientId?type=result_ready&channel=sms&status=sent&startDate=2026-01-01&endDate=2026-02-28",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "patient", ":patientId"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "result_ready",
+                  "description": "Filter: result_ready | unviewed_result_reminder | routine_checkup_reminder"
+                },
+                {
+                  "key": "channel",
+                  "value": "sms",
+                  "description": "Filter: sms | email"
+                },
+                {
+                  "key": "status",
+                  "value": "sent",
+                  "description": "Filter: sent | failed"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "description": "ISO8601 date"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-02-28",
+                  "description": "ISO8601 date"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient (own) OR Health Officer (any)\n**Middleware**: authenticate\n**Validation**: patientIdParamValidation + notificationHistoryQueryValidation\n\nGet notification history for a specific patient with optional filters.\n\n**Patient Access**:\n- URL `patientId` must match `req.user.id`\n\n**Health Officer Access**:\n- Can access any patient's notification history\n\n**Query Parameters**:\n- `type` (enum, optional): result_ready | unviewed_result_reminder | routine_checkup_reminder\n- `channel` (enum, optional): sms | email\n- `status` (enum, optional): sent | failed\n- `startDate` (ISO8601, optional)\n- `endDate` (ISO8601, optional)\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"notifications\": [...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Failed Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/failed?limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "failed"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Min: 1, Max: 100"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: failedNotificationsQueryValidation\n\nGet all failed notifications for troubleshooting and retry.\n\n**Query Parameters**:\n- `limit` (integer, optional, min 1, max 100)\n\n**Use Case**: Lab staff identify delivery problems (invalid phone numbers, email bounces, etc.) and take corrective action.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"notifications\": [...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe to Reminder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientProfileId\": \"65f1234567890abcdef12345\",\n  \"testTypeId\": \"65f1234567890abcdef67890\",\n  \"lastTestDate\": \"2026-01-15T09:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions"]
+            },
+            "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: subscribeValidation\n\nSubscribe patient to routine reminder for a specific test type.\n\n**Request Body**:\n- `patientProfileId` (MongoId, required): Must match `req.user.id`\n- `testTypeId` (MongoId, required): Test type to subscribe for reminders\n- `lastTestDate` (ISO8601, required): Date of patient's last test (cannot be in future)\n\n**Authorization**:\n- Request body `patientProfileId` must match `req.user.id`\n\n**Backend Process**:\n- Sets `isActive: true`\n- Calculates reminder schedule based on test type intervals\n- Returns subscription with nextReminderDate populated\n\n**Response** (201 Created):\n```json\n{\n  \"success\": true,\n  \"message\": \"Reminder subscription created successfully\",\n  \"subscription\": {\n    \"_id\": \"...\",\n    \"patientProfile\": \"...\",\n    \"testType\": \"...\",\n    \"lastTestDate\": \"...\",\n    \"nextReminderDate\": \"...\",\n    \"isActive\": true,\n    \"createdAt\": \"...\"\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions/patient/:patientId",
+              "host": ["{{base_url}}"],
+              "path": [
+                "notifications",
+                "subscriptions",
+                "patient",
+                ":patientId"
+              ],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "65f1234567890abcdef12345"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: patientIdParamValidation\n\nGet all reminder subscriptions for the authenticated patient.\n\n**Authorization**:\n- URL `patientId` must match `req.user.id`\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"subscriptions\": [...]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefccccc"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: subscriptionIdParamValidation\n\nGet detailed information about a specific subscription by ID.\n\n**Authorization Logic**:\n1. Fetch subscription by ID\n2. Verify subscription's `patientProfileId` matches `req.user.id`\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"subscription\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lastTestDate\": \"2026-02-20T10:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefccccc"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: subscriptionIdParamValidation + updateSubscriptionValidation\n\nUpdate subscription with new test date. System recalculates next reminder automatically.\n\n**Request Body**:\n- `lastTestDate` (ISO8601, required): Updated date of patient's last test (cannot be in future)\n\n**Authorization Logic**:\n1. Fetch subscription by ID\n2. Verify subscription's `patientProfileId` matches `req.user.id`\n3. Update lastTestDate\n4. Recalculate nextReminderDate\n\n**Note**: To deactivate reminders, use the Unsubscribe endpoint instead.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Subscription updated successfully\",\n  \"subscription\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Unsubscribe from Reminder",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdefccccc"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: subscriptionIdParamValidation\n\nUnsubscribe patient from routine reminder by deleting the subscription.\n\n**Authorization Logic**:\n1. Fetch subscription by ID\n2. Verify subscription's `patientProfileId` matches `req.user.id`\n3. Delete subscription\n\n**Effect**: Stops all future reminder notifications for that subscription.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Subscription deleted successfully\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string",
+      "description": "Generic JWT token. Replace with patient_token or health_officer_token as needed."
+    },
+    {
+      "key": "patient_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token from patient login"
+    },
+    {
+      "key": "health_officer_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token from health officer login"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token from admin login (role: Admin)"
+    }
+  ]
+}

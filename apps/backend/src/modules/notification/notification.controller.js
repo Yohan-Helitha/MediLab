@@ -106,6 +106,15 @@ export const sendUnviewedResultReminder = async (req, res, next) => {
 export const getNotificationHistory = async (req, res, next) => {
   try {
     const { patientId } = req.params;
+
+    // AUTHORIZATION: Patients can only view their own notifications
+    if (req.user.userType === "patient" && req.user.id !== patientId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only view your own notifications.",
+      });
+    }
+
     const filters = {
       type: req.query.type,
       channel: req.query.channel,
@@ -231,6 +240,18 @@ export const subscribeToReminder = async (req, res, next) => {
       });
     }
 
+    // AUTHORIZATION: Patients can only create subscriptions for themselves
+    if (
+      req.user.userType === "patient" &&
+      req.user.id !== req.body.patientProfileId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Access denied. You can only create subscriptions for yourself.",
+      });
+    }
+
     const subscription = await notificationService.createSubscription(req.body);
 
     res.status(201).json({
@@ -251,12 +272,34 @@ export const unsubscribeFromReminder = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const subscription = await notificationService.deactivateSubscription(id);
+    // Fetch subscription first to check ownership
+    const subscription = await notificationService.findSubscriptionById(id);
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found",
+      });
+    }
+
+    // AUTHORIZATION: Patients can only unsubscribe their own subscriptions
+    if (
+      req.user.userType === "patient" &&
+      req.user.id !== subscription.patientProfileId.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Access denied. You can only unsubscribe your own subscriptions.",
+      });
+    }
+
+    const updated = await notificationService.deactivateSubscription(id);
 
     res.status(200).json({
       success: true,
       message: "Successfully unsubscribed from reminders",
-      data: subscription,
+      data: updated,
     });
   } catch (error) {
     next(error);
@@ -270,6 +313,14 @@ export const unsubscribeFromReminder = async (req, res, next) => {
 export const getPatientSubscriptions = async (req, res, next) => {
   try {
     const { patientId } = req.params;
+
+    // AUTHORIZATION: Patients can only view their own subscriptions
+    if (req.user.userType === "patient" && req.user.id !== patientId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only view your own subscriptions.",
+      });
+    }
 
     const subscriptions =
       await notificationService.findSubscriptionsByPatient(patientId);
@@ -301,6 +352,17 @@ export const getSubscriptionById = async (req, res, next) => {
       });
     }
 
+    // AUTHORIZATION: Patients can only view their own subscriptions
+    if (
+      req.user.userType === "patient" &&
+      req.user.id !== subscription.patientProfileId.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only view your own subscriptions.",
+      });
+    }
+
     res.status(200).json({
       success: true,
       data: subscription,
@@ -325,6 +387,17 @@ export const updateSubscription = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: "Subscription not found",
+      });
+    }
+
+    // AUTHORIZATION: Patients can only update their own subscriptions
+    if (
+      req.user.userType === "patient" &&
+      req.user.id !== subscription.patientProfileId.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only update your own subscriptions.",
       });
     }
 
