@@ -1,16 +1,121 @@
-/**
- * Test Type Controller
- *
- * RESPONSIBILITY CLARIFICATION (Feb 26, 2026):
- * TestType CRUD operations are managed by the Lab Operations Component (Test Catalog Module).
- * This Test Management Component only REFERENCES the TestType model for integration.
- *
- * For TestType CRUD endpoints, see Lab Operations Component.
- *
- * Related files:
- * - testType.model.js: Shared data model (maintained here as integration point)
- * - Test Result Management: Uses TestType for discriminator selection
- * - Notification Management: Uses TestType for test information in notifications
- */
+import * as TestService from "./test.service.js";
 
-// No controllers in this file - TestType CRUD is managed by Lab Operations Component
+export const createTestType = async (req, res, next) => {
+  try {
+    const testType = await TestService.createTestType(req.body);
+    res.status(201).json(testType);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const getAllTestTypes = async (req, res, next) => {
+  try {
+    const filters = {};
+    if (req.query.category) {
+      filters.category = req.query.category;
+    }
+    const testType = await TestService.findAllTestTypes(filters);
+    res.status(200).json(testType);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const getTestTypeById = async (req, res, next) => {
+  try {
+    const testType = await TestService.findTestTypeById(req.params.id);
+    if (!testType) {
+      return res.status(404).json({ error: "Test type not found" });
+    }
+    res.json(testType);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const updateTestType = async (req, res, next) => {
+  try {
+    const testType = await TestService.updateTestType(req.params.id, req.body);
+    if (!testType) {
+      return res.status(404).json({ error: "Test type not found" });
+    }
+    res.json(testType);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+export const softDeleteTestType = async (req, res, next) => {
+  try {
+    const testType = await TestService.softDeleteTestType(req.params.id);
+    if (!testType) {
+      return res.status(404).json({ error: "Test type is not found" });
+    }
+    res.json({ message: "Test type currently inactive" });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const hardDeleteTestType = async (req, res, next) => {
+  try {
+    const testType = await TestService.hardDeleteTestType(req.params.id);
+    if (!testType) {
+      return res.status(404).json({ error: "Test type is not found" });
+    }
+    res.json({ message: "Test type deleted successfully" });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const getTestTypesByCategory = async (req, res, next) => {
+  try {
+    const testType = await TestService.findByCategory(req.params.category);
+    if (!testType || testType.length === 0) {
+      return res.status(404).json({ error: "Test category not found" });
+    }
+    res.json(testType);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const getFormBasedTests = async (req, res, next) => {
+  try {
+    const testType = await TestService.findByEntryMethod("Form");
+    if (!testType || testType.length === 0) {
+      return res.status(404).json({ error: "Form based tests are not found" });
+    }
+    res.json(testType);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const getUploadBasedTests = async (req, res, next) => {
+  try {
+    const testType = await TestService.findByEntryMethod("Upload");
+    if (!testType || testType.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Upload based tests are not found" });
+    }
+    res.json(testType);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const getMonitoringTests = async (req, res, next) => {
+  try {
+    const testType = await TestService.findMonitoringTests();
+    if (!testType || testType.length === 0) {
+      return res.status(404).json({ error: "Monitoring tests are not found" });
+    }
+    res.json(testType);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};

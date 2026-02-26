@@ -4,7 +4,7 @@ const testInstructionSchema = new mongoose.Schema(
   {
     diagnosticTestId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'DiagnosticTest',
+      ref: 'TestType',
       required: true
     },
 

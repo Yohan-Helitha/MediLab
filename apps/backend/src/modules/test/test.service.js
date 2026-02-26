@@ -1,16 +1,48 @@
-/**
- * Test Type Service
- *
- * RESPONSIBILITY CLARIFICATION (Feb 26, 2026):
- * TestType business logic and CRUD operations are managed by the Lab Operations Component.
- * This Test Management Component only uses the TestType model for integration purposes.
- *
- * For TestType CRUD business logic, see Lab Operations Component.
- *
- * Integration:
- * - testType.model.js is maintained here as a shared data structure
- * - Result module references TestType for discriminator selection
- * - Notification module references TestType for test information
- */
+import TestType from "./testType.model.js";
 
-// No business logic in this file - TestType CRUD is managed by Lab Operations Component
+export const createTestType = async (testTypeData) => {
+  const testType = new TestType(testTypeData);
+  return testType.save();
+};
+
+export const findAllTestTypes = async (filters = {}) => {
+  const query = {};
+  if (filters.category) {
+    query.category = { $regex: filters.category, $options: "i" };
+  }
+  return TestType.find(query);
+};
+
+export const findTestTypeById = async (id) => {
+  return TestType.findById(id);
+};
+
+export const updateTestType = async (id, updateData) => {
+  return TestType.findByIdAndUpdate(id, updateData, { new: true });
+};
+
+export const softDeleteTestType = async (id) => {
+  return TestType.findByIdAndUpdate(id, { isActive: false }, { new: true });
+};
+
+export const findByCategory = async (category) => {
+  return await TestType.find({ category: { $regex: category, $options: "i" } });
+};
+
+export const hardDeleteTestType = async (id) => {
+  return TestType.findByIdAndDelete(id);
+};
+
+export const findByEntryMethod = async (entryMethod) => {
+  return await TestType.find({
+    entryMethod: { $regex: entryMethod, $options: "i" },
+  });
+};
+
+export const findMonitoringTests = async () => {
+  return await TestType.find({ isMonitoringRecommended: true });
+};
+
+export const findByDiscriminatorType = async (discriminatorType) => {
+  return await TestType.find({ discriminatorType: discriminatorType });
+};

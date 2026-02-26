@@ -1,18 +1,20 @@
-/**
- * Test Type Routes
- *
- * RESPONSIBILITY CLARIFICATION (Feb 26, 2026):
- * TestType API endpoints are managed by the Lab Operations Component (Test Catalog Module).
- * This Test Management Component does not expose TestType CRUD endpoints.
- *
- * For TestType API endpoints, see Lab Operations Component.
- *
- * This module maintains only:
- * - testType.model.js: Shared data model for integration purposes
- *
- * Integration consumers:
- * - Result Management: References TestType for discriminator selection
- * - Notification Management: References TestType for test information
- */
+import express from "express";
+import * as testController from "./test.controller.js";
 
-// No routes in this file - TestType API endpoints are managed by Lab Operations Component
+const router = express.Router();
+
+// CRUD Routes
+router.post("/", testController.createTestType);
+router.get("/", testController.getAllTestTypes);
+router.get("/:id", testController.getTestTypeById);
+router.put("/:id", testController.updateTestType);
+router.patch("/:id/soft-delete", testController.softDeleteTestType);
+router.delete("/:id", testController.hardDeleteTestType);
+
+// Filter Routes
+router.get("/category/:category", testController.getTestTypesByCategory);
+router.get("/method/form", testController.getFormBasedTests);
+router.get("/method/upload", testController.getUploadBasedTests);
+router.get("/monitoring/recommended", testController.getMonitoringTests);
+
+export default router;

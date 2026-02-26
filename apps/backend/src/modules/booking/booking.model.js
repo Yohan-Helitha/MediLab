@@ -5,7 +5,8 @@ const bookingSchema = new mongoose.Schema(
     // PATIENT INFORMATION
     patientProfileId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'PatientProfile',
+      // References Member (patient) documents by their MongoDB _id
+      ref: 'Member',
       required: true
     },
     patientNameSnapshot: {
@@ -25,7 +26,7 @@ const bookingSchema = new mongoose.Schema(
     },
     diagnosticTestId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'DiagnosticTest',
+      ref: 'TestType',
       required: true
     },
     testNameSnapshot: {
