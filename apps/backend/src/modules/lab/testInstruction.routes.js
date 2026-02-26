@@ -1,6 +1,11 @@
 import express from 'express';
 import * as testInstructionController from './testInstruction.controller.js';
-import { authenticate, checkRole } from '../auth/auth.middleware.js';
+import { authenticate, checkRole, handleValidationErrors } from '../auth/auth.middleware.js';
+import {
+	createTestInstructionValidation,
+	updateTestInstructionValidation,
+	testInstructionIdParamValidation,
+} from './testInstruction.validation.js';
 
 const router = express.Router();
 
@@ -9,6 +14,8 @@ router.post(
 	'/',
 	authenticate,
 	checkRole(['Staff']),
+	createTestInstructionValidation,
+	handleValidationErrors,
 	testInstructionController.createTestInstruction
 );
 router.get('/', testInstructionController.getAllTestInstructions);
@@ -20,12 +27,17 @@ router.put(
 	'/:id',
 	authenticate,
 	checkRole(['Staff']),
+	testInstructionIdParamValidation,
+	updateTestInstructionValidation,
+	handleValidationErrors,
 	testInstructionController.updateTestInstructions
 );
 router.delete(
 	'/:id',
 	authenticate,
 	checkRole(['Staff']),
+	testInstructionIdParamValidation,
+	handleValidationErrors,
 	testInstructionController.deleteTestInstructions
 );
 
