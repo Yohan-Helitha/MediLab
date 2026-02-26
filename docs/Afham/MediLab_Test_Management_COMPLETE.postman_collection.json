@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "test-management-complete-verified",
     "name": "MediLab - Test Management (Verified)",
-    "description": "Complete API documentation for Test Management Component - All endpoints verified against backend implementation.\n\n**Component Owner**: Afham\n**Created**: February 26, 2026\n**Base URL**: http://localhost:5000/api\n\n## Authentication Required\nAll 22 Test Management endpoints require JWT Bearer token authentication.\n\n### Login Endpoints:\n- **Patient Login**: POST /api/auth/patient/login\n- **Health Officer Login**: POST /api/auth/health-officer/login\n\n### Authorization:\n- **Patients**: View own released results, manage own subscriptions\n- **Health Officers**: Submit results, send notifications, view all data\n- **Admins**: All Health Officer permissions + permanent delete\n\n## Total Endpoints: 24\n- Authentication: 2 endpoints\n- TestResult Management: 10 endpoints  \n- Notification Management: 12 endpoints",
+    "description": "Complete API documentation for Test Management Component - All endpoints verified against backend implementation.\n\n**Component Owner**: Afham\n**Created**: February 26, 2026\n**Last Updated**: February 27, 2026\n**Base URL**: http://localhost:5000/api\n\n## Authentication Required\nAll endpoints require JWT Bearer token authentication except login endpoints.\n\n### Login Endpoints (Public):\n- **Patient Login**: POST /api/auth/patient/login\n- **Health Officer Login**: POST /api/auth/health-officer/login\n\n### Authorization:\n- **Patients**: View own released results, manage own subscriptions\n- **Health Officers**: Submit results, send notifications, view all data\n- **Admins**: All Health Officer permissions + permanent delete\n\n## Total Endpoints: 27\n- Authentication: 2 endpoints (public)\n- TestResult Management: 13 endpoints (includes Status History, Update Result, Permanent Delete)\n- Notification Management: 12 endpoints\n\n## Discriminator Pattern Support:\nSupports 8 test types with specialized fields: Blood Glucose, Hemoglobin, Blood Pressure, Pregnancy, X-Ray, ECG, Ultrasound, Automated Report.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -365,6 +365,64 @@
           "response": []
         },
         {
+          "name": "Get Status History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/:id/status-history",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "status-history"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient (own released) OR Health Officer (all)\n**Middleware**: authenticate\n**Validation**: idParamValidation\n\nGet the complete status change history for a specific test result.\n\n**Patient Access**:\n- Can only view if `result.patientProfileId === req.user.id`\n- Can only view if `result.currentStatus === 'released'`\n\n**Health Officer Access**:\n- Can view status history for any result regardless of status\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"resultId\": \"65f1234567890abcdef99999\",\n    \"bookingId\": \"65f1234567890abcdef22222\",\n    \"currentStatus\": \"released\",\n    \"statusHistory\": [\n      {\n        \"status\": \"sample_received\",\n        \"changedAt\": \"2026-02-26T08:30:00.000Z\",\n        \"changedBy\": {\n          \"_id\": \"...\",\n          \"fullName\": \"Dr. Jane Smith\"\n        }\n      },\n      {\n        \"status\": \"processing\",\n        \"changedAt\": \"2026-02-26T10:00:00.000Z\",\n        \"changedBy\": {\n          \"_id\": \"...\",\n          \"fullName\": \"Dr. Jane Smith\"\n        }\n      },\n      {\n        \"status\": \"released\",\n        \"changedAt\": \"2026-02-26T14:30:00.000Z\",\n        \"changedBy\": {\n          \"_id\": \"...\",\n          \"fullName\": \"Dr. John Doe\"\n        }\n      }\n    ]\n  }\n}\n```\n\n**Use Case**: Track test result lifecycle, audit trail, patient transparency"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Test Result",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observations\": \"Updated: Fasting glucose test - patient confirmed 12-hour fasting period.\",\n  \"glucoseLevel\": 92,\n  \"interpretation\": \"Normal fasting glucose level - revised after patient history confirmation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results/:id",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: updateResultValidation\n\nUpdate test result data to correct errors or add additional information. Protected fields cannot be modified.\n\n**Allowed Fields** (varies by discriminator):\n- `observations` (string, optional, max 1000 chars)\n- `testingPersonnelId` (MongoId, optional)\n- Discriminator-specific fields (e.g., glucoseLevel, interpretation, findings)\n\n**Protected Fields** (CANNOT be modified):\n- `patientProfileId` - Immutable patient reference\n- `bookingId` - Immutable booking reference\n- `testTypeId` - Immutable test type reference\n- `releasedAt` - Managed by status workflow\n- `_id`, `__t`, `createdAt` - System fields\n\n**PDF Regeneration**:\n- If discriminator-specific fields are changed (not just observations)\n- AND result status is 'released'\n- Old PDF is deleted and new PDF is generated automatically\n\n**Request Body Example** (Blood Glucose):\n```json\n{\n  \"observations\": \"Updated observations\",\n  \"glucoseLevel\": 92,\n  \"interpretation\": \"Revised interpretation\"\n}\n```\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result updated successfully. PDF regenerated.\",\n  \"result\": {...}\n}\n```\n\n**Use Cases**:\n- Correct data entry errors\n- Add missing interpretation notes\n- Update findings after consultation\n- Revise discriminator-specific values"
+          },
+          "response": []
+        },
+        {
           "name": "Delete Test Result (Soft)",
           "request": {
             "method": "DELETE",
@@ -394,6 +452,39 @@
               ]
             },
             "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: softDeleteValidation\n\nSoft delete a test result. Sets deleted flag but preserves data for audit trails.\n\n**Request Body**:\n- `deleteReason` (string, required): Reason for deletion\n\n**Note**: This is the recommended deletion method. For permanent deletion (Admin only), use DELETE /results/:id/permanent\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result deleted successfully\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Test Result (Permanent)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deleteReason\": \"Permanent deletion for demonstration purposes - admin cleanup\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/results/:id/permanent",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "permanent"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "65f1234567890abcdef99999"
+                }
+              ]
+            },
+            "description": "**Auth**: Admin only\n**Middleware**: authenticate + checkRole(['Admin'])\n**Validation**: hardDeleteValidation\n\nPermanently delete a test result from the database. This is irreversible and should only be used by administrators.\n\n**Request Body**:\n- `deleteReason` (string, required): Reason for permanent deletion (10-500 chars)\n\n**Automatic Actions**:\n- Deletes associated PDF file from file system\n- Reverts booking status to 'processing'\n- Permanently removes result from database (no soft delete flag)\n- Comprehensive audit logging before deletion\n\n**Use Cases**:\n- Data cleanup for test/demo purposes\n- Compliance with data retention policies\n- Correcting critical system errors\n\n**Security**:\n- Requires Admin role (most restrictive)\n- Logs full audit trail before deletion\n- Cannot be undone - use soft delete for regular operations\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result permanently deleted\"\n}\n```\n\n**Note**: For regular deletion operations, use soft delete (DELETE /results/:id) which preserves data for audit trails."
           },
           "response": []
         }

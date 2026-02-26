@@ -737,31 +737,38 @@ Stay healthy!
 
 ### Test Results
 
-- `POST /api/results/form` - Create and release result via form entry
-- `POST /api/results/upload` - Create and release result via file upload
-- `GET /api/results` - List results (role-based, with filters)
+- `POST /api/results` - Create and release result (form or upload)
+- `GET /api/results/patient/:patientId` - Get patient's test results
+- `GET /api/results/patient/:patientId/unviewed` - Get patient's unviewed results
+- `GET /api/results/booking/:bookingId` - Get result by booking
+- `GET /api/results/health-center/:healthCenterId` - Get results by health center
+- `GET /api/results/test-type/:testTypeId` - Get results by test type
 - `GET /api/results/:id` - Get single result details
-- `PUT /api/results/:id` - Update result
-- `DELETE /api/results/:id` - Delete result permanently
 - `GET /api/results/:id/download` - Download result PDF
-
-### Test Status
-
-- `PUT /api/results/:id/status` - Update test status
-- `GET /api/results/:id/status-history` - Get status history
+- `GET /api/results/:id/status-history` - Get status change history
+- `PUT /api/results/:id` - Update result data (Health Officer only)
+- `PATCH /api/results/:id/status` - Update test status
+- `PATCH /api/results/:id/mark-viewed` - Mark result as viewed (Patient)
+- `DELETE /api/results/:id` - Soft delete result (Health Officer) - Primary method
+- `DELETE /api/results/:id/permanent` - Hard delete result (Admin only)
 
 ### Notifications
 
-- `POST /api/notifications/send` - Manual notification trigger
-- `GET /api/notifications/logs` - Get notification logs (admin)
-- `GET /api/notifications/logs/:patientId` - Patient-specific logs
+- `POST /api/notifications/send/result-ready` - Send result ready notification
+- `POST /api/notifications/send/unviewed-reminder` - Send unviewed result reminder
+- `POST /api/notifications/send/routine-reminder` - Send routine checkup reminder
+- `POST /api/notifications/:id/resend` - Resend failed notification
+- `GET /api/notifications/patient/:patientId` - Get patient notification history
+- `GET /api/notifications/failed` - Get failed notifications (Health Officer)
+- `GET /api/notifications/:id` - Get notification by ID
 
-### Reminders
+### Reminder Subscriptions
 
-- `POST /api/reminders/subscribe` - Subscribe to routine reminders
-- `GET /api/reminders/subscriptions` - Get user's subscriptions
-- `DELETE /api/reminders/subscriptions/:id` - Unsubscribe
-- `POST /api/reminders/send` - Manual reminder send (admin/testing)
+- `POST /api/notifications/subscriptions` - Subscribe to routine reminders
+- `GET /api/notifications/subscriptions/patient/:patientId` - Get user's subscriptions
+- `GET /api/notifications/subscriptions/:id` - Get subscription by ID
+- `PUT /api/notifications/subscriptions/:id` - Update subscription
+- `DELETE /api/notifications/subscriptions/:id` - Unsubscribe
 
 ---
 
@@ -879,10 +886,14 @@ The following features are **NOT** included in this component:
 
 ✅ Create: Both form and upload methods working  
 ✅ Read: List and detail views with proper filtering  
-✅ Update: Result data and files can be corrected  
-✅ Delete: Permanent deletion with mandatory reason and confirmation
+✅ Update: Result data can be corrected (PUT /api/results/:id)  
+✅ Delete: Hybrid deletion with soft delete (primary) and hard delete (admin-only)
 
-### 8.4 Notifications
+### 8.4 Status Workflow
+
+✅ Status transitions follow defined rules (sample_received → processing → released)  
+✅ Status history tracked and viewable (GET /api/results/:id/status-history)  
+✅ Notifications automatically sent when result is released
 
 ✅ SMS sent via Twilio successfully  
 ✅ Email sent successfully  

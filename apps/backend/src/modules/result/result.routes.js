@@ -74,6 +74,14 @@ router.get(
   resultController.downloadTestResultPDF,
 );
 
+// Status history route - must come before generic /:id (Patient own released + Health Officer)
+router.get(
+  "/:id/status-history",
+  authenticate,
+  resultValidation.idParamValidation,
+  resultController.getStatusHistory,
+);
+
 // Generic ID route last to avoid conflicts (Patient own released + Health Officer all)
 router.get(
   "/:id",
@@ -83,6 +91,15 @@ router.get(
 );
 
 // Update Routes
+// Update result data (Health Officer only)
+router.put(
+  "/:id",
+  authenticate,
+  isHealthOfficer,
+  resultValidation.updateResultValidation,
+  resultController.updateTestResult,
+);
+
 // Update status (Health Officer only)
 router.patch(
   "/:id/status",

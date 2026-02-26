@@ -641,6 +641,57 @@ export const resultQueryFiltersValidation = [
     .withMessage("Page must be at least 1"),
 ];
 
+// Validation for updating test result data
+export const updateResultValidation = [
+  param("id").isMongoId().withMessage("Invalid test result ID format"),
+
+  body("observations")
+    .optional()
+    .isString()
+    .withMessage("Observations must be a string")
+    .isLength({ max: 1000 })
+    .withMessage("Observations cannot exceed 1000 characters"),
+
+  body("testingPersonnelId")
+    .optional()
+    .isMongoId()
+    .withMessage("Invalid testing personnel ID format"),
+
+  // Note: Discriminator-specific fields can be updated
+  // Validation for specific values will be done in service layer
+  // Protected fields (patient, booking, testType, releasedAt) will be filtered out in service
+
+  // Prevent modification of immutable fields
+  body("patientProfileId")
+    .not()
+    .exists()
+    .withMessage("Patient profile ID cannot be modified"),
+
+  body("bookingId").not().exists().withMessage("Booking ID cannot be modified"),
+
+  body("testTypeId")
+    .not()
+    .exists()
+    .withMessage("Test type ID cannot be modified"),
+
+  body("releasedAt")
+    .not()
+    .exists()
+    .withMessage("Release date cannot be modified"),
+
+  body("_id").not().exists().withMessage("ID cannot be modified"),
+
+  body("__t")
+    .not()
+    .exists()
+    .withMessage("Discriminator type cannot be modified"),
+
+  body("createdAt")
+    .not()
+    .exists()
+    .withMessage("Creation date cannot be modified"),
+];
+
 // Validation for soft delete (primary method)
 export const softDeleteValidation = [
   param("id").isMongoId().withMessage("Invalid test result ID format"),

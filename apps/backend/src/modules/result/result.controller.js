@@ -245,6 +245,107 @@ export const updateTestResultStatus = async (req, res, next) => {
 };
 
 /**
+ * Update test result data (Health Officer only)
+ * PUT /api/results/:id
+ * Body: { result data fields, observations, etc. }
+ */
+export const updateTestResult = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const result = await resultService.updateTestResult(
+      req.params.id,
+      req.body,
+    );
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Test result updated successfully. PDF regenerated if form data changed.",
+      data: result,
+    });
+  } catch (error) {
+    if (error.statusCode === 404) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Get status history for a test result
+ * GET /api/results/:id/status-history
+ */
+export const getStatusHistory = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const result = await resultService.findById(req.params.id);
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: "Test result not found",
+      });
+    }
+
+    // AUTHORIZATION: Patients can only view their own results' history
+    if (req.user.userType === "patient") {
+      if (result.patientProfileId.toString() !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. You can only view your own test results.",
+        });
+      }
+
+      // Patients can only view history of released results
+      if (result.currentStatus !== "released") {
+        return res.status(403).json({
+          success: false,
+          message: "This result has not been released yet.",
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Status history retrieved successfully",
+      data: {
+        resultId: result._id,
+        bookingId: result.bookingId,
+        currentStatus: result.currentStatus,
+        statusHistory: result.statusHistory,
+      },
+    });
+  } catch (error) {
+    if (error.statusCode === 404) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
  * Mark test result as viewed by user
  * PATCH /api/results/:id/mark-viewed
  * Body: { userId }

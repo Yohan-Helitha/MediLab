@@ -197,6 +197,98 @@ export const updateResultStatus = async (id, status, changedBy) => {
 };
 
 /**
+ * Update test result data (excluding patient, booking, testType)
+ * @param {String} id - Test result ID
+ * @param {Object} updateData - Fields to update
+ * @returns {Promise<Object>} Updated test result
+ */
+export const updateTestResult = async (id, updateData) => {
+  // Find result (excluding soft-deleted)
+  const result = await TestResult.findOne({ _id: id, isDeleted: false })
+    .populate("patientProfileId", "fullName dateOfBirth gender contactNumber")
+    .populate("testTypeId", "name code")
+    .populate(
+      "healthCenterId",
+      "name addressLine1 addressLine2 district province phoneNumber email",
+    )
+    .populate("testingPersonnelId", "fullName name")
+    .populate("bookingId", "bookingDate");
+
+  if (!result) {
+    const error = new Error("Test result not found or has been deleted");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Prevent modification of immutable fields
+  const protectedFields = [
+    "patientProfileId",
+    "bookingId",
+    "testTypeId",
+    "releasedAt",
+    "_id",
+    "__t",
+    "createdAt",
+  ];
+  protectedFields.forEach((field) => delete updateData[field]);
+
+  // Track if form data changed (for PDF regeneration)
+  let formDataChanged = false;
+
+  // Update allowed fields
+  Object.keys(updateData).forEach((key) => {
+    if (updateData[key] !== undefined && !protectedFields.includes(key)) {
+      // Check if this is a discriminator-specific field (indicates form data change)
+      if (
+        ![
+          "observations",
+          "currentStatus",
+          "statusHistory",
+          "viewedBy",
+          "enteredBy",
+          "testingPersonnelId",
+          "isDeleted",
+          "deletedAt",
+          "deletedBy",
+          "deleteReason",
+        ].includes(key)
+      ) {
+        formDataChanged = true;
+      }
+      result[key] = updateData[key];
+    }
+  });
+
+  // Regenerate PDF if form data changed and result is released
+  if (formDataChanged && result.currentStatus === "released") {
+    try {
+      // Delete old PDF if it exists
+      if (
+        result.generatedReportPath &&
+        fs.existsSync(result.generatedReportPath)
+      ) {
+        fs.unlinkSync(result.generatedReportPath);
+      }
+
+      // Generate new PDF
+      const pdfPath = await generateTestResultPDF(result);
+      result.generatedReportPath = pdfPath;
+      console.log(
+        "[Result Service] PDF regenerated after data update:",
+        pdfPath,
+      );
+    } catch (pdfError) {
+      console.error("[Result Service] Error regenerating PDF:", pdfError);
+      // Continue without PDF - don't block update
+    }
+  }
+
+  await result.save();
+
+  return result;
+};
+
+/**
  * Mark result as viewed by a user
  * @param {String} id - Test result ID
  * @param {String} userId - User ID who viewed the result
