@@ -1,15 +1,36 @@
 import express from "express";
 import * as testController from "./test.controller.js";
+import { authenticate, checkRole } from "../auth/auth.middleware.js";
 
 const router = express.Router();
 
-// CRUD Routes
-router.post("/", testController.createTestType);
+// CRUD Routes (protected for staff)
+router.post(
+	"/",
+	authenticate,
+	checkRole(["Staff"]),
+	testController.createTestType
+);
 router.get("/", testController.getAllTestTypes);
 router.get("/:id", testController.getTestTypeById);
-router.put("/:id", testController.updateTestType);
-router.patch("/:id/soft-delete", testController.softDeleteTestType);
-router.delete("/:id", testController.hardDeleteTestType);
+router.put(
+	"/:id",
+	authenticate,
+	checkRole(["Staff"]),
+	testController.updateTestType
+);
+router.patch(
+	"/:id/soft-delete",
+	authenticate,
+	checkRole(["Staff"]),
+	testController.softDeleteTestType
+);
+router.delete(
+	"/:id",
+	authenticate,
+	checkRole(["Staff"]),
+	testController.hardDeleteTestType
+);
 
 // Filter Routes
 router.get("/category/:category", testController.getTestTypesByCategory);
