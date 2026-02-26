@@ -1,49 +1,18 @@
-import express from "express";
-import * as testController from "./test.controller.js";
-import * as testValidation from "./test.validation.js";
+/**
+ * Test Type Routes
+ *
+ * RESPONSIBILITY CLARIFICATION (Feb 26, 2026):
+ * TestType API endpoints are managed by the Lab Operations Component (Test Catalog Module).
+ * This Test Management Component does not expose TestType CRUD endpoints.
+ *
+ * For TestType API endpoints, see Lab Operations Component.
+ *
+ * This module maintains only:
+ * - testType.model.js: Shared data model for integration purposes
+ *
+ * Integration consumers:
+ * - Result Management: References TestType for discriminator selection
+ * - Notification Management: References TestType for test information
+ */
 
-const router = express.Router();
-
-// CRUD Routes
-router.post(
-  "/",
-  testValidation.createTestTypeValidation,
-  testController.createTestType,
-);
-
-router.get(
-  "/",
-  testValidation.queryFiltersValidation,
-  testController.getAllTestTypes,
-);
-
-router.get(
-  "/:id",
-  testValidation.idParamValidation,
-  testController.getTestTypeById,
-);
-
-router.put(
-  "/:id",
-  testValidation.updateTestTypeValidation,
-  testController.updateTestType,
-);
-
-router.delete(
-  "/:id",
-  testValidation.idParamValidation,
-  testController.deleteTestType,
-);
-
-// Filter Routes
-router.get(
-  "/category/:category",
-  testValidation.categoryParamValidation,
-  testController.getTestTypesByCategory,
-);
-
-router.get("/method/form", testController.getFormBasedTests);
-router.get("/method/upload", testController.getUploadBasedTests);
-router.get("/monitoring/recommended", testController.getMonitoringTests);
-
-export default router;
+// No routes in this file - TestType API endpoints are managed by Lab Operations Component

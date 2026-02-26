@@ -28,7 +28,11 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 
 - **Booking/Appointment Module:** Retrieves booking details, patient information
 - **Patient Management Module:** Accesses patient profiles, contact information
-- **Test Catalog Module:** Retrieves test type configurations, form schemas, reference ranges
+- **Test Catalog Module (Lab Operations Component):** Manages TestType CRUD operations and configurations. This component maintains `testType.model.js` as a shared data model for integration purposes only.
+  - **Integration Usage:**
+    - Test Result Management: References TestType model for discriminator selection and form schema lookup
+    - Notification Management: References TestType model for test information in notifications
+  - **Responsibility:** TestType CRUD operations (create, read, update, delete) are managed by the Lab Operations Component
 - **Health Center Module:** Accesses center details for report auto-population
 - **Third-Party APIs:** Twilio (SMS), SendGrid/NodeMailer (Email)
 
@@ -57,8 +61,9 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 
 - Full access to all features
 - Can view system-wide notification logs
-- Can configure test type settings
 - Can manage reminder configurations
+
+**Note:** Test type configuration is managed by the Lab Operations Component (Test Catalog Module).
 
 ---
 
@@ -791,22 +796,32 @@ Stay healthy!
 - Query patient details by ID
 - Verify patient consent for notifications
 
-### 6.3 Test Catalog Module
+### 6.3 Test Catalog Module (Lab Operations Component)
 
-**Required Data:**
+**Important:** This Test Management Component does NOT manage TestType CRUD operations. TestType management is handled by the Lab Operations Component. This component only **reads** TestType data through the shared `testType.model.js` for integration purposes.
+
+**Required Data (Read-Only Access):**
 
 - Test name, category
 - Test type configuration (form-based or upload)
+- Discriminator type (for result model selection)
 - Form schema with field definitions
 - Reference ranges
 - Reminder configuration (frequency, eligibility)
 - Report template path
 
-**Required Functionality:**
+**Required Functionality (Provided by Lab Operations Component):**
 
-- Query test type by ID
+- Query test type by ID (for result submission and validation)
 - Retrieve form schema for dynamic form generation
-- Query tests supporting routine monitoring
+- Query tests supporting routine monitoring (for reminder subscriptions)
+- Query test type metadata (for notifications and reports)
+
+**Integration Pattern:**
+
+- This component imports `testType.model.js` as a shared resource
+- All TestType CRUD endpoints (`/api/tests/*`) are managed by Lab Operations Component
+- This component only performs read queries on TestType collection
 
 ### 6.4 Health Center Module
 

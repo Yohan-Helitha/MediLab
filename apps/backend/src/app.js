@@ -23,11 +23,10 @@ app.get("/api/health", (req, res) => {
 // app.use("/api/labs", labRoutes);
 
 // Test Management Component Routes
-import testRoutes from "./modules/test/test.routes.js";
+// Note: TestType CRUD endpoints (/api/tests) are managed by Lab Operations Component
 import resultRoutes from "./modules/result/result.routes.js";
 import notificationRoutes from "./modules/notification/notification.routes.js";
 
-app.use("/api/tests", testRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/notifications", notificationRoutes);
 
