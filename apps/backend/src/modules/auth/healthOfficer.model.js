@@ -35,7 +35,7 @@ const healthOfficerSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['MOH', 'PHI', 'Nurse', 'Admin', 'Lab_Technician', 'Doctor'],
+      enum: ['MOH', 'PHI', 'Nurse', 'Admin', 'Lab_Technician', 'Doctor','Staff'],
       required: true
     },
 
