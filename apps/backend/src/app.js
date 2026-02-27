@@ -26,9 +26,13 @@ import medicationRoutes from "./modules/patient/routes/medicationRoutes.js";
 import pastMedicalHistoryRoutes from "./modules/patient/routes/pastMedicalHistoryRoutes.js";
 import emergencyContactRoutes from "./modules/patient/routes/emergencyContactRoutes.js";
 import familyMemberRoutes from "./modules/patient/routes/familyMemberRoutes.js";
-import familyRelationshipRoutes from "./modules/patient/routes/familyRelationshipRoutes.js";	
+import familyRelationshipRoutes from "./modules/patient/routes/familyRelationshipRoutes.js";
 import visitRoutes from "./modules/patient/routes/visitRoutes.js";
 import referralRoutes from "./modules/patient/routes/referralRoutes.js";
+
+// Test Management Component routes
+import resultRoutes from "./modules/result/result.routes.js";
+import notificationRoutes from "./modules/notification/notification.routes.js";
 
 const app = express();
 
@@ -46,18 +50,16 @@ app.use("/api/test-instructions", testInstructionRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
-	res.json({ status: "ok", env: config.nodeEnv });
+  res.json({ status: "ok", env: config.nodeEnv });
 });
 
 // Auth module routes
-
 app.use("/api/auth", authRoutes);
 
-
+// Consultation module (AI Doctor) - TODO
 //app.use("/api/consultation", consultationRoutes);
 
-
-//patient module - api routes
+// Patient module - api routes
 app.use("/api/members", memberRoutes);
 app.use("/api/households", householdRoutes);
 app.use("/api/health-details", healthDetailsRoutes);
@@ -71,16 +73,19 @@ app.use("/api/family-relationships", familyRelationshipRoutes);
 app.use("/api/visits", visitRoutes);
 app.use("/api/referrals", referralRoutes);
 
-// TODO: mount other feature routes here, e.g.
-// TODO: mount feature routes here, e.g.
-// register booking routes
-
+// Booking and Inventory module routes
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/inventory", inventoryRoutes);
 
+// Test Management Component Routes
+// Note: TestType CRUD endpoints (/api/test-types) are managed by Lab Operations Component (Arani)
+// This component manages: Test Results (/api/results) and Notifications (/api/notifications)
+app.use("/api/results", resultRoutes);
+app.use("/api/notifications", notificationRoutes);
 
-
-// import labRoutes from "./modules/lab/lab.routes.js";
-// app.use("/api/labs", labRoutes);
+// Error handling (must be after all routes)
+import { errorHandler, notFoundHandler } from "./core/error-handler.js";
+app.use(notFoundHandler); // 404 handler
+app.use(errorHandler); // Global error handler
 
 export default app;

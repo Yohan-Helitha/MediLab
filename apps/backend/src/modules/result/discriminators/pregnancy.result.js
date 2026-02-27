@@ -11,8 +11,8 @@ const pregnancyTestResultSchema = new Schema({
     required: true,
   },
 
-  // Test Type
-  testType: {
+  // Pregnancy Test Sub-Type (renamed from testType to avoid base schema conflict)
+  pregnancyTestType: {
     type: String,
     enum: ["Urine hCG", "Serum hCG (Qualitative)", "Serum hCG (Quantitative)"],
     required: true,
@@ -23,7 +23,7 @@ const pregnancyTestResultSchema = new Schema({
     type: Number,
     min: 0,
     required: function () {
-      return this.testType === "Serum hCG (Quantitative)";
+      return this.pregnancyTestType === "Serum hCG (Quantitative)";
     },
   },
 
@@ -32,7 +32,7 @@ const pregnancyTestResultSchema = new Schema({
     enum: ["mIU/mL", "IU/L"],
     default: "mIU/mL",
     required: function () {
-      return this.testType === "Serum hCG (Quantitative)";
+      return this.pregnancyTestType === "Serum hCG (Quantitative)";
     },
   },
 

@@ -114,10 +114,9 @@ const testTypeSchema = new mongoose.Schema(
   },
 );
 
-// Indexes
-testTypeSchema.index({ code: 1 }, { unique: true });
+// Indexes (code and isActive already have unique/index in schema, so only add additional ones)
 testTypeSchema.index({ discriminatorType: 1 });
-testTypeSchema.index({ isActive: 1 });
+testTypeSchema.index({ category: 1, isActive: 1 }); // Compound index for filtered queries
 
 const TestType = mongoose.model("TestType", testTypeSchema);
 

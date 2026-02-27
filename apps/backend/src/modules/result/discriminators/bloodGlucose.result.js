@@ -4,8 +4,8 @@ import TestResult from "../testResult.model.js";
 const { Schema } = mongoose;
 
 const bloodGlucoseResultSchema = new Schema({
-  // Test Type
-  testType: {
+  // Glucose Test Sub-Type (renamed from testType to avoid base schema conflict)
+  glucoseTestType: {
     type: String,
     enum: ["Fasting", "Random", "Postprandial", "HbA1c"],
     required: true,
@@ -52,7 +52,7 @@ const bloodGlucoseResultSchema = new Schema({
     min: 0,
     max: 24,
     required: function () {
-      return this.testType === "Fasting";
+      return this.glucoseTestType === "Fasting";
     },
   },
 

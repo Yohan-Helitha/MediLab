@@ -1,6 +1,6 @@
 # MongoDB Database Schemas
 
-## Lab Operations & Communication Management Module
+## Test Management & Communication Module
 
 **Project:** Rural Health Diagnostic Test Management System  
 **Date:** February 12, 2026  
@@ -11,7 +11,7 @@
 
 ## Schema Overview
 
-This document defines the MongoDB schemas required for the Lab Operations & Communication Management Module.
+This document defines the MongoDB schemas required for the Test Management & Communication Module.
 
 ### Design Pattern: Mongoose Discriminators
 
