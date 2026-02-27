@@ -16,41 +16,60 @@ import {
   hardDeleteBookingController,
 } from './booking.controller.js';
 import { createBookingValidation, updateBookingValidation } from './booking.validation.js';
-import { protect } from '../middleware/auth.middleware.js';
+// Use the real JWT-based auth middleware
+import {
+  authenticate,
+  isPatient,
+  isHealthOfficer,
+  checkRole,
+} from '../auth/auth.middleware.js';
 
 const router = express.Router();
+
+// Local alias so existing naming (`protect`) still makes sense
+const protect = authenticate;
 
 /**
  * @route   POST /api/bookings
  * @desc    Create new booking
- * @access  Patient / Staff / Health Officer (authenticated)
+ * @access  Patient (authenticated)
  */
 router.post(
   '/',
-  protect,                   // authentication middleware
-  createBookingValidation,   // validation middleware
-  createBookingController    // controller
+  protect,                  // JWT authentication
+  isPatient,                // only patients can create bookings
+  createBookingValidation,  // validation middleware
+  createBookingController   // controller
 );
 
-// List bookings
-router.get('/', protect, getBookings);
+// List all bookings - restricted to health officers
+router.get('/', protect, isHealthOfficer, getBookings);
 
 // Filtered booking fetches
+// By patient: allow any authenticated user for now
 router.get('/patient/:patientProfileId', protect, getBookingByPatientId);
-router.get('/center/:healthCenterId', protect, getBookingByHealthCenterId);
-router.get('/date/:bookingDate', protect, getBookingByDate);
-router.get('/createdBy/:createdBy', protect, getBookingByCreatedBy);
-router.get('/status/:status', protect, getBookingByStatus);
-router.get('/type/:type', protect, getBookingByType);
 
-// Update booking
-router.put('/:id', protect, updateBookingValidation, updateBookingController);
+// Other filters: restricted to health officers
+router.get('/center/:healthCenterId', protect, isHealthOfficer, getBookingByHealthCenterId);
+router.get('/date/:bookingDate', protect, isHealthOfficer, getBookingByDate);
+router.get('/createdBy/:createdBy', protect, isHealthOfficer, getBookingByCreatedBy);
+router.get('/status/:status', protect, isHealthOfficer, getBookingByStatus);
+router.get('/type/:type', protect, isHealthOfficer, getBookingByType);
 
-// Soft delete booking
-router.delete('/:id', protect, softDeleteBookingController);
+// Update booking - restricted to health officers
+router.put('/:id', protect, isHealthOfficer, updateBookingValidation, updateBookingController);
 
-// Hard delete booking
-router.delete('/:id/hard', protect, hardDeleteBookingController);
+// Soft delete booking - restricted to health officers
+router.delete('/:id', protect, isHealthOfficer, softDeleteBookingController);
+
+// Hard delete booking - restricted to admin health officers
+router.delete(
+  '/:id/hard',
+  protect,
+  isHealthOfficer,
+  checkRole(['Admin', 'ADMIN']),
+  hardDeleteBookingController
+);
 
 export default router;
 
