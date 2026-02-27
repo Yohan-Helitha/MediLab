@@ -1,6 +1,6 @@
 import express from "express";
 import * as testController from "./test.controller.js";
-import { authenticate, checkRole, handleValidationErrors } from "../auth/auth.middleware.js";
+import { authenticate, isStaff, handleValidationErrors } from "../auth/auth.middleware.js";
 import {
 	createTestTypeValidation,
 	updateTestTypeValidation,
@@ -13,7 +13,7 @@ const router = express.Router();
 router.post(
 	"/",
 	authenticate,
-	checkRole(["Staff"]),
+	isStaff,
 	createTestTypeValidation,
 	handleValidationErrors,
 	testController.createTestType
@@ -23,7 +23,7 @@ router.get("/:id", testController.getTestTypeById);
 router.put(
 	"/:id",
 	authenticate,
-	checkRole(["Staff"]),
+	isStaff,
 	idParamValidation,
 	updateTestTypeValidation,
 	handleValidationErrors,
@@ -32,7 +32,7 @@ router.put(
 router.patch(
 	"/:id/soft-delete",
 	authenticate,
-	checkRole(["Staff"]),
+	isStaff,
 	idParamValidation,
 	handleValidationErrors,
 	testController.softDeleteTestType
@@ -40,7 +40,7 @@ router.patch(
 router.delete(
 	"/:id",
 	authenticate,
-	checkRole(["Staff"]),
+	isStaff,
 	idParamValidation,
 	handleValidationErrors,
 	testController.hardDeleteTestType

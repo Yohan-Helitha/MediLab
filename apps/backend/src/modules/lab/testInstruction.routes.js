@@ -1,6 +1,6 @@
 import express from 'express';
 import * as testInstructionController from './testInstruction.controller.js';
-import { authenticate, checkRole, handleValidationErrors } from '../auth/auth.middleware.js';
+import { authenticate, isStaff, handleValidationErrors } from '../auth/auth.middleware.js';
 import {
 	createTestInstructionValidation,
 	updateTestInstructionValidation,
@@ -13,20 +13,20 @@ const router = express.Router();
 router.post(
 	'/',
 	authenticate,
-	checkRole(['Staff']),
+	isStaff,
 	createTestInstructionValidation,
 	handleValidationErrors,
 	testInstructionController.createTestInstruction
 );
 router.get('/', testInstructionController.getAllTestInstructions);
-router.get('/:id', testInstructionController.getTestInstructionById);
 router.get('/test-type/:testTypeId', testInstructionController.getTestInstructionByTestTypeId);
 router.get('/diagnostic-test/:diagnosticTestId', testInstructionController.getTestInstructionByDiagnosticTestId);
 router.get('/language/:testTypeId', testInstructionController.getTestInstructionByLanguage);
+router.get('/:id', testInstructionController.getTestInstructionById);
 router.put(
 	'/:id',
 	authenticate,
-	checkRole(['Staff']),
+	isStaff,
 	testInstructionIdParamValidation,
 	updateTestInstructionValidation,
 	handleValidationErrors,
@@ -35,7 +35,7 @@ router.put(
 router.delete(
 	'/:id',
 	authenticate,
-	checkRole(['Staff']),
+	isStaff,
 	testInstructionIdParamValidation,
 	handleValidationErrors,
 	testInstructionController.deleteTestInstructions

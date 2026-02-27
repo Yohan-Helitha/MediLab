@@ -1,7 +1,8 @@
 import express from 'express';
 import * as labTestController from './labTest.controller.js';
-import { authenticate, checkRole, handleValidationErrors } from '../auth/auth.middleware.js';
+import { authenticate, isStaff, handleValidationErrors } from '../auth/auth.middleware.js';
 import {
+	createLabTestValidation,
 	updateLabTestStatusValidation,
 	labIdParamValidation,
 	labTestIdParamValidation,
@@ -9,11 +10,21 @@ import {
 
 const router = express.Router();
 
+// Create a lab-specific test (assign a diagnostic test to a lab)
+router.post(
+	'/',
+	authenticate,
+	isStaff,
+	createLabTestValidation,
+	handleValidationErrors,
+	labTestController.createLabTest
+);
+
 // Only staff can update lab test availability status
 router.patch(
 	'/:id/status',
 	authenticate,
-	checkRole(['Staff']),
+	isStaff,
 	labTestIdParamValidation,
 	updateLabTestStatusValidation,
 	handleValidationErrors,

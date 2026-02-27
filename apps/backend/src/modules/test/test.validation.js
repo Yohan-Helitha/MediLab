@@ -18,8 +18,11 @@ export const createTestTypeValidation = [
     .isLength({ min: 3, max: 50 })
     .withMessage("Category must be between 3 and 50 characters"),
   body("entryMethod")
-    .isIn(["Form", "Upload"])
-    .withMessage("entryMethod must be either 'Form' or 'Upload'"),
+    .isString()
+    .withMessage("entryMethod must be a string")
+    .customSanitizer((v) => (typeof v === "string" ? v.toLowerCase() : v))
+    .isIn(["form", "upload"])
+    .withMessage("entryMethod must be either 'form' or 'upload'"),
   body("discriminatorType")
     .isString()
     .withMessage("discriminatorType must be a string")
@@ -69,8 +72,11 @@ export const updateTestTypeValidation = [
     .withMessage("Category must be between 3 and 50 characters"),
   body("entryMethod")
     .optional()
-    .isIn(["Form", "Upload"])
-    .withMessage("entryMethod must be either 'Form' or 'Upload'"),
+    .isString()
+    .withMessage("entryMethod must be a string")
+    .customSanitizer((v) => (typeof v === "string" ? v.toLowerCase() : v))
+    .isIn(["form", "upload"])
+    .withMessage("entryMethod must be either 'form' or 'upload'"),
   body("discriminatorType")
     .optional()
     .isString()

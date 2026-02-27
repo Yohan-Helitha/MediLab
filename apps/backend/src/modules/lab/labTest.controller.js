@@ -1,5 +1,20 @@
 import * as LabTestService from './labTest.service.js';
 
+export const createLabTest = async (req, res, next) => {
+    try {
+        const labTest = await LabTestService.createLabTest(req.body);
+        res.status(201).json(labTest);
+    } catch (error) {
+        // Handle duplicate (labId, diagnosticTestId) constraint violations gracefully
+        if (error.code === 11000) {
+            return res.status(400).json({
+                error: 'This test is already assigned to this lab',
+            });
+        }
+        res.status(400).json({ error: error.message });
+    }
+};
+
 export const updateLabTestStatus = async (req, res, next) => {
     try {
         const labTest = await LabTestService.updateStatus(req.params.id, req.body.status);
