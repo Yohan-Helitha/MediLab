@@ -11,6 +11,13 @@ async function start() {
     // Initialize scheduled notification jobs
     await setupScheduledJobs();
 
+    // Start HTTP server
+    const server = app.listen(config.port, () => {
+      console.log(`[Server] Listening on http://localhost:${config.port}`);
+      console.log(`[Server] Environment: ${config.nodeEnv}`);
+      console.log(`[Server] Press Ctrl+C to stop\n`);
+    });
+
     const shutdown = (signal) => {
       console.log(`[Server] Received ${signal}. Shutting down gracefully...`);
       server.close(() => {

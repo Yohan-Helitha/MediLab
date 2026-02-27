@@ -40,7 +40,7 @@ export const createTestResult = async (discriminatorType, resultData) => {
   // Create status history entry
   const statusHistory = [
     {
-      status: resultData.currentStatus || "released",
+      status: resultData.currentStatus || "pending",
       changedBy: resultData.enteredBy,
       changedAt: new Date(),
     },
@@ -62,13 +62,13 @@ export const createTestResult = async (discriminatorType, resultData) => {
  */
 export const findTestResultById = async (id) => {
   const result = await TestResult.findOne({ _id: id, isDeleted: false })
-    .populate("patientProfileId", "firstName lastName contactNumber")
+    .populate("patientProfileId", "full_name contact_number")
     .populate("testTypeId", "name code category discriminatorType")
     .populate("healthCenterId", "name location")
     .populate("bookingId")
-    .populate("enteredBy", "firstName lastName")
-    .populate("statusHistory.changedBy", "firstName lastName")
-    .populate("viewedBy.userId", "firstName lastName");
+    .populate("enteredBy", "fullName")
+    .populate("statusHistory.changedBy", "fullName")
+    .populate("viewedBy.userId", "full_name");
 
   if (!result) {
     const error = new Error("Test result not found or has been deleted");
@@ -129,10 +129,10 @@ export const findResultsByPatient = async (patientProfileId, filters = {}) => {
  */
 export const findResultByBooking = async (bookingId) => {
   const result = await TestResult.findOne({ bookingId, isDeleted: false })
-    .populate("patientProfileId", "firstName lastName contactNumber")
+    .populate("patientProfileId", "full_name contact_number")
     .populate("testTypeId", "name code category discriminatorType")
     .populate("healthCenterId", "name location")
-    .populate("enteredBy", "firstName lastName");
+    .populate("enteredBy", "fullName");
 
   if (!result) {
     const error = new Error(
@@ -148,13 +148,16 @@ export const findResultByBooking = async (bookingId) => {
 /**
  * Update test result status and add to status history
  * @param {String} id - Test result ID
- * @param {String} status - New status (sample_received, processing, released)
+ * @param {String} status - New status (pending, released)
  * @param {String} changedBy - User ID making the change
  * @returns {Promise<Object>} Updated test result
  */
 export const updateResultStatus = async (id, status, changedBy) => {
   const result = await TestResult.findOne({ _id: id, isDeleted: false })
-    .populate("patientProfileId", "fullName dateOfBirth gender contactNumber")
+    .populate(
+      "patientProfileId",
+      "full_name date_of_birth gender contact_number",
+    )
     .populate("testTypeId", "name code")
     .populate(
       "healthCenterId",
@@ -179,12 +182,16 @@ export const updateResultStatus = async (id, status, changedBy) => {
     changedAt: new Date(),
   });
 
+  // Set releasedAt timestamp when status changes to released
+  if (status === "released") {
+    result.releasedAt = new Date();
+  }
+
   // Generate PDF report when status is released
   if (status === "released" && !result.generatedReportPath) {
     try {
       const pdfPath = await generateTestResultPDF(result);
       result.generatedReportPath = pdfPath;
-      result.releasedAt = new Date();
     } catch (pdfError) {
       console.error("Error generating PDF report:", pdfError);
       // Continue without PDF - don't block status update
@@ -205,7 +212,10 @@ export const updateResultStatus = async (id, status, changedBy) => {
 export const updateTestResult = async (id, updateData) => {
   // Find result (excluding soft-deleted)
   const result = await TestResult.findOne({ _id: id, isDeleted: false })
-    .populate("patientProfileId", "fullName dateOfBirth gender contactNumber")
+    .populate(
+      "patientProfileId",
+      "full_name date_of_birth gender contact_number",
+    )
     .populate("testTypeId", "name code")
     .populate(
       "healthCenterId",
@@ -259,6 +269,9 @@ export const updateTestResult = async (id, updateData) => {
     }
   });
 
+  // Save changes first to ensure discriminator fields are persisted
+  await result.save();
+
   // Regenerate PDF if form data changed and result is released
   if (formDataChanged && result.currentStatus === "released") {
     try {
@@ -270,9 +283,27 @@ export const updateTestResult = async (id, updateData) => {
         fs.unlinkSync(result.generatedReportPath);
       }
 
+      // Fetch the saved result with all populated fields for PDF generation
+      const resultForPdf = await TestResult.findById(result._id)
+        .populate(
+          "patientProfileId",
+          "full_name date_of_birth gender contact_number",
+        )
+        .populate("testTypeId", "name code")
+        .populate(
+          "healthCenterId",
+          "name addressLine1 addressLine2 district province phoneNumber email",
+        )
+        .populate("testingPersonnelId", "fullName name")
+        .populate("bookingId", "bookingDate");
+
       // Generate new PDF
-      const pdfPath = await generateTestResultPDF(result);
+      const pdfPath = await generateTestResultPDF(resultForPdf);
       result.generatedReportPath = pdfPath;
+
+      // Save again with the new PDF path
+      await result.save();
+
       console.log(
         "[Result Service] PDF regenerated after data update:",
         pdfPath,
@@ -282,8 +313,6 @@ export const updateTestResult = async (id, updateData) => {
       // Continue without PDF - don't block update
     }
   }
-
-  await result.save();
 
   return result;
 };
@@ -325,13 +354,16 @@ export const addViewedByEntry = async (id, userId) => {
  * @returns {Promise<Array>} Array of unviewed test results
  */
 export const findUnviewedResultsByPatient = async (patientProfileId) => {
-  // Find results where the patient hasn't viewed yet
-  // This would typically check if the patient's user ID is in viewedBy array
+  // Find results where the patient hasn't viewed yet (viewedBy array doesn't contain patient ID)
   const results = await TestResult.find({
     patientProfileId,
     isDeleted: false, // Exclude soft-deleted results
-    // You might need to get the user ID from patientProfileId
-    // For now, we'll return all results and filter in controller if needed
+    currentStatus: "released", // Only released results can be viewed
+    $or: [
+      { viewedBy: { $exists: false } }, // viewedBy field doesn't exist
+      { viewedBy: { $size: 0 } }, // viewedBy array is empty
+      { "viewedBy.userId": { $ne: patientProfileId } }, // Patient ID not in viewedBy array
+    ],
   })
     .populate("testTypeId", "name code category")
     .populate("healthCenterId", "name")
@@ -377,9 +409,9 @@ export const findResultsByHealthCenter = async (
   const skip = (page - 1) * limit;
 
   const results = await TestResult.find(query)
-    .populate("patientProfileId", "firstName lastName")
+    .populate("patientProfileId", "full_name")
     .populate("testTypeId", "name code category")
-    .populate("enteredBy", "firstName lastName")
+    .populate("enteredBy", "fullName")
     .sort({ releasedAt: -1 })
     .limit(limit)
     .skip(skip);
@@ -394,7 +426,7 @@ export const findResultsByHealthCenter = async (
  */
 export const findResultsByTestType = async (testTypeId) => {
   const results = await TestResult.find({ testTypeId, isDeleted: false })
-    .populate("patientProfileId", "firstName lastName")
+    .populate("patientProfileId", "full_name")
     .populate("healthCenterId", "name")
     .sort({ releasedAt: -1 })
     .limit(100);

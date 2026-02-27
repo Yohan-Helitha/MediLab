@@ -3,6 +3,7 @@
 
 import { validationResult } from "express-validator";
 import * as notificationService from "./notification.service.js";
+import TestResult from "../result/testResult.model.js";
 
 // ===== NOTIFICATION LOG OPERATIONS =====
 
@@ -22,16 +23,44 @@ export const sendResultReadyNotification = async (req, res, next) => {
       });
     }
 
-    // Get required data from request body
-    const { testResult, patient, testType, healthCenter } = req.body;
+    // Fetch test result to get releasedAt timestamp
+    const testResult = await TestResult.findById(req.body.testResult._id);
+
+    if (!testResult) {
+      return res.status(404).json({
+        success: false,
+        message: "Test result not found",
+      });
+    }
+
+    // Check if result is released
+    if (testResult.currentStatus !== "released") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot send notification. Test result must be released first.",
+      });
+    }
+
+    // Prepare data combining request body with test result data
+    const notificationData = {
+      testResult: {
+        _id: testResult._id,
+        releasedAt: testResult.releasedAt,
+      },
+      patient: {
+        _id: req.body.patient._id,
+        fullName: req.body.patient.fullName || "Patient",
+        contactNumber: req.body.patient.contactNumber,
+        email: req.body.patient.email,
+      },
+      testType: req.body.testType,
+      healthCenter: req.body.healthCenter,
+    };
 
     // Send notification via SMS and Email
-    const results = await notificationService.sendResultReadyNotification({
-      testResult,
-      patient,
-      testType,
-      healthCenter,
-    });
+    const results =
+      await notificationService.sendResultReadyNotification(notificationData);
 
     res.status(200).json({
       success: true,

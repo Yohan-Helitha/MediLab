@@ -89,7 +89,7 @@ export const getTestResultById = async (req, res, next) => {
         });
       }
 
-      if (result.status !== "released") {
+      if (result.currentStatus !== "released") {
         return res.status(403).json({
           success: false,
           message: "This test result has not been released yet.",
@@ -654,7 +654,7 @@ export const downloadTestResultPDF = async (req, res, next) => {
         });
       }
 
-      if (result.status !== "released") {
+      if (result.currentStatus !== "released") {
         return res.status(403).json({
           success: false,
           message: "This test result has not been released yet.",

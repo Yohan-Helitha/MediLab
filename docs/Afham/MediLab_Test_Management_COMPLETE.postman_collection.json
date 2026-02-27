@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "test-management-complete-verified",
     "name": "MediLab - Test Management (Verified)",
-    "description": "Complete API documentation for Test Management Component - All endpoints verified against backend implementation.\n\n**Component Owner**: Afham\n**Created**: February 26, 2026\n**Last Updated**: February 27, 2026\n**Base URL**: http://localhost:5000/api\n\n## Authentication Required\nAll endpoints require JWT Bearer token authentication except login endpoints.\n\n### Login Endpoints (Public):\n- **Patient Login**: POST /api/auth/patient/login\n- **Health Officer Login**: POST /api/auth/health-officer/login\n\n### Authorization:\n- **Patients**: View own released results, manage own subscriptions\n- **Health Officers**: Submit results, send notifications, view all data\n- **Admins**: All Health Officer permissions + permanent delete\n\n## Total Endpoints: 27\n- Authentication: 2 endpoints (public)\n- TestResult Management: 13 endpoints (includes Status History, Update Result, Permanent Delete)\n- Notification Management: 12 endpoints\n\n## Discriminator Pattern Support:\nSupports 8 test types with specialized fields: Blood Glucose, Hemoglobin, Blood Pressure, Pregnancy, X-Ray, ECG, Ultrasound, Automated Report.",
+    "description": "Complete API documentation for Test Management Component - All endpoints verified against backend implementation.\n\n**Component Owner**: Afham\n**Created**: February 26, 2026\n**Last Updated**: February 27, 2026 (Two-Stage Workflow Update)\n**Base URL**: http://localhost:5000/api\n\n## Authentication Required\nAll endpoints require JWT Bearer token authentication except login endpoints.\n\n### Login Endpoints (Public):\n- **Patient Login**: POST /api/auth/patient/login\n- **Health Officer Login**: POST /api/auth/health-officer/login\n- **Admin Login**: POST /api/auth/health-officer/login (with Admin credentials)\n\n### Authorization:\n- **Patients**: View own released results, manage own subscriptions, download PDFs\n- **Health Officers**: Submit results, send notifications, view all data\n- **Admins**: All Health Officer permissions + permanent delete\n\n## Total Endpoints: 28\n- Authentication: 2 endpoints (public, 3 login variations)\n- TestResult Management: 14 endpoints (includes PDF Download, Status History, Update Result, Permanent Delete)\n- Notification Management: 12 endpoints\n\n## Workflow:\n**Two-Stage Status Flow**: pending → released\n- Results submitted with status: **pending** (default)\n- Lab staff updates to: **released** (triggers PDF generation)\n- Patients can only view/download: **released** results\n\n## Discriminator Pattern Support:\nSupports 8 test types with specialized fields: Blood Glucose, Hemoglobin, Blood Pressure, Pregnancy, X-Ray, ECG, Ultrasound, Automated Report.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -32,7 +32,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"identifier\": \"M001\",\n  \"password\": \"Patient@123\"\n}"
+              "raw": "{\n  \"identifier\": \"DEMO001\",\n  \"password\": \"Patient@123\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/patient/login",
@@ -41,6 +41,24 @@
             },
             "description": "**Access**: Public\n**Validation**: validatePatientLogin\n\nLogin as patient to receive JWT token with patient permissions.\n\n**Request Body**:\n- `identifier` (string, required): Can be member_id, nic, or contact_number\n- `password` (string, required): Patient password\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"patient\": {...},\n    \"token\": \"<jwt_token>\"\n  }\n}\n```\n\n**Token Payload**:\n```json\n{\n  \"id\": \"<patient_profile_id>\",\n  \"userType\": \"patient\",\n  \"member_id\": \"M001\",\n  \"full_name\": \"John Doe\"\n}\n```\n\n**Next Step**: Copy `data.token` and save as `{{patient_token}}`"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-capture patient token after successful login",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.collectionVariables.set(\"patient_token\", response.data.token);",
+                  "        console.log(\"✅ Patient token captured automatically\");",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -55,7 +73,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"identifier\": \"EMP001\",\n  \"password\": \"HealthOfficer@123\"\n}"
+              "raw": "{\n  \"identifier\": \"demo_officer\",\n  \"password\": \"Demo@123\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/health-officer/login",
@@ -64,6 +82,78 @@
             },
             "description": "**Access**: Public\n**Validation**: validateHealthOfficerLogin\n\nLogin as health officer to receive JWT token with health officer permissions.\n\n**Request Body**:\n- `identifier` (string, required): Can be employeeId, email, or username\n- `password` (string, required): Health officer password\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"healthOfficer\": {...},\n    \"token\": \"<jwt_token>\"\n  }\n}\n```\n\n**Token Payload**:\n```json\n{\n  \"id\": \"<health_officer_id>\",\n  \"userType\": \"healthOfficer\",\n  \"role\": \"Lab_Technician\",\n  \"employeeId\": \"EMP001\",\n  \"fullName\": \"Dr. Jane Smith\"\n}\n```\n\n**Available Roles**: MOH, PHI, Nurse, Admin, Lab_Technician, Doctor\n\n**Next Step**: Copy `data.token` and save as `{{health_officer_token}}` or `{{admin_token}}`"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-capture health officer token after successful login",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.collectionVariables.set(\"health_officer_token\", response.data.token);",
+                  "        console.log(\"✅ Health officer token captured automatically\");",
+                  "        ",
+                  "        // Also check if user is Admin and set admin_token",
+                  "        if (response.data.healthOfficer && response.data.healthOfficer.role === 'Admin') {",
+                  "            pm.collectionVariables.set(\"admin_token\", response.data.token);",
+                  "            console.log(\"✅ Admin token also captured\");",
+                  "        }",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"admin_demo\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/health-officer/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "health-officer", "login"]
+            },
+            "description": "**Access**: Public\n**Validation**: validateHealthOfficerLogin\n\nLogin as admin to receive JWT token with admin permissions (required for permanent deletion).\n\n**Request Body**:\n- `identifier` (string, required): Can be employeeId, email, or username\n- `password` (string, required): Admin password\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"healthOfficer\": {...},\n    \"token\": \"<jwt_token>\"\n  }\n}\n```\n\n**Token Payload**:\n```json\n{\n  \"id\": \"<admin_id>\",\n  \"userType\": \"healthOfficer\",\n  \"role\": \"Admin\",\n  \"employeeId\": \"DEMO_ADMIN_001\",\n  \"fullName\": \"Admin Demo User\"\n}\n```\n\n**Important**: Admin role is required for:\n- DELETE /results/:id/permanent (Permanent deletion)\n- Other system-wide administrative operations\n\n**Next Step**: Copy `data.token` and save as `{{admin_token}}`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-capture admin token after successful login",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.collectionVariables.set(\"admin_token\", response.data.token);",
+                  "        console.log(\"✅ Admin token captured automatically\");",
+                  "        ",
+                  "        // Verify it's actually an Admin",
+                  "        if (response.data.healthOfficer && response.data.healthOfficer.role === 'Admin') {",
+                  "            console.log(\"✅ Confirmed: User has Admin role\");",
+                  "        } else {",
+                  "            console.warn(\"⚠️ Warning: User does not have Admin role!\");",
+                  "        }",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         }
       ]
@@ -88,15 +178,33 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"bookingId\": \"65f1234567890abcdef22222\",\n  \"patientProfileId\": \"65f1234567890abcdef12345\",\n  \"testTypeId\": \"65f1234567890abcdef67890\",\n  \"healthCenterId\": \"65f1234567890abcdef11111\",\n  \"enteredBy\": \"65f1234567890abcdef33333\",\n  \"currentStatus\": \"processing\",\n  \"observations\": \"Blood glucose test performed after 10-hour fasting period.\",\n  \"testType\": \"Fasting\",\n  \"glucoseLevel\": 95,\n  \"unit\": \"mg/dL\",\n  \"sampleType\": \"Venous Blood\",\n  \"sampleQuality\": \"Good\",\n  \"sampleCollectionTime\": \"2026-02-26T08:00:00.000Z\",\n  \"fastingDuration\": 10,\n  \"interpretation\": \"Normal fasting glucose level\"\n}"
+              "raw": "{\n  \"bookingId\": \"{{booking_id}}\",\n  \"patientProfileId\": \"{{patient_id}}\",\n  \"testTypeId\": \"{{blood_glucose_type_id}}\",\n  \"healthCenterId\": \"{{health_center_id}}\",\n  \"enteredBy\": \"{{health_officer_id}}\",\n  \"currentStatus\": \"pending\",\n  \"observations\": \"Blood glucose test performed after 10-hour fasting period.\",\n  \"glucoseTestType\": \"Fasting\",\n  \"glucoseLevel\": 95,\n  \"unit\": \"mg/dL\",\n  \"sampleType\": \"Venous Blood\",\n  \"sampleQuality\": \"Good\",\n  \"sampleCollectionTime\": \"2026-02-27T08:00:00.000Z\",\n  \"fastingDuration\": 10,\n  \"method\": \"Laboratory Analyzer\",\n  \"referenceRange\": {\n    \"normalMin\": 70,\n    \"normalMax\": 100,\n    \"preDiabeticMin\": 100,\n    \"preDiabeticMax\": 125,\n    \"diabeticMin\": 126\n  },\n  \"interpretation\": \"Normal\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/results",
               "host": ["{{base_url}}"],
               "path": ["results"]
             },
-            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: submitResultValidation + discriminator-specific validation\n\nSubmit a new test result. The testTypeId determines which discriminator model is used.\n\n**Base Required Fields**:\n- `bookingId` (MongoId, required)\n- `patientProfileId` (MongoId, required)\n- `testTypeId` (MongoId, required) - Determines discriminator type\n- `healthCenterId` (MongoId, required)\n- `enteredBy` (MongoId, required) - Health officer submitting\n- `observations` (string, optional, max 1000 chars)\n- `currentStatus` (enum, optional): sample_received | processing | released (default: sample_received)\n- `releasedAt` (ISO8601, optional)\n\n**Blood Glucose Discriminator** (example shown):\n- `testType` (enum, required): Fasting | Random | Postprandial | HbA1c\n- `glucoseLevel` (number, required): 0-600\n- `unit` (enum, required): mg/dL | mmol/L\n- `sampleType` (enum, required): Venous Blood | Capillary Blood\n- `sampleQuality` (enum, required): Good | Hemolyzed | Lipemic | Clotted\n- `sampleCollectionTime` (ISO8601, required)\n- `fastingDuration` (integer, optional): 0-24 hours\n- `interpretation` (string, optional, max 500 chars)\n\n**Other Discriminator Types**:\n- **Hemoglobin**: hemoglobinLevel, unit, sampleType, sampleCollectionTime\n- **Blood Pressure**: systolicBP, diastolicBP, pulseRate, patientPosition, armUsed, cuffSize, patientState, measurementTime, method\n- **Pregnancy**: result, testType, hcgLevel?, hcgUnit?, method, sampleType, sampleQuality, sampleCollectionTime\n- **X-Ray**: uploadedFiles[], bodyPart, clinicalIndication, views[], findings, impression, interpretation\n- **ECG**: uploadedFiles[], ecgType, clinicalIndication, heartRate?, rhythm?, findings, interpretation\n- **Ultrasound**: uploadedFiles[], studyType, clinicalIndication, findings, impression, interpretation\n- **Automated Report**: uploadedFiles[1], testPanelName, testCategory, sampleType, sampleCollectionTime, analysisCompletedTime\n\n**Response** (201 Created):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result submitted successfully\",\n  \"result\": {...}\n}\n```"
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: submitResultValidation + discriminator-specific validation\n\nSubmit a new test result. The testTypeId determines which discriminator model is used.\n\n**Base Required Fields**:\n- `bookingId` (MongoId, required)\n- `patientProfileId` (MongoId, required)\n- `testTypeId` (MongoId, required) - Determines discriminator type\n- `healthCenterId` (MongoId, required)\n- `enteredBy` (MongoId, required) - Health officer submitting\n- `observations` (string, optional, max 1000 chars)\n- `currentStatus` (enum, optional): pending | released (default: pending)\n- `releasedAt` (ISO8601, optional)\n\n**Blood Glucose Discriminator** (example shown):\n- `glucoseTestType` (enum, required): Fasting | Random | Postprandial | HbA1c\n- `glucoseLevel` (number, required): 0-600\n- `unit` (enum, required): mg/dL | mmol/L (default: mg/dL)\n- `sampleType` (enum, required): Venous Blood | Capillary Blood\n- `sampleQuality` (enum, required): Good | Hemolyzed | Lipemic | Clotted\n- `sampleCollectionTime` (ISO8601, required)\n- `fastingDuration` (integer, conditional): 0-24 hours (required if glucoseTestType is Fasting)\n- `method` (enum, required): Glucometer | Laboratory Analyzer | POC Device\n- `referenceRange` (object, required):\n  * `normalMin` (number, required)\n  * `normalMax` (number, required)\n  * `preDiabeticMin` (number, optional)\n  * `preDiabeticMax` (number, optional)\n  * `diabeticMin` (number, optional)\n- `interpretation` (enum, required): Normal | Hypoglycemia | Pre-diabetic | Diabetic | Critical\n- `clinicalNotes` (string, optional, max 500 chars)\n\n**Other Discriminator Types**:\n- **Hemoglobin**: hemoglobinLevel, unit, sampleType, sampleCollectionTime\n- **Blood Pressure**: systolicBP, diastolicBP, pulseRate, patientPosition, armUsed, cuffSize, patientState, measurementTime, method\n- **Pregnancy**: result, testType, hcgLevel?, hcgUnit?, method, sampleType, sampleQuality, sampleCollectionTime\n- **X-Ray**: uploadedFiles[], bodyPart, clinicalIndication, views[], findings, impression, interpretation\n- **ECG**: uploadedFiles[], ecgType, clinicalIndication, heartRate?, rhythm?, findings, interpretation\n- **Ultrasound**: uploadedFiles[], studyType, clinicalIndication, findings, impression, interpretation\n- **Automated Report**: uploadedFiles[1], testPanelName, testCategory, sampleType, sampleCollectionTime, analysisCompletedTime\n\n**Response** (201 Created):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result submitted successfully\",\n  \"result\": {...}\n}\n```"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-capture result ID after successful submission",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data._id) {",
+                  "        pm.collectionVariables.set(\"result_id\", response.data._id);",
+                  "        console.log(\"✅ Result ID captured:\", response.data._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -106,7 +214,8 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
+                "value": "Bearer {{health_officer_token}}",
+                "description": "Multi-role endpoint: Use patient_token (own released) or health_officer_token (all)"
               }
             ],
             "url": {
@@ -116,7 +225,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdef99999"
+                  "value": "{{result_id}}"
                 }
               ]
             },
@@ -131,7 +240,8 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
+                "value": "Bearer {{health_officer_token}}",
+                "description": "Multi-role endpoint: Use patient_token (own released) or health_officer_token (all)"
               }
             ],
             "url": {
@@ -142,7 +252,7 @@
                 {
                   "key": "status",
                   "value": "released",
-                  "description": "Filter: sample_received | processing | released"
+                  "description": "Filter: pending | released"
                 },
                 {
                   "key": "startDate",
@@ -176,11 +286,11 @@
               "variable": [
                 {
                   "key": "patientId",
-                  "value": "65f1234567890abcdef12345"
+                  "value": "{{patient_id}}"
                 }
               ]
             },
-            "description": "**Auth**: Patient (own released) OR Health Officer (all)\n**Middleware**: authenticate\n**Validation**: patientIdParamValidation + resultQueryFiltersValidation\n\nGet all test results for a specific patient with optional filters.\n\n**Patient Access**:\n- URL `patientId` must match `req.user.id`\n- Only returns `status='released'` results (forced filter)\n\n**Health Officer Access**:\n- Can access any patient's results\n- Can filter by any status\n\n**Query Parameters**:\n- `status` (enum, optional): sample_received | processing | released\n- `startDate` (ISO8601, optional)\n- `endDate` (ISO8601, optional)\n- `testTypeId` (MongoId, optional)\n- `page` (integer, optional, min 1)\n- `limit` (integer, optional, min 1, max 100)\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"results\": [...],\n  \"pagination\": {...}\n}\n```"
+            "description": "**Auth**: Patient (own released) OR Health Officer (all)\n**Middleware**: authenticate\n**Validation**: patientIdParamValidation + resultQueryFiltersValidation\n\nGet all test results for a specific patient with optional filters.\n\n**Patient Access**:\n- URL `patientId` must match `req.user.id`\n- Only returns `status='released'` results (forced filter)\n\n**Health Officer Access**:\n- Can access any patient's results\n- Can filter by any status\n\n**Query Parameters**:\n- `status` (enum, optional): pending | released\n- `startDate` (ISO8601, optional)\n- `endDate` (ISO8601, optional)\n- `testTypeId` (MongoId, optional)\n- `page` (integer, optional, min 1)\n- `limit` (integer, optional, min 1, max 100)\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"results\": [...],\n  \"pagination\": {...}\n}\n```"
           },
           "response": []
         },
@@ -201,7 +311,7 @@
               "variable": [
                 {
                   "key": "patientId",
-                  "value": "65f1234567890abcdef12345"
+                  "value": "{{patient_id}}"
                 }
               ]
             },
@@ -226,7 +336,7 @@
               "variable": [
                 {
                   "key": "bookingId",
-                  "value": "65f1234567890abcdef22222"
+                  "value": "{{booking_id}}"
                 }
               ]
             },
@@ -265,7 +375,7 @@
               "variable": [
                 {
                   "key": "healthCenterId",
-                  "value": "65f1234567890abcdef11111"
+                  "value": "{{health_center_id}}"
                 }
               ]
             },
@@ -290,7 +400,7 @@
               "variable": [
                 {
                   "key": "testTypeId",
-                  "value": "65f1234567890abcdef67890"
+                  "value": "{{blood_glucose_type_id}}"
                 }
               ]
             },
@@ -314,7 +424,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"released\",\n  \"changedBy\": \"65f1234567890abcdef33333\"\n}"
+              "raw": "{\n  \"status\": \"released\",\n  \"changedBy\": \"{{health_officer_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/results/:id/status",
@@ -323,11 +433,11 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdef99999"
+                  "value": "{{result_id}}"
                 }
               ]
             },
-            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: idParamValidation + updateStatusValidation\n\nUpdate the processing status of a test result.\n\n**Request Body**:\n- `status` (enum, required): sample_received | processing | released\n- `changedBy` (MongoId, required): Health officer ID making the change\n\n**Status Flow**: sample_received → processing → released\n\n**Note**: When status changes to 'released', `releasedAt` timestamp is automatically set.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result status updated successfully\",\n  \"result\": {...}\n}\n```"
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: idParamValidation + updateStatusValidation\n\nUpdate the processing status of a test result.\n\n**Request Body**:\n- `status` (enum, required): pending | released\n- `changedBy` (MongoId, required): Health officer ID making the change\n\n**Status Flow**: pending → released\n\n**Note**: When status changes to 'released', `releasedAt` timestamp is automatically set and PDF report is generated.\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result status updated successfully\",\n  \"result\": {...}\n}\n```"
           },
           "response": []
         },
@@ -347,7 +457,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"65f1234567890abcdef12345\"\n}"
+              "raw": "{\n  \"userId\": \"{{patient_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/results/:id/mark-viewed",
@@ -356,11 +466,37 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdef99999"
+                  "value": "{{result_id}}"
                 }
               ]
             },
             "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: idParamValidation + markViewedValidation\n\nMark a test result as viewed by the patient. Records viewing timestamp.\n\n**Request Body**:\n- `userId` (MongoId, required): Patient ID (must match `req.user.id`)\n\n**Authorization Logic**:\n1. Request body `userId` must match `req.user.id`\n2. Result fetched by ID\n3. Result's `patientProfileId` must match `req.user.id`\n4. Result must have `currentStatus === 'released'`\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result marked as viewed\",\n  \"result\": {...}\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Download Test Result PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}",
+                "description": "Multi-role endpoint: Use patient_token (own released) or health_officer_token (all)"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/:id/download",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "download"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{result_id}}"
+                }
+              ]
+            },
+            "description": "**Auth**: Patient (own released) OR Health Officer (all)\\n**Middleware**: authenticate\\n**Validation**: idParamValidation\\n\\nDownload the PDF report for a test result. The PDF is automatically generated when result status changes to 'released'.\\n\\n**Patient Access**:\\n- Can only download if `result.patientProfileId === req.user.id`\\n- Can only download if `result.currentStatus === 'released'`\\n\\n**Health Officer Access**:\\n- Can download any released result's PDF\\n\\n**Response** (200 OK):\\n- Content-Type: application/pdf\\n- Content-Disposition: attachment; filename=\\\"<filename>.pdf\\\"\\n- Body: PDF file stream\\n\\n**Error Conditions**:\\n- 404: PDF not yet generated (result must be released first)\\n- 404: PDF file not found on server\\n- 403: Access denied (patients can only download own results)\\n\\n**Use Cases**:\\n- Patient downloads their test results\\n- Health officer retrieves results for patient consultation\\n- Archiving or printing test reports"
           },
           "response": []
         },
@@ -371,7 +507,8 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
+                "value": "Bearer {{health_officer_token}}",
+                "description": "Multi-role endpoint: Use patient_token (own released) or health_officer_token (all)"
               }
             ],
             "url": {
@@ -381,11 +518,11 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdef99999"
+                  "value": "{{result_id}}"
                 }
               ]
             },
-            "description": "**Auth**: Patient (own released) OR Health Officer (all)\n**Middleware**: authenticate\n**Validation**: idParamValidation\n\nGet the complete status change history for a specific test result.\n\n**Patient Access**:\n- Can only view if `result.patientProfileId === req.user.id`\n- Can only view if `result.currentStatus === 'released'`\n\n**Health Officer Access**:\n- Can view status history for any result regardless of status\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"resultId\": \"65f1234567890abcdef99999\",\n    \"bookingId\": \"65f1234567890abcdef22222\",\n    \"currentStatus\": \"released\",\n    \"statusHistory\": [\n      {\n        \"status\": \"sample_received\",\n        \"changedAt\": \"2026-02-26T08:30:00.000Z\",\n        \"changedBy\": {\n          \"_id\": \"...\",\n          \"fullName\": \"Dr. Jane Smith\"\n        }\n      },\n      {\n        \"status\": \"processing\",\n        \"changedAt\": \"2026-02-26T10:00:00.000Z\",\n        \"changedBy\": {\n          \"_id\": \"...\",\n          \"fullName\": \"Dr. Jane Smith\"\n        }\n      },\n      {\n        \"status\": \"released\",\n        \"changedAt\": \"2026-02-26T14:30:00.000Z\",\n        \"changedBy\": {\n          \"_id\": \"...\",\n          \"fullName\": \"Dr. John Doe\"\n        }\n      }\n    ]\n  }\n}\n```\n\n**Use Case**: Track test result lifecycle, audit trail, patient transparency"
+            "description": "**Auth**: Patient (own released) OR Health Officer (all)\n**Middleware**: authenticate\n**Validation**: idParamValidation\n\nGet the complete status change history for a specific test result.\n\n**Patient Access**:\n- Can only view if `result.patientProfileId === req.user.id`\n- Can only view if `result.currentStatus === 'released'`\n\n**Health Officer Access**:\n- Can view status history for any result regardless of status\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"resultId\": \"65f1234567890abcdef99999\",\n    \"bookingId\": \"65f1234567890abcdef22222\",\n    \"currentStatus\": \"released\",\n    \"statusHistory\": [\n      {\n        \"status\": \"pending\",\n        \"changedAt\": \"2026-02-27T08:30:00.000Z\",\n        \"changedBy\": {\n          \"_id\": \"...\",\n          \"fullName\": \"Dr. Jane Smith\"\n        }\n      },\n      {\n        \"status\": \"released\",\n        \"changedAt\": \"2026-02-27T14:30:00.000Z\",\n        \"changedBy\": {\n          \"_id\": \"...\",\n          \"fullName\": \"Dr. John Doe\"\n        }\n      }\n    ]\n  }\n}\n```\n\n**Use Case**: Track test result lifecycle, audit trail, patient transparency"
           },
           "response": []
         },
@@ -405,7 +542,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"observations\": \"Updated: Fasting glucose test - patient confirmed 12-hour fasting period.\",\n  \"glucoseLevel\": 92,\n  \"interpretation\": \"Normal fasting glucose level - revised after patient history confirmation\"\n}"
+              "raw": "{\n  \"observations\": \"Updated: Fasting glucose test - patient confirmed 12-hour fasting period.\",\n  \"glucoseLevel\": 92,\n  \"interpretation\": \"Normal\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/results/:id",
@@ -414,7 +551,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdef99999"
+                  "value": "{{result_id}}"
                 }
               ]
             },
@@ -447,7 +584,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdef99999"
+                  "value": "{{result_id}}"
                 }
               ]
             },
@@ -480,11 +617,11 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdef99999"
+                  "value": "{{result_id}}"
                 }
               ]
             },
-            "description": "**Auth**: Admin only\n**Middleware**: authenticate + checkRole(['Admin'])\n**Validation**: hardDeleteValidation\n\nPermanently delete a test result from the database. This is irreversible and should only be used by administrators.\n\n**Request Body**:\n- `deleteReason` (string, required): Reason for permanent deletion (10-500 chars)\n\n**Automatic Actions**:\n- Deletes associated PDF file from file system\n- Reverts booking status to 'processing'\n- Permanently removes result from database (no soft delete flag)\n- Comprehensive audit logging before deletion\n\n**Use Cases**:\n- Data cleanup for test/demo purposes\n- Compliance with data retention policies\n- Correcting critical system errors\n\n**Security**:\n- Requires Admin role (most restrictive)\n- Logs full audit trail before deletion\n- Cannot be undone - use soft delete for regular operations\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result permanently deleted\"\n}\n```\n\n**Note**: For regular deletion operations, use soft delete (DELETE /results/:id) which preserves data for audit trails."
+            "description": "**Auth**: Admin only\n**Middleware**: authenticate + checkRole(['Admin'])\n**Validation**: hardDeleteValidation\n\nPermanently delete a test result from the database. This is irreversible and should only be used by administrators.\n\n**Request Body**:\n- `deleteReason` (string, required): Reason for permanent deletion (10-500 chars)\n\n**Automatic Actions**:\n- Deletes associated PDF file from file system\n- Reverts booking status to 'pending'\n- Permanently removes result from database (no soft delete flag)\n- Comprehensive audit logging before deletion\n\n**Use Cases**:\n- Data cleanup for test/demo purposes\n- Compliance with data retention policies\n- Correcting critical system errors\n\n**Security**:\n- Requires Admin role (most restrictive)\n- Logs full audit trail before deletion\n- Cannot be undone - use soft delete for regular operations\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Test result permanently deleted\"\n}\n```\n\n**Note**: For regular deletion operations, use soft delete (DELETE /results/:id) which preserves data for audit trails."
           },
           "response": []
         }
@@ -510,7 +647,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"testResult\": {\n    \"_id\": \"65f1234567890abcdef99999\"\n  },\n  \"patient\": {\n    \"_id\": \"65f1234567890abcdef12345\",\n    \"contactNumber\": \"+94712345678\",\n    \"email\": \"patient@example.com\"\n  },\n  \"testType\": {\n    \"_id\": \"65f1234567890abcdef55555\",\n    \"name\": \"Blood Glucose Test\"\n  },\n  \"healthCenter\": {\n    \"name\": \"Central Medical Laboratory\"\n  }\n}"
+              "raw": "{\n  \"testResult\": {\n    \"_id\": \"{{result_id}}\"\n  },\n  \"patient\": {\n    \"_id\": \"{{patient_id}}\",\n    \"fullName\": \"Demo Patient\",\n    \"contactNumber\": \"+94764118021\",\n    \"email\": \"mafham2001@yahoo.com\"\n  },\n  \"testType\": {\n    \"_id\": \"{{blood_glucose_type_id}}\",\n    \"name\": \"Blood Glucose Test\"\n  },\n  \"healthCenter\": {\n    \"name\": \"Central Medical Laboratory\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/notifications/send/result-ready",
@@ -519,6 +656,24 @@
             },
             "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: sendResultReadyValidation\n\nSend notification to patient that their test result is ready. Attempts both SMS and Email if provided.\n\n**Request Body** (Nested Objects):\n- `testResult` (object, required):\n  - `_id` (MongoId, required): Test result ID\n  \n- `patient` (object, required):\n  - `_id` (MongoId, required): Patient profile ID\n  - `contactNumber` (string, optional): For SMS (must provide at least one: contactNumber or email)\n  - `email` (email, optional): For email (must provide at least one: contactNumber or email)\n  \n- `testType` (object, required):\n  - `_id` (MongoId, required): Test type ID\n  - `name` (string, required): Test type name for notification content\n  \n- `healthCenter` (object, required):\n  - `name` (string, required): Health center name for notification content\n\n**Requirements**: Twilio (SMS) and/or SendGrid (Email) configured in .env\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Notifications sent successfully\",\n  \"notifications\": [\n    {\n      \"_id\": \"...\",\n      \"type\": \"result_ready\",\n      \"channel\": \"sms\",\n      \"recipient\": \"+94712345678\",\n      \"status\": \"sent\",\n      \"sentAt\": \"...\"\n    },\n    {\n      \"_id\": \"...\",\n      \"type\": \"result_ready\",\n      \"channel\": \"email\",\n      \"recipient\": \"patient@example.com\",\n      \"status\": \"sent\",\n      \"sentAt\": \"...\"\n    }\n  ]\n}\n```"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-capture notification ID after successful send",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.notifications && response.notifications.length > 0) {",
+                  "        pm.collectionVariables.set('notification_id', response.notifications[0]._id);",
+                  "        console.log('✅ Notification ID captured:', response.notifications[0]._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -560,7 +715,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"subscriptionId\": \"65f1234567890abcdefccccc\"\n}"
+              "raw": "{\n  \"subscriptionId\": \"{{subscription_id}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/notifications/send/routine-reminder",
@@ -588,7 +743,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdefaaaaa"
+                  "value": "{{notification_id}}"
                 }
               ]
             },
@@ -613,7 +768,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdefaaaaa"
+                  "value": "{{notification_id}}"
                 }
               ]
             },
@@ -628,7 +783,8 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
+                "value": "Bearer {{health_officer_token}}",
+                "description": "Multi-role endpoint: Use patient_token (own) or health_officer_token (any)"
               }
             ],
             "url": {
@@ -665,7 +821,7 @@
               "variable": [
                 {
                   "key": "patientId",
-                  "value": "65f1234567890abcdef12345"
+                  "value": "{{patient_id}}"
                 }
               ]
             },
@@ -715,7 +871,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientProfileId\": \"65f1234567890abcdef12345\",\n  \"testTypeId\": \"65f1234567890abcdef67890\",\n  \"lastTestDate\": \"2026-01-15T09:00:00.000Z\"\n}"
+              "raw": "{\n  \"patientProfileId\": \"{{patient_id}}\",\n  \"testTypeId\": \"{{blood_glucose_type_id}}\",\n  \"lastTestDate\": \"2026-01-15T09:00:00.000Z\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/notifications/subscriptions",
@@ -724,6 +880,24 @@
             },
             "description": "**Auth**: Patient only\n**Middleware**: authenticate + isPatient\n**Validation**: subscribeValidation\n\nSubscribe patient to routine reminder for a specific test type.\n\n**Request Body**:\n- `patientProfileId` (MongoId, required): Must match `req.user.id`\n- `testTypeId` (MongoId, required): Test type to subscribe for reminders\n- `lastTestDate` (ISO8601, required): Date of patient's last test (cannot be in future)\n\n**Authorization**:\n- Request body `patientProfileId` must match `req.user.id`\n\n**Backend Process**:\n- Sets `isActive: true`\n- Calculates reminder schedule based on test type intervals\n- Returns subscription with nextReminderDate populated\n\n**Response** (201 Created):\n```json\n{\n  \"success\": true,\n  \"message\": \"Reminder subscription created successfully\",\n  \"subscription\": {\n    \"_id\": \"...\",\n    \"patientProfile\": \"...\",\n    \"testType\": \"...\",\n    \"lastTestDate\": \"...\",\n    \"nextReminderDate\": \"...\",\n    \"isActive\": true,\n    \"createdAt\": \"...\"\n  }\n}\n```"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-capture subscription ID after successful creation",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.subscription && response.subscription._id) {",
+                  "        pm.collectionVariables.set('subscription_id', response.subscription._id);",
+                  "        console.log('✅ Subscription ID captured:', response.subscription._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -748,7 +922,7 @@
               "variable": [
                 {
                   "key": "patientId",
-                  "value": "65f1234567890abcdef12345"
+                  "value": "{{patient_id}}"
                 }
               ]
             },
@@ -773,7 +947,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdefccccc"
+                  "value": "{{subscription_id}}"
                 }
               ]
             },
@@ -806,7 +980,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdefccccc"
+                  "value": "{{subscription_id}}"
                 }
               ]
             },
@@ -831,7 +1005,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "65f1234567890abcdefccccc"
+                  "value": "{{subscription_id}}"
                 }
               ]
             },
@@ -849,6 +1023,66 @@
       "type": "string"
     },
     {
+      "key": "patient_id",
+      "value": "PASTE_FROM_SEED_OUTPUT",
+      "type": "string",
+      "description": "Patient ObjectID from seed script"
+    },
+    {
+      "key": "health_officer_id",
+      "value": "PASTE_FROM_SEED_OUTPUT",
+      "type": "string",
+      "description": "Health Officer ObjectID from seed script"
+    },
+    {
+      "key": "admin_id",
+      "value": "PASTE_FROM_SEED_OUTPUT",
+      "type": "string",
+      "description": "Admin User ObjectID from seed script (for permanent deletion)"
+    },
+    {
+      "key": "health_center_id",
+      "value": "PASTE_FROM_SEED_OUTPUT",
+      "type": "string",
+      "description": "Health Center (Lab) ObjectID from seed script"
+    },
+    {
+      "key": "blood_glucose_type_id",
+      "value": "PASTE_FROM_SEED_OUTPUT",
+      "type": "string",
+      "description": "Blood Glucose Test Type ObjectID from seed script"
+    },
+    {
+      "key": "hemoglobin_type_id",
+      "value": "PASTE_FROM_SEED_OUTPUT",
+      "type": "string",
+      "description": "Hemoglobin Test Type ObjectID from seed script"
+    },
+    {
+      "key": "booking_id",
+      "value": "PASTE_FROM_SEED_OUTPUT",
+      "type": "string",
+      "description": "Booking ObjectID from seed script"
+    },
+    {
+      "key": "result_id",
+      "value": "",
+      "type": "string",
+      "description": "Auto-captured after Submit Test Result"
+    },
+    {
+      "key": "notification_id",
+      "value": "",
+      "type": "string",
+      "description": "Auto-captured after Send Result Ready Notification"
+    },
+    {
+      "key": "subscription_id",
+      "value": "",
+      "type": "string",
+      "description": "Auto-captured after Subscribe to Reminder"
+    },
+    {
       "key": "jwt_token",
       "value": "",
       "type": "string",
@@ -858,19 +1092,19 @@
       "key": "patient_token",
       "value": "",
       "type": "string",
-      "description": "JWT token from patient login"
+      "description": "JWT token from patient login (auto-captured)"
     },
     {
       "key": "health_officer_token",
       "value": "",
       "type": "string",
-      "description": "JWT token from health officer login"
+      "description": "JWT token from health officer login (auto-captured)"
     },
     {
       "key": "admin_token",
       "value": "",
       "type": "string",
-      "description": "JWT token from admin login (role: Admin)"
+      "description": "JWT token from admin login (role: Admin, auto-captured)"
     }
   ]
 }

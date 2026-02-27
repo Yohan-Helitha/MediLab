@@ -70,7 +70,7 @@ export const submitResultValidation = [
 
   body("currentStatus")
     .optional()
-    .isIn(["sample_received", "processing", "released"])
+    .isIn(["pending", "released"])
     .withMessage("Invalid status value"),
 
   body("releasedAt")
@@ -589,8 +589,8 @@ export const updateStatusValidation = [
   body("status")
     .notEmpty()
     .withMessage("Status is required")
-    .isIn(["sample_received", "processing", "released"])
-    .withMessage("Status must be sample_received, processing, or released"),
+    .isIn(["pending", "released"])
+    .withMessage("Status must be pending or released"),
 
   body("changedBy")
     .notEmpty()
@@ -612,7 +612,7 @@ export const markViewedValidation = [
 export const resultQueryFiltersValidation = [
   query("status")
     .optional()
-    .isIn(["sample_received", "processing", "released"])
+    .isIn(["pending", "released"])
     .withMessage("Invalid status filter"),
 
   query("startDate")

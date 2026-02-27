@@ -142,9 +142,11 @@ export const sendResultReadyNotification = async (data) => {
   if (patient.email) {
     const emailData = {
       to: patient.email,
-      patientName: `${patient.firstName} ${patient.lastName}`,
+      patientName: patient.fullName || "Patient",
       testName: testType.name,
-      testDate: testResult.releasedAt.toLocaleDateString(),
+      testDate: testResult.releasedAt
+        ? new Date(testResult.releasedAt).toLocaleDateString()
+        : new Date().toLocaleDateString(),
       centerName: healthCenter.name,
       loginUrl: `${config.frontendUrl}/login`,
     };
@@ -212,9 +214,11 @@ export const sendUnviewedResultReminder = async (data) => {
   if (patient.email) {
     const emailData = {
       to: patient.email,
-      patientName: `${patient.firstName} ${patient.lastName}`,
+      patientName: patient.fullName || "Patient",
       testName: testType.name,
-      releasedDate: testResult.releasedAt.toLocaleDateString(),
+      releasedDate: testResult.releasedAt
+        ? new Date(testResult.releasedAt).toLocaleDateString()
+        : new Date().toLocaleDateString(),
       daysUnviewed: daysUnviewed,
       loginUrl: `${config.frontendUrl}/login`,
     };
@@ -261,7 +265,7 @@ export const findUnviewedResults = async (
     releasedAt: { $lte: cutoffDate },
     viewedBy: { $size: 0 },
   })
-    .populate("patientProfileId", "firstName lastName email contactNumber")
+    .populate("patientProfileId", "full_name email contact_number")
     .populate("testTypeId", "name code")
     .populate("healthCenterId", "name")
     .sort({ releasedAt: 1 }); // Oldest first
@@ -284,10 +288,23 @@ export const findUnviewedResults = async (
       );
 
       filteredResults.push({
-        testResult: result,
-        patient: result.patientProfileId,
-        testType: result.testTypeId,
-        healthCenter: result.healthCenterId,
+        testResult: {
+          _id: result._id,
+          releasedAt: result.releasedAt,
+        },
+        patient: {
+          _id: result.patientProfileId._id,
+          fullName: result.patientProfileId.full_name,
+          contactNumber: result.patientProfileId.contact_number,
+          email: result.patientProfileId.email,
+        },
+        testType: {
+          _id: result.testTypeId._id,
+          name: result.testTypeId.name,
+        },
+        healthCenter: {
+          name: result.healthCenterId.name,
+        },
         daysUnviewed: daysUnviewed,
         remindersSent: reminderCount,
       });
@@ -394,9 +411,11 @@ export const sendRoutineCheckupReminder = async (data) => {
   if (patient.email) {
     const emailData = {
       to: patient.email,
-      patientName: `${patient.firstName} ${patient.lastName}`,
+      patientName: patient.fullName || "Patient",
       testName: testType.name,
-      lastTestDate: subscription.lastTestDate.toLocaleDateString(),
+      lastTestDate: subscription.lastTestDate
+        ? new Date(subscription.lastTestDate).toLocaleDateString()
+        : "N/A",
       bookingUrl: `${config.frontendUrl}/booking`,
       unsubscribeUrl: `${config.frontendUrl}/subscriptions/${subscription._id}/unsubscribe`,
     };

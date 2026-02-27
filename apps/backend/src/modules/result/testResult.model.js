@@ -8,12 +8,12 @@ const StatusHistorySchema = new Schema(
   {
     status: {
       type: String,
-      enum: ["sample_received", "processing", "released"],
+      enum: ["pending", "released"],
       required: true,
     },
     changedBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "HealthOfficer",
       required: true,
     },
     changedAt: {
@@ -29,7 +29,7 @@ const ViewedBySchema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Member",
       required: true,
     },
     viewedAt: {
@@ -72,7 +72,7 @@ const testResultBaseSchema = new Schema(
     },
     patientProfileId: {
       type: Schema.Types.ObjectId,
-      ref: "PatientProfile",
+      ref: "Member",
       required: true,
       index: true,
     },
@@ -98,21 +98,19 @@ const testResultBaseSchema = new Schema(
     },
     currentStatus: {
       type: String,
-      enum: ["sample_received", "processing", "released"],
-      default: "released",
+      enum: ["pending", "released"],
+      default: "pending",
       required: true,
       index: true,
     },
     statusHistory: [StatusHistorySchema],
     enteredBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "HealthOfficer",
       required: true,
     },
     releasedAt: {
       type: Date,
-      required: true,
-      default: Date.now,
       index: true,
     },
     viewedBy: [ViewedBySchema],
