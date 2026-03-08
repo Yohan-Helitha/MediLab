@@ -7,6 +7,9 @@ import HealthOfficer from '../auth/healthOfficer.model.js';
 
 let staffToken;
 
+// Allow more time for DB connection and seeding in integration tests
+jest.setTimeout(30000);
+
 beforeAll(async () => {
   await connectDB();
 

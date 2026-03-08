@@ -1,44 +1,26 @@
-import Lab, { saveMock } from './lab.model.js';
+import Lab from './lab.model.js';
 import * as labService from './lab.service.js';
-
-// Mock the Lab model for all tests in this file
-jest.mock('./lab.model.js', () => {
-  const saveMockLocal = jest.fn();
-
-  const LabMock = jest.fn().mockImplementation(() => ({
-    save: saveMockLocal,
-  }));
-
-  LabMock.find = jest.fn();
-  LabMock.findById = jest.fn();
-  LabMock.findByIdAndUpdate = jest.fn();
-  LabMock.findByIdAndDelete = jest.fn();
-
-  return {
-    __esModule: true,
-    default: LabMock,
-    saveMock: saveMockLocal,
-  };
-});
 
 describe('lab.service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    Lab.prototype.save = jest.fn();
+    Lab.find = jest.fn();
+    Lab.findById = jest.fn();
+    Lab.findByIdAndUpdate = jest.fn();
+    Lab.findByIdAndDelete = jest.fn();
   });
 
   it('createLab should create and save a lab', async () => {
     const labData = { name: 'Central Lab', district: 'Colombo' };
     const savedLab = { _id: 'lab123', ...labData };
 
-    // saveMock is provided by our jest.mock factory
-    saveMock.mockResolvedValue(savedLab);
+    Lab.prototype.save.mockResolvedValue(savedLab);
 
     const result = await labService.createLab(labData);
 
-    // Lab constructor called with provided data
     expect(Lab).toHaveBeenCalledWith(labData);
-    // save called once and result returned
-    expect(saveMock).toHaveBeenCalledTimes(1);
+    expect(Lab.prototype.save).toHaveBeenCalledTimes(1);
     expect(result).toBe(savedLab);
   });
 

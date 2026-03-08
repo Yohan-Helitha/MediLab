@@ -11,6 +11,9 @@ let staffId;
 let testTypeId;
 let instructionId;
 
+// Allow more time for DB connection and seeding in integration tests
+jest.setTimeout(30000);
+
 beforeAll(async () => {
   await connectDB();
 
