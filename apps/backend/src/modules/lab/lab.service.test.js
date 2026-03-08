@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import Lab from './lab.model.js';
 import * as labService from './lab.service.js';
 

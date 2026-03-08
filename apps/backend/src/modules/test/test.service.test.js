@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import TestType from "./testType.model.js";
 
 import {
