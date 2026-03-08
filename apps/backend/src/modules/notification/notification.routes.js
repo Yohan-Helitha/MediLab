@@ -1,44 +1,106 @@
 import express from "express";
 import * as notificationController from "./notification.controller.js";
+import * as validation from "./notification.validation.js";
+import {
+  authenticate,
+  isPatient,
+  isHealthOfficer,
+} from "../auth/auth.middleware.js";
 
 const router = express.Router();
 
 // ===== NOTIFICATION LOG ROUTES =====
 
-// Send notifications
+// Send notifications (Health Officer only)
 router.post(
   "/send/result-ready",
+  authenticate,
+  isHealthOfficer,
+  validation.sendResultReadyValidation,
   notificationController.sendResultReadyNotification,
 );
 router.post(
   "/send/unviewed-reminder",
+  authenticate,
+  isHealthOfficer,
   notificationController.sendUnviewedResultReminder,
 );
-router.post("/:id/resend", notificationController.resendNotification);
+router.post(
+  "/send/routine-reminder",
+  authenticate,
+  isHealthOfficer,
+  validation.sendRoutineReminderValidation,
+  notificationController.sendRoutineCheckupReminder,
+);
+router.post(
+  "/:id/resend",
+  authenticate,
+  isHealthOfficer,
+  validation.idParamValidation,
+  notificationController.resendNotification,
+);
 
-// Get notification logs
-router.get("/logs", notificationController.getNotificationHistory);
-router.get("/logs/:id", notificationController.getNotificationById);
+// Get notification logs (Patient can view own, Health Officer can view all)
+router.get(
+  "/patient/:patientId",
+  authenticate,
+  validation.patientIdParamValidation,
+  validation.notificationHistoryQueryValidation,
+  notificationController.getNotificationHistory,
+);
+router.get(
+  "/failed",
+  authenticate,
+  isHealthOfficer,
+  validation.failedNotificationsQueryValidation,
+  notificationController.getFailedNotifications,
+);
+router.get(
+  "/:id",
+  authenticate,
+  isHealthOfficer,
+  validation.idParamValidation,
+  notificationController.getNotificationById,
+);
 
 // ===== REMINDER SUBSCRIPTION ROUTES =====
 
-// Subscription management
-router.post("/subscriptions", notificationController.subscribeToReminder);
+// Subscription management (Patient only - own subscriptions)
+router.post(
+  "/subscriptions",
+  authenticate,
+  isPatient,
+  validation.subscribeValidation,
+  notificationController.subscribeToReminder,
+);
 router.delete(
   "/subscriptions/:id",
+  authenticate,
+  isPatient,
+  validation.subscriptionIdParamValidation,
   notificationController.unsubscribeFromReminder,
 );
 router.get(
   "/subscriptions/patient/:patientId",
+  authenticate,
+  isPatient,
+  validation.patientIdParamValidation,
   notificationController.getPatientSubscriptions,
 );
-router.get("/subscriptions/:id", notificationController.getSubscriptionById);
-router.patch("/subscriptions/:id", notificationController.updateSubscription);
-
-// Cron job endpoint (should be protected/internal only)
-router.post(
-  "/cron/send-due-reminders",
-  notificationController.sendDueReminders,
+router.get(
+  "/subscriptions/:id",
+  authenticate,
+  isPatient,
+  validation.subscriptionIdParamValidation,
+  notificationController.getSubscriptionById,
+);
+router.put(
+  "/subscriptions/:id",
+  authenticate,
+  isPatient,
+  validation.subscriptionIdParamValidation,
+  validation.updateSubscriptionValidation,
+  notificationController.updateSubscription,
 );
 
 export default router;

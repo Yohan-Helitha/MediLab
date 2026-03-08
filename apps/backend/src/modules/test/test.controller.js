@@ -1,7 +1,7 @@
-import * as TestService from './test.service.js';
+import * as TestService from "./test.service.js";
 
 export const createTestType = async (req, res, next) => {
-  try{
+  try {
     const testType = await TestService.createTestType(req.body);
     res.status(201).json(testType);
   }catch(error){
@@ -13,9 +13,9 @@ export const createTestType = async (req, res, next) => {
 };
 
 export const getAllTestTypes = async (req, res, next) => {
-  try{
-    const filters ={};
-    if(req.query.category){
+  try {
+    const filters = {};
+    if (req.query.category) {
       filters.category = req.query.category;
     }
     const testType = await TestService.findAllTestTypes(filters);
@@ -29,7 +29,7 @@ export const getAllTestTypes = async (req, res, next) => {
 };
 
 export const getTestTypeById = async (req, res, next) => {
-  try{
+  try {
     const testType = await TestService.findTestTypeById(req.params.id);
     if(!testType){
       return res.status(404).json({
@@ -65,7 +65,7 @@ export const updateTestType = async (req, res, next) => {
 };
 
 export const softDeleteTestType = async (req, res, next) => {
-  try{
+  try {
     const testType = await TestService.softDeleteTestType(req.params.id);
     if(!testType){
       return res.status(404).json({
@@ -82,8 +82,8 @@ export const softDeleteTestType = async (req, res, next) => {
   }
 };
 
-export const hardDeleteTestType =async (req,res,next) => {
-  try{
+export const hardDeleteTestType = async (req, res, next) => {
+  try {
     const testType = await TestService.hardDeleteTestType(req.params.id);
     if(!testType){
       return res.status(404).json({
@@ -101,7 +101,7 @@ export const hardDeleteTestType =async (req,res,next) => {
 };
 
 export const getTestTypesByCategory = async (req, res, next) => {
-  try{
+  try {
     const testType = await TestService.findByCategory(req.params.category);
     if(!testType || testType.length === 0){
       return res.status(404).json({
@@ -119,7 +119,7 @@ export const getTestTypesByCategory = async (req, res, next) => {
 };
 
 export const getFormBasedTests = async (req, res, next) => {
-  try{
+  try {
     const testType = await TestService.findByEntryMethod("Form");
     if(!testType || testType.length === 0){
       return res.status(404).json({
@@ -137,7 +137,7 @@ export const getFormBasedTests = async (req, res, next) => {
 };
 
 export const getUploadBasedTests = async (req, res, next) => {
-  try{
+  try {
     const testType = await TestService.findByEntryMethod("Upload");
     if(!testType || testType.length === 0){
       return res.status(404).json({
@@ -155,7 +155,7 @@ export const getUploadBasedTests = async (req, res, next) => {
 };
 
 export const getMonitoringTests = async (req, res, next) => {
-  try{
+  try {
     const testType = await TestService.findMonitoringTests();
     if(!testType || testType.length === 0){
       return res.status(404).json({

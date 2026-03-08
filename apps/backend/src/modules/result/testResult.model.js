@@ -8,12 +8,12 @@ const StatusHistorySchema = new Schema(
   {
     status: {
       type: String,
-      enum: ["sample_received", "processing", "released"],
+      enum: ["pending", "released"],
       required: true,
     },
     changedBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "HealthOfficer",
       required: true,
     },
     changedAt: {
@@ -29,7 +29,7 @@ const ViewedBySchema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Member",
       required: true,
     },
     viewedAt: {
@@ -72,7 +72,7 @@ const testResultBaseSchema = new Schema(
     },
     patientProfileId: {
       type: Schema.Types.ObjectId,
-      ref: "PatientProfile",
+      ref: "Member",
       required: true,
       index: true,
     },
@@ -98,24 +98,41 @@ const testResultBaseSchema = new Schema(
     },
     currentStatus: {
       type: String,
-      enum: ["sample_received", "processing", "released"],
-      default: "released",
+      enum: ["pending", "released"],
+      default: "pending",
       required: true,
       index: true,
     },
     statusHistory: [StatusHistorySchema],
     enteredBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "HealthOfficer",
       required: true,
     },
     releasedAt: {
       type: Date,
-      required: true,
-      default: Date.now,
       index: true,
     },
     viewedBy: [ViewedBySchema],
+
+    // Soft deletion fields (for audit trail and compliance)
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true, // For efficient filtering of deleted records
+    },
+    deletedAt: {
+      type: Date,
+    },
+    deletedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "HealthOfficer", // Only health officers can delete
+    },
+    deleteReason: {
+      type: String,
+      minlength: 10,
+      trim: true,
+    },
   },
   {
     discriminatorKey: "testType",
@@ -132,6 +149,7 @@ testResultBaseSchema.index({
   releasedAt: -1,
 });
 testResultBaseSchema.index({ testTypeId: 1, releasedAt: -1 });
+testResultBaseSchema.index({ isDeleted: 1, releasedAt: -1 }); // For filtering deleted records
 
 const TestResult = mongoose.model("TestResult", testResultBaseSchema);
 

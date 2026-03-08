@@ -8,14 +8,23 @@ import {
   reserveForBookingValidation,
   restockInventoryValidation,
 } from "./inventory.validation.js";
-import { protect, adminOnly } from "../middleware/auth.middleware.js";
+// Use the new JWT-based auth middleware
+import {
+  authenticate,
+  isHealthOfficer,
+  checkRole,
+} from "../auth/auth.middleware.js";
 
 const router = express.Router();
+
+// Local alias to keep `protect` naming
+const protect = authenticate;
 
 // Reserve equipment for a booking (based on test type requirements)
 router.post(
   "/reserve",
   protect,
+  isHealthOfficer, // only health officers can reserve inventory
   reserveForBookingValidation,
   reserveForBookingController,
 );
@@ -24,21 +33,14 @@ router.post(
 router.post(
   "/deduct-after-completion/:bookingId",
   protect,
+  isHealthOfficer, // only health officers can deduct after completion
   deductAfterCompletionController,
 );
-
-// Restock equipment - ADMIN only
-// router.post(
-//   "/restock",
-//   protect,
-//   adminOnly,
-//   restockInventoryValidation,
-//   restockEquipmentController,
-// );
 
 router.post(
   "/restock",
   protect,
+  checkRole(["Admin", "ADMIN"]), // admin health officers only
   restockInventoryValidation,
   restockEquipmentController,
 );

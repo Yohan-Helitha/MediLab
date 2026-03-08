@@ -2,35 +2,43 @@
 import app from "./app.js";
 import config from "./config/environment.js";
 import connectDB from "./config/db.js";
+import { setupScheduledJobs } from "./jobs/notificationJobs.js";
 
 async function start() {
-	try {
-		await connectDB();
-		const server = app.listen(config.port, () => {
-			console.log(`[Server] Listening on port ${config.port} (${config.nodeEnv})`);
-		});
+  try {
+    await connectDB();
 
-		const shutdown = (signal) => {
-			console.log(`[Server] Received ${signal}. Shutting down gracefully...`);
-			server.close(() => {
-				console.log("[Server] HTTP server closed");
-				process.exit(0);
-			});
-		};
+    // Initialize scheduled notification jobs
+    await setupScheduledJobs();
 
-		process.on("SIGINT", shutdown);
-		process.on("SIGTERM", shutdown);
+    // Start HTTP server
+    const server = app.listen(config.port, () => {
+      console.log(`[Server] Listening on http://localhost:${config.port}`);
+      console.log(`[Server] Environment: ${config.nodeEnv}`);
+      console.log(`[Server] Press Ctrl+C to stop\n`);
+    });
 
-		process.on("unhandledRejection", (reason) => {
-			console.error("[Server] Unhandled Rejection:", reason);
-		});
-		process.on("uncaughtException", (err) => {
-			console.error("[Server] Uncaught Exception:", err);
-		});
-	} catch (err) {
-		console.error("[Server] Startup error:", err);
-		process.exit(1);
-	}
+    const shutdown = (signal) => {
+      console.log(`[Server] Received ${signal}. Shutting down gracefully...`);
+      server.close(() => {
+        console.log("[Server] HTTP server closed");
+        process.exit(0);
+      });
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+
+    process.on("unhandledRejection", (reason) => {
+      console.error("[Server] Unhandled Rejection:", reason);
+    });
+    process.on("uncaughtException", (err) => {
+      console.error("[Server] Uncaught Exception:", err);
+    });
+  } catch (err) {
+    console.error("[Server] Startup error:", err);
+    process.exit(1);
+  }
 }
 
 start();
