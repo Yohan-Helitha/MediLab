@@ -121,6 +121,9 @@ export const checkRole = (allowedRoles) => {
   };
 };
 
+// Convenience middleware to allow only Staff health officers
+export const isStaff = checkRole(['Staff']);
+
 /**
  * Optional authentication - doesn't fail if token is missing
  * Just adds user data to req.user if token is valid

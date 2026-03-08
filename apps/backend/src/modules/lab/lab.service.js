@@ -28,7 +28,7 @@ export const deleteLab = async (id) => {
 export const updateLabStatus = async (id, status) => {
   return Lab.findByIdAndUpdate(
     id,
-    { status },
+    { operationalStatus: status },
     { new: true }
   );
 };

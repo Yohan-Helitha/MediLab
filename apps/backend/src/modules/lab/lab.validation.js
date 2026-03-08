@@ -1,34 +1,87 @@
-// Lab validation using Joi
-const Joi = require('joi');
+import { body } from 'express-validator';
 
-// Schema for lab registration and update
-const labSchema = Joi.object({
-  name: Joi.string().min(3).max(100).required(), //name validation for length and required
+// Validation rules for lab creation and update
+// These are aligned with the Lab mongoose model (lab.model.js)
+export const validateLab = [
+  body('name')
+    .isString()
+    .withMessage('name must be a string')
+    .isLength({ min: 3, max: 200 })
+    .withMessage('name must be between 3 and 200 characters'),
+  body('addressLine1')
+    .optional()
+    .isString()
+    .withMessage('addressLine1 must be a string')
+    .isLength({ max: 200 })
+    .withMessage('addressLine1 must be at most 200 characters'),
+  body('addressLine2')
+    .optional()
+    .isString()
+    .withMessage('addressLine2 must be a string')
+    .isLength({ max: 200 })
+    .withMessage('addressLine2 must be at most 200 characters'),
+  body('district')
+    .optional()
+    .isString()
+    .withMessage('district must be a string')
+    .isLength({ max: 100 })
+    .withMessage('district must be at most 100 characters'),
+  body('province')
+    .optional()
+    .isString()
+    .withMessage('province must be a string')
+    .isLength({ max: 100 })
+    .withMessage('province must be at most 100 characters'),
+  body('latitude')
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('latitude must be between -90 and 90'),
+  body('longitude')
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('longitude must be between -180 and 180'),
+  body('phoneNumber')
+    .optional()
+    .isString()
+    .withMessage('phoneNumber must be a string')
+    .isLength({ max: 40 })
+    .withMessage('phoneNumber must be at most 40 characters'),
+  body('email')
+    .optional()
+    .isEmail()
+    .withMessage('email must be a valid email address')
+    .isLength({ max: 200 })
+    .withMessage('email must be at most 200 characters'),
+  body('operatingHours')
+    .optional()
+    .isArray()
+    .withMessage('operatingHours must be an array'),
+  body('operatingHours.*.day')
+    .optional()
+    .isString()
+    .withMessage('operatingHours.day must be a string'),
+  body('operatingHours.*.openTime')
+    .optional()
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    .withMessage('openTime must be in HH:mm format'),
+  body('operatingHours.*.closeTime')
+    .optional()
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    .withMessage('closeTime must be in HH:mm format'),
+  body('operationalStatus')
+    .optional()
+    .isIn(['OPEN', 'CLOSED', 'HOLIDAY', 'MAINTENANCE'])
+    .withMessage('operationalStatus must be one of: OPEN, CLOSED, HOLIDAY, MAINTENANCE'),
+  body('isActive')
+    .optional()
+    .isBoolean()
+    .withMessage('isActive must be a boolean'),
+  body('createdBy')
+    .optional()
+    .isHexadecimal()
+    .withMessage('createdBy must be a valid hex string')
+    .isLength({ min: 24, max: 24 })
+    .withMessage('createdBy must be a 24-character ObjectId'),
+];
 
-  location: Joi.string().min(3).max(100).required(), //location validation for length and required
-
-  contactInfo: Joi.object({
-    phone: Joi.string().pattern(/^\+?[0-9\-\s]{7,15}$/).required(), 
-    address: Joi.string().min(5).max(200).required(),
-  }).required(),
-
-  operatingHours: Joi.object({
-    start: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required(), // HH:MM
-    end: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required(),   // HH:MM
-  }).required(),
-
-  status: Joi.string().valid('active', 'inactive', 'closed', 'holiday').required(),
-});
-
-// Middleware for validating lab data
-function validateLab(req, res, next) {
-  const { error } = labSchema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ error: error.details[0].message });
-  }
-  next();
-}
-
-module.exports = {
-  validateLab,
-};
+export default { validateLab };
