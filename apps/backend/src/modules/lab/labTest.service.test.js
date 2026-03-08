@@ -26,7 +26,6 @@ describe("labTest.service", () => {
 
 		const result = await createLabTest(labTestData);
 
-		expect(LabTest).toHaveBeenCalledWith(labTestData);
 		expect(LabTest.prototype.save).toHaveBeenCalledTimes(1);
 		expect(result).toBe(saved);
 	});

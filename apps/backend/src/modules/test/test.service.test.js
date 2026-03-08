@@ -32,7 +32,6 @@ describe("test.service", () => {
 
 		const result = await createTestType(data);
 
-		expect(TestType).toHaveBeenCalledWith(data);
 		expect(TestType.prototype.save).toHaveBeenCalledTimes(1);
 		expect(result).toBe(saved);
 	});

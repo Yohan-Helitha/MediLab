@@ -50,8 +50,10 @@ beforeAll(async () => {
   });
 
   // Create a lab and a test type to be used in lab-tests
+  const uniqueSuffix = Date.now();
+
   const lab = await Lab.create({
-    name: 'Integration Lab For LabTests',
+    name: `Integration Lab For LabTests ${uniqueSuffix}`,
     district: 'Colombo',
     province: 'Western',
     phoneNumber: '0113000000',
@@ -61,9 +63,9 @@ beforeAll(async () => {
 
   labId = lab._id.toString();
 
-  const code = `LTINT-${Date.now()}`;
+  const code = `LTINT-${uniqueSuffix}`;
   const testType = await TestType.create({
-    name: 'Integration Lab Test Type',
+    name: `Integration Lab Test Type ${uniqueSuffix}`,
     code,
     category: 'Imaging',
     description: 'Integration lab test type for lab-tests routes',

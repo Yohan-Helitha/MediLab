@@ -50,9 +50,10 @@ beforeAll(async () => {
     fullName: officer.fullName,
   });
 
-  const code = `TIINT-${Date.now()}`;
+  const uniqueSuffix = Date.now();
+  const code = `TIINT-${uniqueSuffix}`;
   const testType = await TestType.create({
-    name: 'Integration Instruction Test Type',
+    name: `Integration Instruction Test Type ${uniqueSuffix}`,
     code,
     category: 'Imaging',
     description: 'Integration test type for test-instruction routes',
@@ -130,8 +131,7 @@ describe('Test-instruction routes integration', () => {
     const byTestTypeRes = await request(app).get(`/api/test-instructions/test-type/${testTypeId}`);
 
     expect(byTestTypeRes.status).toBe(200);
-    expect(Array.isArray(byTestTypeRes.body)).toBe(true);
-    expect(byTestTypeRes.body.length).toBeGreaterThan(0);
+    expect(byTestTypeRes.body.diagnosticTestId).toBe(testTypeId);
   });
 
   it('should fetch test-instructions by language for a given test type', async () => {
@@ -140,7 +140,7 @@ describe('Test-instruction routes integration', () => {
       .query({ language: 'en' });
 
     expect(byLanguageRes.status).toBe(200);
-    expect(Array.isArray(byLanguageRes.body)).toBe(true);
-    expect(byLanguageRes.body.length).toBeGreaterThan(0);
+    expect(byLanguageRes.body.diagnosticTestId).toBe(testTypeId);
+    expect(byLanguageRes.body.languageCode).toBe('en');
   });
 });

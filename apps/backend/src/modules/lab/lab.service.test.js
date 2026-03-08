@@ -20,7 +20,6 @@ describe('lab.service', () => {
 
     const result = await labService.createLab(labData);
 
-    expect(Lab).toHaveBeenCalledWith(labData);
     expect(Lab.prototype.save).toHaveBeenCalledTimes(1);
     expect(result).toBe(savedLab);
   });

@@ -70,13 +70,15 @@ describe('Test type routes integration', () => {
   });
 
   it('should allow Staff to create a valid test type', async () => {
-    const uniqueCode = `INT-${Date.now()}`;
+    const uniqueSuffix = Date.now();
+    const uniqueCode = `INT-${uniqueSuffix}`;
+    const uniqueName = `Integration ECG Test ${uniqueSuffix}`;
 
     const res = await request(app)
       .post('/api/test-types')
       .set('Authorization', `Bearer ${staffToken}`)
       .send({
-        name: 'Integration ECG Test',
+        name: uniqueName,
         code: uniqueCode,
         category: 'Imaging',
         description: 'ECG integration test type',
@@ -84,12 +86,13 @@ describe('Test type routes integration', () => {
         discriminatorType: 'ECG',
         price: 1500,
         resultTime: '2 hours',
+        reportTemplate: 'templates/integration-ecg.html',
         isRoutineMonitoringRecommended: false,
         isActive: true,
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.name).toBe('Integration ECG Test');
+    expect(res.body.name).toBe(uniqueName);
     expect(res.body.code).toBe(uniqueCode.toUpperCase());
   });
 });
