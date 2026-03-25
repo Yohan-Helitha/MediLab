@@ -1,6 +1,93 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import Modal from "../components/Modal";
+import LabForm from "../components/LabForm";
+import { fetchLabs, createLab } from "../api/labApi";
 
 function LabManagementPage() {
+	const [isAddLabOpen, setIsAddLabOpen] = useState(false);
+	const [labs, setLabs] = useState([]);
+	const [isLoading, setIsLoading] = useState(false);
+
+	useEffect(() => {
+		let isMounted = true;
+		setIsLoading(true);
+		fetchLabs()
+			.then((data) => {
+				if (isMounted) {
+					setLabs(data || []);
+				}
+			})
+			.catch((err) => {
+				console.error("Failed to load labs", err);
+			})
+			.finally(() => {
+				if (isMounted) setIsLoading(false);
+			});
+		return () => {
+			isMounted = false;
+		};
+	}, []);
+
+	const handleCreateLab = async (formData) => {
+		try {
+			// Map form fields to backend payload
+			const payload = {
+				name: formData.name,
+				district: formData.district,
+				phoneNumber: formData.phoneNumber || undefined,
+				addressLine1: formData.addressLine1 || undefined,
+				operationalStatus: formData.operationalStatus,
+			};
+
+			// Optional operating hours parsing: accept formats like
+			// "08:30 - 17:30" or "08:30 AM - 5:30 PM".
+			if (formData.operatingHoursDisplay) {
+				const to24Hour = (value) => {
+					if (!value) return undefined;
+					// Normalize dots to colons and trim
+					let v = value.replace(/\./g, ":").trim();
+					const match = v.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+					if (!match) return undefined;
+					let hour = parseInt(match[1], 10);
+					const minute = parseInt(match[2], 10);
+					const suffix = match[3] ? match[3].toUpperCase() : null;
+					if (suffix === "AM") {
+						if (hour === 12) hour = 0;
+					} else if (suffix === "PM") {
+						if (hour < 12) hour += 12;
+					}
+					if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+						return undefined;
+					}
+					return `${hour.toString().padStart(2, "0")}:${minute
+							.toString()
+							.padStart(2, "0")}`;
+					};
+
+				const parts = formData.operatingHoursDisplay.split("-").map((p) => p.trim());
+				if (parts.length === 2) {
+					const openTime = to24Hour(parts[0]);
+					const closeTime = to24Hour(parts[1]);
+					if (openTime && closeTime) {
+						payload.operatingHours = [
+							{
+								day: "General",
+								openTime,
+								closeTime,
+							},
+						];
+					}
+				}
+			}
+
+			const created = await createLab(payload);
+			setLabs((prev) => [...prev, created]);
+			setIsAddLabOpen(false);
+		} catch (err) {
+			console.error("Failed to create lab", err);
+			alert(err.message || "Failed to create lab. Check console for details.");
+		}
+	};
 	// Simple static layout matching the Lab Management screenshot
 	return (
 		<div className="space-y-6">
@@ -13,7 +100,10 @@ function LabManagementPage() {
 						Manage registered diagnostic centers and their details.
 					</p>
 				</div>
-				<button className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700">
+				<button
+					onClick={() => setIsAddLabOpen(true)}
+					className="rounded-md bg-teal-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-teal-700"
+				>
 					+ Add New Lab
 				</button>
 			</header>
@@ -23,7 +113,7 @@ function LabManagementPage() {
 				<input
 					type="text"
 					placeholder="Search labs by name or district..."
-					className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+					className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
 				/>
 			</div>
 
@@ -40,36 +130,59 @@ function LabManagementPage() {
 
 			{/* Static lab rows */}
 			<div className="space-y-1 rounded-b-xl bg-white p-2 shadow-sm">
-				<LabRow
-					name="North Rural Center"
-					district="North District"
-					phone="+1 (555) 123-4567"
-					address="123 Health Way, Northville"
-					hours="08:00 AM - 05:00 PM"
-					status="Open"
-					statusColor="bg-emerald-100 text-emerald-700"
-				/>
-				<LabRow
-					name="West Valley Clinic"
-					district="West District"
-					phone="+1 (555) 987-6543"
-					address="456 Valley Rd, Westside"
-					hours="09:00 AM - 06:00 PM"
-					status="Closed"
-					statusColor="bg-rose-100 text-rose-700"
-				/>
-				<LabRow
-					name="Eastside Diagnostic"
-					district="East District"
-					phone="+1 (555) 456-7890"
-					address="789 East Blvd, Easttown"
-					hours="08:00 AM - 04:00 PM"
-					status="Holiday"
-					statusColor="bg-amber-100 text-amber-700"
-				/>
+				{isLoading && (
+					<div className="px-4 py-3 text-sm text-slate-500">
+						Loading labs...
+					</div>
+				)}
+				{!isLoading &&
+					labs.map((lab) => {
+						const firstOperating = lab.operatingHours && lab.operatingHours[0];
+						const hours = firstOperating
+							? `${firstOperating.openTime} - ${firstOperating.closeTime}`
+							: "";
+						return (
+							<LabRow
+								key={lab._id}
+								name={lab.name}
+								district={lab.district}
+								phone={lab.phoneNumber}
+								address={lab.addressLine1}
+								hours={hours}
+								status={lab.operationalStatus}
+								statusColor={getStatusColor(lab.operationalStatus)}
+							/>
+						);
+					})}
 			</div>
+
+			<Modal
+				isOpen={isAddLabOpen}
+				title="Add New Lab"
+				onClose={() => setIsAddLabOpen(false)}
+			>
+				<LabForm
+					onCancel={() => setIsAddLabOpen(false)}
+					onSubmit={handleCreateLab}
+				/>
+			</Modal>
 		</div>
 	);
+}
+
+function getStatusColor(status) {
+	switch (status) {
+		case "OPEN":
+			return "bg-teal-100 text-teal-700";
+		case "CLOSED":
+			return "bg-rose-100 text-rose-700";
+		case "HOLIDAY":
+			return "bg-amber-100 text-amber-700";
+		case "MAINTENANCE":
+			return "bg-slate-100 text-slate-700";
+		default:
+			return "bg-slate-100 text-slate-700";
+	}
 }
 
 function LabRow({ name, district, phone, address, hours, status, statusColor }) {

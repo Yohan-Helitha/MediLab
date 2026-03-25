@@ -11,25 +11,25 @@ function Sidebar() {
 	return (
 		<aside className="flex min-h-screen w-64 flex-col bg-[#0F172A] px-5 py-6 text-white">
 			{/* Logo */}
-			<div className="mb-8 flex items-center text-xl font-semibold tracking-tight">
-				<div className="mr-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-[#0D9488]">
-					{/* Simple heartbeat icon */}
-					<svg
-						viewBox="0 0 24 24"
-						aria-hidden="true"
-						className="h-4 w-4 text-white"
-					>
-						<path
-							fill="currentColor"
-							d="M3 12h4l1.5-3 3 6 2-4h7"
-							stroke="currentColor"
-							strokeWidth="1.5"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</svg>
+			<div className="mb-8 flex justify-center items-center text-2xl font-bold tracking-tight text-teal-600">
+				<svg
+					viewBox="0 0 24 24"
+					aria-hidden="true"
+					className="mr-2 h-4 w-4 text-teal-600"
+				>
+					<path
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1.8"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						d="M3 13h3.5L9 9l3 6 2-4 2 4H21"
+					/>
+				</svg>
+
+				<div className="flex justify-center">
+  					<span className="text-teal-600 text-2xl font-bold">MediLab</span>
 				</div>
-				<span className="text-[#0D9488]">MediLab</span>
 			</div>
 
 			{/* Navigation */}
@@ -63,7 +63,7 @@ function Sidebar() {
 
 			{/* User summary at bottom */}
 			<div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-4 text-xs">
-				<div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F2347] text-[11px] font-semibold">
+				<div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0D9488] text-[11px] font-semibold">
 					JD
 				</div>
 				<div>
