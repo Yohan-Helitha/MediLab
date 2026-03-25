@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import LabForm from "../components/LabForm";
-import { fetchLabs, createLab, updateLab } from "../api/labApi";
+import { fetchLabs, createLab, updateLab, deleteLab } from "../api/labApi";
 
 function LabManagementPage() {
 	const [isLabModalOpen, setIsLabModalOpen] = useState(false);
@@ -108,6 +108,19 @@ function LabManagementPage() {
 			alert(err.message || "Failed to update lab. Check console for details.");
 		}
 	};
+
+	const handleDeleteLab = async (labId) => {
+		if (!window.confirm("Are you sure you want to delete this lab?")) {
+			return;
+		}
+		try {
+			await deleteLab(labId);
+			setLabs((prev) => prev.filter((lab) => lab._id !== labId));
+		} catch (err) {
+			console.error("Failed to delete lab", err);
+			alert(err.message || "Failed to delete lab. Check console for details.");
+		}
+	};
 	// Simple static layout matching the Lab Management screenshot
 	return (
 		<div className="space-y-6">
@@ -167,6 +180,7 @@ function LabManagementPage() {
 						return (
 							<LabRow
 								key={lab._id}
+								id={lab._id}
 								name={lab.name}
 								district={lab.district}
 								phone={lab.phoneNumber}
@@ -178,6 +192,7 @@ function LabManagementPage() {
 									setEditingLab(lab);
 									setIsLabModalOpen(true);
 								}}
+								onDelete={() => handleDeleteLab(lab._id)}
 							/>
 						);
 					})}
@@ -241,7 +256,7 @@ function getStatusColor(status) {
 	}
 }
 
-function LabRow({ name, district, phone, address, hours, status, statusColor, onEdit }) {
+function LabRow({ name, district, phone, address, hours, status, statusColor, onEdit, onDelete }) {
 	return (
 		<div className="rounded-lg px-4 py-3 hover:bg-slate-50">
 			<div className="grid grid-cols-12 items-center gap-4 text-sm text-slate-700">
@@ -266,7 +281,12 @@ function LabRow({ name, district, phone, address, hours, status, statusColor, on
 					>
 						✏️
 					</button>
-					<button className="hover:text-rose-500">🗑️</button>
+					<button
+						onClick={onDelete}
+						className="hover:text-rose-500"
+					>
+						🗑️
+					</button>
 				</div>
 			</div>
 		</div>

@@ -18,4 +18,10 @@ export function updateLab(id, payload) {
 	});
 }
 
+export function deleteLab(id) {
+	return apiRequest(`/api/labs/${id}`, {
+		method: "DELETE",
+	});
+}
+
 
