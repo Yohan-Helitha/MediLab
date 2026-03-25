@@ -1,16 +1,28 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-// Form for creating a new Lab, aligned with the Lab model
-// and the UI shown in the reference screenshot.
-function LabForm({ onSubmit, onCancel }) {
-	const [formData, setFormData] = useState({
-		name: "",
-		district: "",
-		phoneNumber: "",
-		addressLine1: "",
-		operatingHoursDisplay: "",
-		operationalStatus: "OPEN",
-	});
+// Form for creating or editing a Lab.
+// initialValues lets us pre-fill fields when editing.
+function LabForm({ onSubmit, onCancel, initialValues, submitLabel }) {
+	const [formData, setFormData] = useState(() => ({
+		name: initialValues?.name || "",
+		district: initialValues?.district || "",
+		phoneNumber: initialValues?.phoneNumber || "",
+		addressLine1: initialValues?.addressLine1 || "",
+		operatingHoursDisplay: initialValues?.operatingHoursDisplay || "",
+		operationalStatus: initialValues?.operationalStatus || "OPEN",
+	}));
+
+	useEffect(() => {
+		setFormData({
+			name: initialValues?.name || "",
+			district: initialValues?.district || "",
+			phoneNumber: initialValues?.phoneNumber || "",
+			addressLine1: initialValues?.addressLine1 || "",
+			operatingHoursDisplay:
+				initialValues?.operatingHoursDisplay || "",
+			operationalStatus: initialValues?.operationalStatus || "OPEN",
+		});
+	}, [initialValues]);
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
@@ -130,7 +142,7 @@ function LabForm({ onSubmit, onCancel }) {
 					type="submit"
 					className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700"
 				>
-					Create Lab
+					{submitLabel || "Create Lab"}
 				</button>
 			</div>
 		</form>

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import LabForm from "../components/LabForm";
-import { fetchLabs, createLab } from "../api/labApi";
+import { fetchLabs, createLab, updateLab } from "../api/labApi";
 
 function LabManagementPage() {
-	const [isAddLabOpen, setIsAddLabOpen] = useState(false);
+	const [isLabModalOpen, setIsLabModalOpen] = useState(false);
+	const [editingLab, setEditingLab] = useState(null);
 	const [labs, setLabs] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
 
@@ -28,64 +29,83 @@ function LabManagementPage() {
 		};
 	}, []);
 
-	const handleCreateLab = async (formData) => {
-		try {
-			// Map form fields to backend payload
-			const payload = {
-				name: formData.name,
-				district: formData.district,
-				phoneNumber: formData.phoneNumber || undefined,
-				addressLine1: formData.addressLine1 || undefined,
-				operationalStatus: formData.operationalStatus,
+	const buildPayloadFromForm = (formData) => {
+		const payload = {
+			name: formData.name,
+			district: formData.district,
+			phoneNumber: formData.phoneNumber || undefined,
+			addressLine1: formData.addressLine1 || undefined,
+			operationalStatus: formData.operationalStatus,
+		};
+
+		// Optional operating hours parsing: accept formats like
+		// "08:30 - 17:30" or "08:30 AM - 5:30 PM".
+		if (formData.operatingHoursDisplay) {
+			const to24Hour = (value) => {
+				if (!value) return undefined;
+				// Normalize dots to colons and trim
+				let v = value.replace(/\./g, ":").trim();
+				const match = v.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+				if (!match) return undefined;
+				let hour = parseInt(match[1], 10);
+				const minute = parseInt(match[2], 10);
+				const suffix = match[3] ? match[3].toUpperCase() : null;
+				if (suffix === "AM") {
+					if (hour === 12) hour = 0;
+				} else if (suffix === "PM") {
+					if (hour < 12) hour += 12;
+				}
+				if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+					return undefined;
+				}
+				return `${hour.toString().padStart(2, "0")}:${minute
+						.toString()
+						.padStart(2, "0")}`;
 			};
 
-			// Optional operating hours parsing: accept formats like
-			// "08:30 - 17:30" or "08:30 AM - 5:30 PM".
-			if (formData.operatingHoursDisplay) {
-				const to24Hour = (value) => {
-					if (!value) return undefined;
-					// Normalize dots to colons and trim
-					let v = value.replace(/\./g, ":").trim();
-					const match = v.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-					if (!match) return undefined;
-					let hour = parseInt(match[1], 10);
-					const minute = parseInt(match[2], 10);
-					const suffix = match[3] ? match[3].toUpperCase() : null;
-					if (suffix === "AM") {
-						if (hour === 12) hour = 0;
-					} else if (suffix === "PM") {
-						if (hour < 12) hour += 12;
-					}
-					if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-						return undefined;
-					}
-					return `${hour.toString().padStart(2, "0")}:${minute
-							.toString()
-							.padStart(2, "0")}`;
-					};
-
-				const parts = formData.operatingHoursDisplay.split("-").map((p) => p.trim());
-				if (parts.length === 2) {
-					const openTime = to24Hour(parts[0]);
-					const closeTime = to24Hour(parts[1]);
-					if (openTime && closeTime) {
-						payload.operatingHours = [
-							{
-								day: "General",
-								openTime,
-								closeTime,
-							},
-						];
-					}
+			const parts = formData.operatingHoursDisplay
+				.split("-")
+				.map((p) => p.trim());
+			if (parts.length === 2) {
+				const openTime = to24Hour(parts[0]);
+				const closeTime = to24Hour(parts[1]);
+				if (openTime && closeTime) {
+					payload.operatingHours = [
+						{
+							day: "General",
+							openTime,
+							closeTime,
+						},
+					];
 				}
 			}
+		}
 
+		return payload;
+	};
+
+	const handleCreateLab = async (formData) => {
+		try {
+			const payload = buildPayloadFromForm(formData);
 			const created = await createLab(payload);
 			setLabs((prev) => [...prev, created]);
-			setIsAddLabOpen(false);
+			setIsLabModalOpen(false);
 		} catch (err) {
 			console.error("Failed to create lab", err);
 			alert(err.message || "Failed to create lab. Check console for details.");
+		}
+	};
+
+	const handleUpdateLab = async (labId, formData) => {
+		try {
+			const payload = buildPayloadFromForm(formData);
+			const updated = await updateLab(labId, payload);
+			setLabs((prev) => prev.map((lab) => (lab._id === updated._id ? updated : lab)));
+			setIsLabModalOpen(false);
+			setEditingLab(null);
+		} catch (err) {
+			console.error("Failed to update lab", err);
+			alert(err.message || "Failed to update lab. Check console for details.");
 		}
 	};
 	// Simple static layout matching the Lab Management screenshot
@@ -101,7 +121,10 @@ function LabManagementPage() {
 					</p>
 				</div>
 				<button
-					onClick={() => setIsAddLabOpen(true)}
+					onClick={() => {
+						setEditingLab(null);
+						setIsLabModalOpen(true);
+					}}
 					className="rounded-md bg-teal-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-teal-700"
 				>
 					+ Add New Lab
@@ -151,23 +174,56 @@ function LabManagementPage() {
 								hours={hours}
 								status={lab.operationalStatus}
 								statusColor={getStatusColor(lab.operationalStatus)}
+								onEdit={() => {
+									setEditingLab(lab);
+									setIsLabModalOpen(true);
+								}}
 							/>
 						);
 					})}
 			</div>
 
 			<Modal
-				isOpen={isAddLabOpen}
-				title="Add New Lab"
-				onClose={() => setIsAddLabOpen(false)}
+				isOpen={isLabModalOpen}
+				title={editingLab ? "Edit Lab" : "Add New Lab"}
+				onClose={() => {
+					setIsLabModalOpen(false);
+					setEditingLab(null);
+				}}
 			>
 				<LabForm
-					onCancel={() => setIsAddLabOpen(false)}
-					onSubmit={handleCreateLab}
+					initialValues={buildInitialFormValues(editingLab)}
+					submitLabel={editingLab ? "Save Changes" : "Create Lab"}
+					onCancel={() => {
+						setIsLabModalOpen(false);
+						setEditingLab(null);
+					}}
+					onSubmit={(data) => {
+						if (editingLab) {
+							return handleUpdateLab(editingLab._id, data);
+						}
+						return handleCreateLab(data);
+					}}
 				/>
 			</Modal>
 		</div>
 	);
+}
+
+function buildInitialFormValues(lab) {
+	if (!lab) return undefined;
+	const firstOperating = lab.operatingHours && lab.operatingHours[0];
+	const operatingHoursDisplay = firstOperating
+		? `${firstOperating.openTime} - ${firstOperating.closeTime}`
+		: "";
+	return {
+		name: lab.name || "",
+		district: lab.district || "",
+		phoneNumber: lab.phoneNumber || "",
+		addressLine1: lab.addressLine1 || "",
+		operatingHoursDisplay,
+		operationalStatus: lab.operationalStatus || "OPEN",
+	};
 }
 
 function getStatusColor(status) {
@@ -185,7 +241,7 @@ function getStatusColor(status) {
 	}
 }
 
-function LabRow({ name, district, phone, address, hours, status, statusColor }) {
+function LabRow({ name, district, phone, address, hours, status, statusColor, onEdit }) {
 	return (
 		<div className="rounded-lg px-4 py-3 hover:bg-slate-50">
 			<div className="grid grid-cols-12 items-center gap-4 text-sm text-slate-700">
@@ -204,7 +260,12 @@ function LabRow({ name, district, phone, address, hours, status, statusColor }) 
 					</span>
 				</div>
 				<div className="col-span-1 flex justify-end gap-3 text-slate-400">
-					<button className="hover:text-slate-600">✏️</button>
+					<button
+						onClick={onEdit}
+						className="hover:text-slate-600"
+					>
+						✏️
+					</button>
 					<button className="hover:text-rose-500">🗑️</button>
 				</div>
 			</div>

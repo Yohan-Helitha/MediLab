@@ -11,3 +11,11 @@ export function createLab(payload) {
 	});
 }
 
+export function updateLab(id, payload) {
+	return apiRequest(`/api/labs/${id}`, {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+
