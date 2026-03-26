@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { HiPencilSquare, HiTrash } from "react-icons/hi2";
 import Modal from "../components/Modal";
 import LabForm from "../components/LabForm";
 import { fetchLabs, createLab, updateLab, deleteLab } from "../api/labApi";
@@ -295,14 +296,16 @@ function LabRow({ name, district, phone, address, hours, status, statusColor, on
 					<button
 						onClick={onEdit}
 						className="hover:text-slate-600"
+						aria-label="Edit lab"
 					>
-						✏️
+						<HiPencilSquare className="h-4 w-4" />
 					</button>
 					<button
 						onClick={onDelete}
 						className="hover:text-rose-500"
+						aria-label="Delete lab"
 					>
-						🗑️
+						<HiTrash className="h-4 w-4" />
 					</button>
 				</div>
 			</div>
