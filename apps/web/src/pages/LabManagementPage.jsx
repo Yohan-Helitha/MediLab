@@ -8,6 +8,7 @@ function LabManagementPage() {
 	const [editingLab, setEditingLab] = useState(null);
 	const [labs, setLabs] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [searchTerm, setSearchTerm] = useState("");
 
 	useEffect(() => {
 		let isMounted = true;
@@ -121,6 +122,15 @@ function LabManagementPage() {
 			alert(err.message || "Failed to delete lab. Check console for details.");
 		}
 	};
+
+	const filteredLabs = labs.filter((lab) => {
+		if (!searchTerm) return true;
+		const term = searchTerm.toLowerCase();
+		const name = (lab.name || "").toLowerCase();
+		const district = (lab.district || "").toLowerCase();
+		return name.includes(term) || district.includes(term);
+	});
+
 	// Simple static layout matching the Lab Management screenshot
 	return (
 		<div className="space-y-6">
@@ -149,6 +159,8 @@ function LabManagementPage() {
 				<input
 					type="text"
 					placeholder="Search labs by name or district..."
+					value={searchTerm}
+					onChange={(e) => setSearchTerm(e.target.value)}
 					className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
 				/>
 			</div>
@@ -171,8 +183,13 @@ function LabManagementPage() {
 						Loading labs...
 					</div>
 				)}
+				{!isLoading && filteredLabs.length === 0 && (
+					<div className="px-4 py-3 text-sm text-slate-500">
+						No labs found.
+					</div>
+				)}
 				{!isLoading &&
-					labs.map((lab) => {
+					filteredLabs.map((lab) => {
 						const firstOperating = lab.operatingHours && lab.operatingHours[0];
 						const hours = firstOperating
 							? `${firstOperating.openTime} - ${firstOperating.closeTime}`
