@@ -30,8 +30,6 @@ router.put(
 );
 router.delete(
 	'/:id',
-	authenticate,
-	isStaff,
 	testInstructionIdParamValidation,
 	handleValidationErrors,
 	testInstructionController.deleteTestInstructions

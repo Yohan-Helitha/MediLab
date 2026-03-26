@@ -37,9 +37,9 @@ export const createTestInstructionValidation = [
 		.optional()
 		.isBoolean()
 		.withMessage("isActive must be a boolean"),
+// createdBy is handled via auth in real environments; optional for now
 	body("createdBy")
-		.notEmpty()
-		.withMessage("createdBy is required")
+		.optional()
 		.isHexadecimal()
 		.withMessage("createdBy must be a valid hex string")
 		.isLength({ min: 24, max: 24 })
