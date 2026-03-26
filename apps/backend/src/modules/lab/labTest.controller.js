@@ -108,3 +108,39 @@ export const getTestsByName = async (req, res, next) => {
         });
     }
 };
+
+export const updateLabTestDetails = async (req, res, next) => {
+    try {
+        const labTest = await LabTestService.updateLabTest(req.params.id, req.body);
+        if (!labTest) {
+            return res.status(404).json({
+                success: false,
+                message: "Lab test is not found",
+            });
+        }
+        res.json(labTest);
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+export const deleteLabTest = async (req, res, next) => {
+    try {
+        const deleted = await LabTestService.deleteLabTest(req.params.id);
+        if (!deleted) {
+            return res.status(404).json({
+                success: false,
+                message: "Lab test is not found",
+            });
+        }
+        res.status(204).send();
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
