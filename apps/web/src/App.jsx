@@ -1,11 +1,13 @@
-import React from 'react';
+import React from "react";
+import DashboardLayout from "./layout/DashboardLayout.jsx";
+import LabManagementPage from "./pages/LabManagementPage.jsx";
 
 function App() {
-  return (
-    <div className="App">
-      <h1>MediLab</h1>
-    </div>
-  );
+	return (
+		<DashboardLayout>
+			<LabManagementPage />
+		</DashboardLayout>
+	);
 }
 
 export default App;
