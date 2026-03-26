@@ -126,7 +126,7 @@ function LabManagementPage() {
 		<div className="space-y-6">
 			<header className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold text-slate-900">
+					<h1 className="text-2xl font-bold text-slate-900">
 						Lab Management
 					</h1>
 					<p className="mt-1 text-sm text-slate-500">
