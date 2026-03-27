@@ -1,15 +1,33 @@
 import React from "react";
 
-function PublicLayout({ children }) {
+function PublicLayout({ children, onNavigate }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
         <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="text-teal-700 font-bold text-lg">MediLab</div>
+            <button
+              type="button"
+              onClick={() => onNavigate && onNavigate("home")}
+              className="text-teal-700 font-bold text-lg"
+            >
+              MediLab
+            </button>
             <nav className="hidden md:flex gap-4 text-sm text-slate-600">
-              <a href="#" className="hover:text-teal-600">Home</a>
-              <a href="#" className="hover:text-teal-600">Health Centers</a>
+              <button
+                type="button"
+                onClick={() => onNavigate && onNavigate("home")}
+                className="hover:text-teal-600"
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate && onNavigate("health-centers")}
+                className="hover:text-teal-600"
+              >
+                Health Centers
+              </button>
             </nav>
           </div>
           <div>

@@ -15,3 +15,7 @@ export function fetchTestTypes() {
 export async function fetchLabTestsByLab(labId) {
   return apiRequest(`/api/lab-tests/lab/${labId}`);
 }
+
+export function fetchTestInstructionsByDiagnosticTest(diagnosticTestId) {
+	return apiRequest(`/api/test-instructions/diagnostic-test/${diagnosticTestId}`);
+}

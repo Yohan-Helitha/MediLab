@@ -11,13 +11,13 @@ function PublicRoutes() {
   // This is a very small internal router for the public site. Integrate with React Router later if needed.
   switch (route.name) {
     case "home":
-      return <HomePage />;
+      return <HomePage navigate={navigate} />;
     case "health-centers":
-      return <HealthCentersPage />;
+      return <HealthCentersPage navigate={navigate} />;
     case "lab":
-      return <LabDetailsPage labId={route.params.labId} />;
+      return <LabDetailsPage labId={route.params.labId} navigate={navigate} />;
     default:
-      return <HomePage />;
+      return <HomePage navigate={navigate} />;
   }
 }
 

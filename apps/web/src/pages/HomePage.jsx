@@ -7,7 +7,7 @@ import LabCard from "../components/patient/LabCard";
 import TestCard from "../components/patient/TestCard";
 import { fetchLabs, fetchTestTypes } from "../api/patientApi";
 
-function HomePage() {
+function HomePage({ navigate }) {
   const [labs, setLabs] = useState([]);
   const [tests, setTests] = useState([]);
   const [search, setSearch] = useState("");
@@ -47,7 +47,7 @@ function HomePage() {
   );
 
   return (
-    <PublicLayout>
+    <PublicLayout onNavigate={navigate}>
       <div className="space-y-8">
         <section className="rounded-2xl bg-gradient-to-r from-teal-500 to-teal-800 p-8 text-white shadow-md">
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
