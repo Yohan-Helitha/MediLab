@@ -4,9 +4,11 @@ import LabManagementPage from "./pages/LabManagementPage.jsx";
 import TestManagementPage from "./pages/TestManagementPage.jsx";
 import TestAvailabilityPage from "./pages/TestAvailabilityPage.jsx";
 import TestInstructionsPage from "./pages/TestInstructionsPage.jsx";
+import PublicRoutes from "./routes/PublicRoutes.jsx";
 
 function App() {
 	const [activePage, setActivePage] = useState("labs");
+	const [showPublic, setShowPublic] = useState(false);
 
 	const renderPage = () => {
 		switch (activePage) {
@@ -23,9 +25,24 @@ function App() {
 	};
 
 	return (
-		<DashboardLayout activePage={activePage} onChangePage={setActivePage}>
-			{renderPage()}
-		</DashboardLayout>
+		<>
+			<div className="p-3 flex justify-end">
+				<button
+					className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+					onClick={() => setShowPublic((s) => !s)}
+				>
+					{showPublic ? "View Staff Dashboard" : "View Patient Site"}
+				</button>
+			</div>
+
+			{showPublic ? (
+				<PublicRoutes />
+			) : (
+				<DashboardLayout activePage={activePage} onChangePage={setActivePage}>
+					{renderPage()}
+				</DashboardLayout>
+			)}
+		</>
 	);
 }
 
