@@ -7,7 +7,7 @@ import {
 	HiGlobeAlt,
 } from "react-icons/hi2";
 
-function Sidebar() {
+function Sidebar({ activePage, onChangePage }) {
 	return (
 		<aside className="flex min-h-screen w-64 flex-col bg-[#0F172A] px-5 py-6 text-white">
 			{/* Logo */}
@@ -37,22 +37,26 @@ function Sidebar() {
 				<SidebarItem
 					label="Lab Management"
 					Icon={HiBuildingOffice2}
-					isActive
+					isActive={activePage === "labs"}
+					onClick={() => onChangePage && onChangePage("labs")}
 				/>
 				<SidebarItem
 					label="Test Management"
 					Icon={HiBeaker}
-					isActive={false}
+					isActive={activePage === "tests"}
+					onClick={() => onChangePage && onChangePage("tests")}
 				/>
 				<SidebarItem
 					label="Test Availability"
 					Icon={HiAdjustmentsVertical}
-					isActive={false}
+					isActive={activePage === "availability"}
+					onClick={() => onChangePage && onChangePage("availability")}
 				/>
 				<SidebarItem
 					label="Test Instructions"
 					Icon={HiDocumentText}
-					isActive={false}
+					isActive={activePage === "instructions"}
+					onClick={() => onChangePage && onChangePage("instructions")}
 				/>
 				<SidebarItem
 					label="Language Management"
@@ -75,7 +79,7 @@ function Sidebar() {
 	);
 }
 
-function SidebarItem({ label, isActive, Icon }) {
+function SidebarItem({ label, isActive, Icon, onClick }) {
 	const baseClasses =
 		"flex items-center rounded-full px-3 py-2 text-sm cursor-pointer transition-colors";
 	const activeClasses = isActive
@@ -83,7 +87,11 @@ function SidebarItem({ label, isActive, Icon }) {
 		: " text-gray-300 hover:bg-white/5";
 
 	return (
-		<div className={baseClasses + activeClasses}>
+		<button
+			type="button"
+			onClick={onClick}
+			className={baseClasses + activeClasses}
+		>
 			{Icon && (
 				<Icon
 					className={
@@ -93,7 +101,7 @@ function SidebarItem({ label, isActive, Icon }) {
 				/>
 			)}
 			<span>{label}</span>
-		</div>
+		</button>
 	);
 }
 

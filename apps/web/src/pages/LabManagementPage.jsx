@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { HiPencilSquare, HiTrash } from "react-icons/hi2";
 import Modal from "../components/Modal";
 import LabForm from "../components/LabForm";
 import { fetchLabs, createLab, updateLab, deleteLab } from "../api/labApi";
@@ -8,6 +9,7 @@ function LabManagementPage() {
 	const [editingLab, setEditingLab] = useState(null);
 	const [labs, setLabs] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [searchTerm, setSearchTerm] = useState("");
 
 	useEffect(() => {
 		let isMounted = true;
@@ -121,12 +123,21 @@ function LabManagementPage() {
 			alert(err.message || "Failed to delete lab. Check console for details.");
 		}
 	};
+
+	const filteredLabs = labs.filter((lab) => {
+		if (!searchTerm) return true;
+		const term = searchTerm.toLowerCase();
+		const name = (lab.name || "").toLowerCase();
+		const district = (lab.district || "").toLowerCase();
+		return name.includes(term) || district.includes(term);
+	});
+
 	// Simple static layout matching the Lab Management screenshot
 	return (
 		<div className="space-y-6">
 			<header className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold text-slate-900">
+					<h1 className="text-2xl font-bold text-slate-900">
 						Lab Management
 					</h1>
 					<p className="mt-1 text-sm text-slate-500">
@@ -149,6 +160,8 @@ function LabManagementPage() {
 				<input
 					type="text"
 					placeholder="Search labs by name or district..."
+					value={searchTerm}
+					onChange={(e) => setSearchTerm(e.target.value)}
 					className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
 				/>
 			</div>
@@ -171,8 +184,13 @@ function LabManagementPage() {
 						Loading labs...
 					</div>
 				)}
+				{!isLoading && filteredLabs.length === 0 && (
+					<div className="px-4 py-3 text-sm text-slate-500">
+						No labs found.
+					</div>
+				)}
 				{!isLoading &&
-					labs.map((lab) => {
+					filteredLabs.map((lab) => {
 						const firstOperating = lab.operatingHours && lab.operatingHours[0];
 						const hours = firstOperating
 							? `${firstOperating.openTime} - ${firstOperating.closeTime}`
@@ -278,14 +296,16 @@ function LabRow({ name, district, phone, address, hours, status, statusColor, on
 					<button
 						onClick={onEdit}
 						className="hover:text-slate-600"
+						aria-label="Edit lab"
 					>
-						✏️
+						<HiPencilSquare className="h-4 w-4" />
 					</button>
 					<button
 						onClick={onDelete}
 						className="hover:text-rose-500"
+						aria-label="Delete lab"
 					>
-						🗑️
+						<HiTrash className="h-4 w-4" />
 					</button>
 				</div>
 			</div>

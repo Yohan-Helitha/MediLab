@@ -34,9 +34,11 @@ export const createTestTypeValidation = [
     .isLength({ min: 10, max: 500 })
     .withMessage("Description must be between 10 and 500 characters"),
   body("price")
+    .optional()
     .isFloat({ min: 0 })
     .withMessage("Price must be a number greater than or equal to 0"),
   body("resultTime")
+    .optional()
     .matches(/^\d+\s*hours$/)
     .withMessage("resultTime must be in the format '<number> hours'")
     .isString(),
