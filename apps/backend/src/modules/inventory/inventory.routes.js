@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  listInventoryStockController,
   reserveForBookingController,
   deductAfterCompletionController,
   restockEquipmentController,
@@ -23,6 +24,14 @@ const router = express.Router();
 
 // Local alias to keep `protect` naming
 const protect = authenticate;
+
+// Inventory stock overview
+router.get(
+  "/stock",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  listInventoryStockController,
+);
 
 // Reserve equipment for a booking (based on test type requirements)
 router.post(

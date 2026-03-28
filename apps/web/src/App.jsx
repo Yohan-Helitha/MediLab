@@ -6,6 +6,8 @@ import LabManagementPage from "./pages/LabManagementPage.jsx";
 import AdminFinanceDashboard from "./pages/AdminFinanceDashboard.jsx";
 import AdminInventoryDashboard from "./pages/AdminInventoryDashboard.jsx";
 import AdminOverviewDashboard from "./pages/AdminOverviewDashboard.jsx";
+import AdminEquipmentCatalog from "./pages/AdminEquipmentCatalog.jsx";
+import AdminTestEquipmentRequirements from "./pages/AdminTestEquipmentRequirements.jsx";
 
 function App() {
 	return (
@@ -39,6 +41,22 @@ function App() {
 				 element={
 					<AdminDashboardLayout title="Inventory Management">
 						<AdminInventoryDashboard />
+					</AdminDashboardLayout>
+				}
+			/>
+			<Route
+				path="/admin/inventory/equipment"
+				 element={
+					<AdminDashboardLayout title="Equipment Catalog">
+						<AdminEquipmentCatalog />
+					</AdminDashboardLayout>
+				}
+			/>
+			<Route
+				path="/admin/inventory/requirements"
+				 element={
+					<AdminDashboardLayout title="Test Equipment Requirements">
+						<AdminTestEquipmentRequirements />
 					</AdminDashboardLayout>
 				}
 			/>

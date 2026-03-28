@@ -3,10 +3,24 @@ import {
   reserveEquipement,
   deductAfterTestCompletion,
   restockEquipment,
+  listInventoryStock,
   getTestEquipmentRequirements,
   upsertTestEquipmentRequirement,
   deactivateTestEquipmentRequirement,
 } from "./inventory.service.js";
+
+export const listInventoryStockController = async (req, res) => {
+  try {
+    const { healthCenterId } = req.query;
+
+    const items = await listInventoryStock({ healthCenterId });
+
+    return res.status(200).json({ items });
+  } catch (error) {
+    console.error("Error fetching inventory stock:", error);
+    return res.status(400).json({ message: error.message });
+  }
+};
 
 export const reserveForBookingController = async (req, res) => {
   try {

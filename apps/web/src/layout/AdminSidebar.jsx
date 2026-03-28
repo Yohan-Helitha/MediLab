@@ -5,6 +5,7 @@ import {
 	HiBeaker,
 	HiAdjustmentsVertical,
 	HiDocumentText,
+	HiClipboardDocumentList,
 } from "react-icons/hi2";
 
 function AdminSidebar() {
@@ -45,6 +46,12 @@ function AdminSidebar() {
 					to="/admin/inventory"
 					label="Inventory"
 					Icon={HiBeaker}
+					end
+				/>
+				<AdminNavItem
+					to="/admin/inventory/equipment"
+					label="Equipment Catalog"
+					Icon={HiClipboardDocumentList}
 				/>
 				<AdminNavItem
 					to="/admin/users"
@@ -67,10 +74,11 @@ function AdminSidebar() {
 	);
 }
 
-function AdminNavItem({ to, label, Icon }) {
+function AdminNavItem({ to, label, Icon, end = false }) {
 	return (
 		<NavLink
 			to={to}
+			end={end}
 			className={({ isActive }) => {
 				const baseClasses =
 					"flex items-center gap-2 rounded-full px-3 py-2 transition-colors cursor-pointer";

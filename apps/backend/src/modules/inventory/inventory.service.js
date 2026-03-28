@@ -239,6 +239,22 @@ export const restockEquipment = async (
 };
 
 
+// ---- Inventory stock overview (per health center) ----
+
+export const listInventoryStock = async ({ healthCenterId } = {}) => {
+
+  const query = {};
+
+  if (healthCenterId) {
+    query.healthCenterId = healthCenterId;
+  }
+
+  return InventoryStock.find(query)
+    .populate("equipmentId", "name type")
+    .exec();
+};
+
+
 // ---- Test equipment requirement management (admin configuration) ----
 
 export const getTestEquipmentRequirements = async (testTypeId) => {
@@ -288,6 +304,7 @@ export default {
   reserveEquipement,
   deductAfterTestCompletion,
   restockEquipment,
+  listInventoryStock,
   getTestEquipmentRequirements,
   upsertTestEquipmentRequirement,
   deactivateTestEquipmentRequirement,
