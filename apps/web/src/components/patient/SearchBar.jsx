@@ -3,10 +3,18 @@ import React from "react";
 function SearchBar({
   value,
   onChange,
+  onSubmit,
   placeholder = "Search for labs or tests...",
   size = "lg",
 }) {
   const isSmall = size === "sm";
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && onSubmit) {
+      e.preventDefault();
+      onSubmit(value?.trim?.() ?? "");
+    }
+  };
 
   return (
     <div className="w-full max-w-2xl">
@@ -34,6 +42,7 @@ function SearchBar({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={`flex-1 px-4 ${
             isSmall ? "py-1.5 text-xs" : "py-2 text-sm"
@@ -41,6 +50,8 @@ function SearchBar({
         />
 
         <button
+          type="button"
+          onClick={() => onSubmit && onSubmit(value?.trim?.() ?? "")}
           className={`ml-3 bg-teal-600 text-white rounded-full hover:bg-teal-700 ${
             isSmall ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
           }`}

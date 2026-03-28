@@ -5,10 +5,10 @@ import SearchBar from "../components/patient/SearchBar";
 import Modal from "../components/Modal";
 import { fetchLabs, fetchLabTestsByLab } from "../api/patientApi";
 
-function HealthCentersPage({ navigate }) {
+function HealthCentersPage({ navigate, initialQuery = "" }) {
   const [labs, setLabs] = useState([]);
   const [labTestsByLab, setLabTestsByLab] = useState({});
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery || "");
   const [statusModalLab, setStatusModalLab] = useState(null);
 
   useEffect(() => {
@@ -38,6 +38,10 @@ function HealthCentersPage({ navigate }) {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    setSearch(initialQuery || "");
+  }, [initialQuery]);
 
   const filteredLabs = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -81,6 +85,7 @@ function HealthCentersPage({ navigate }) {
               onChange={setSearch}
               placeholder="Search by lab or test name..."
               size="sm"
+              onSubmit={(value) => setSearch(value)}
             />
           </div>
         </header>

@@ -65,7 +65,14 @@ function HomePage({ navigate }) {
 
             <div className="flex justify-end">
               <div className="w-full md:w-[480px]">
-                <SearchBar value={search} onChange={setSearch} />
+                <SearchBar
+                  value={search}
+                  onChange={setSearch}
+                  onSubmit={(query) => {
+                    if (!navigate) return;
+                    navigate("health-centers", { query });
+                  }}
+                />
               </div>
             </div>
           </div>

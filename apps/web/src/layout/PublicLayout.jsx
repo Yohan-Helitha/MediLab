@@ -18,32 +18,35 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
-        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between gap-6">
+          {/* Left: logo */}
+          <button
+            type="button"
+            onClick={() => onNavigate && onNavigate("home")}
+            className="text-teal-700 font-bold text-lg whitespace-nowrap"
+          >
+            MediLab
+          </button>
+
+          {/* Center: navigation */}
+          <nav className="hidden md:flex flex-1 justify-center gap-6 text-sm text-slate-600">
             <button
               type="button"
               onClick={() => onNavigate && onNavigate("home")}
-              className="text-teal-700 font-bold text-lg"
+              className="hover:text-teal-600"
             >
-              MediLab
+              Home
             </button>
-            <nav className="hidden md:flex gap-4 text-sm text-slate-600">
-              <button
-                type="button"
-                onClick={() => onNavigate && onNavigate("home")}
-                className="hover:text-teal-600"
-              >
-                Home
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate && onNavigate("health-centers")}
-                className="hover:text-teal-600"
-              >
-                Health Centers
-              </button>
-            </nav>
-          </div>
+            <button
+              type="button"
+              onClick={() => onNavigate && onNavigate("health-centers")}
+              className="hover:text-teal-600"
+            >
+              Health Centers
+            </button>
+          </nav>
+
+          {/* Right: language selector */}
           <div className="relative">
             <button
               type="button"

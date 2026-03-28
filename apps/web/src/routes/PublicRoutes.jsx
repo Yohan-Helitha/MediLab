@@ -13,7 +13,12 @@ function PublicRoutes() {
     case "home":
       return <HomePage navigate={navigate} />;
     case "health-centers":
-      return <HealthCentersPage navigate={navigate} />;
+      return (
+        <HealthCentersPage
+          navigate={navigate}
+          initialQuery={route.params.query || ""}
+        />
+      );
     case "lab":
       return <LabDetailsPage labId={route.params.labId} navigate={navigate} />;
     default:
