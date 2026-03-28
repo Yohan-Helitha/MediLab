@@ -3,10 +3,14 @@ import {
   reserveForBookingController,
   deductAfterCompletionController,
   restockEquipmentController,
+  listTestEquipmentRequirementsController,
+  upsertTestEquipmentRequirementController,
+  deactivateTestEquipmentRequirementController,
 } from "./inventory.controller.js";
 import {
   reserveForBookingValidation,
   restockInventoryValidation,
+  upsertTestEquipmentRequirementValidation,
 } from "./inventory.validation.js";
 // Use the new JWT-based auth middleware
 import {
@@ -43,6 +47,37 @@ router.post(
   checkRole(["Admin", "ADMIN"]), // admin health officers only
   restockInventoryValidation,
   restockEquipmentController,
+);
+
+// Admin configuration of required equipment per test type
+router.get(
+  "/requirements",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  listTestEquipmentRequirementsController,
+);
+
+router.post(
+  "/requirements",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  upsertTestEquipmentRequirementValidation,
+  upsertTestEquipmentRequirementController,
+);
+
+router.put(
+  "/requirements/:id",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  upsertTestEquipmentRequirementValidation,
+  upsertTestEquipmentRequirementController,
+);
+
+router.delete(
+  "/requirements/:id",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  deactivateTestEquipmentRequirementController,
 );
 
 

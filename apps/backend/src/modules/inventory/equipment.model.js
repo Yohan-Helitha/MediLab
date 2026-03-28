@@ -18,6 +18,10 @@ const equipmentSchema = new mongoose.Schema(
       type: String,
       maxlength: 500,
     },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     isActive: {
       type: Boolean,
       default: true,

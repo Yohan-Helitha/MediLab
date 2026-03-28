@@ -239,8 +239,56 @@ export const restockEquipment = async (
 };
 
 
+// ---- Test equipment requirement management (admin configuration) ----
+
+export const getTestEquipmentRequirements = async (testTypeId) => {
+  return TestEquipmentRequirement.find({
+    testTypeId,
+    isActive: true,
+  })
+    .populate("equipmentId", "name type description isActive")
+    .exec();
+};
+
+export const upsertTestEquipmentRequirement = async ({
+  id = null,
+  testTypeId,
+  equipmentId,
+  quantityPerTest,
+  isActive = true,
+}) => {
+  if (id) {
+    return TestEquipmentRequirement.findByIdAndUpdate(
+      id,
+      { testTypeId, equipmentId, quantityPerTest, isActive },
+      { new: true, runValidators: true },
+    ).exec();
+  }
+
+  const requirement = new TestEquipmentRequirement({
+    testTypeId,
+    equipmentId,
+    quantityPerTest,
+    isActive,
+  });
+
+  return requirement.save();
+};
+
+export const deactivateTestEquipmentRequirement = async (id) => {
+  return TestEquipmentRequirement.findByIdAndUpdate(
+    id,
+    { isActive: false },
+    { new: true },
+  ).exec();
+};
+
+
 export default {
   reserveEquipement,
   deductAfterTestCompletion,
   restockEquipment,
+  getTestEquipmentRequirements,
+  upsertTestEquipmentRequirement,
+  deactivateTestEquipmentRequirement,
 };
