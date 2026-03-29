@@ -52,7 +52,11 @@ const householdSchema = new mongoose.Schema({
   registration_date: {
     type: Date,
     default: Date.now
-  }
+  },
+  members: [{
+    type: String, // member_id
+    maxlength: 50
+  }]
 }, {
   timestamps: true
 });
