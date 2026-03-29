@@ -7,7 +7,11 @@ import {
 } from "../validations/emergencyContactValidation.js";
 import { handleValidationErrors } from "../middlewares/emergencyContactMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", emergencyContactController.getAllEmergencyContacts);
 
