@@ -6,87 +6,10 @@ import TestEquipmentRequirement from "./testEquipmentRequirement.model.js";
 import Booking from "../booking/booking.model.js";
 import TestType from "../test/testType.model.js";
 
-export const reserveEquipement = async (
-    TestTypeId,
-    healthCenterId,
-    {bookingId = null, createdBy = null} = {}
-
-) => {
-
-    const session = await mongoose.startSession();
-    let result;
-    let reservedItems = [];
-    let requirements;
-
-    try {
-        
-        await session.withTransaction( async () => {
-          requirements = await TestEquipmentRequirement.find({
-            testTypeId: TestTypeId,
-            isActive: true
-          }).session(session);
-
-          if (!requirements.length) {
-            result = {reservedItems: [], message: "No equipement required for test"};
-                return; 
-            }
-            
-          for (const req of requirements) {
-
-                const stock = await InventoryStock.findOne({
-                    healthCenterId,
-                    equipmentId: req.equipmentId
-                }).session(session).exec();
-
-                if(!stock){
-                    throw new Error(`Stock record not found for equipment ${req.equipmentId} at health center ${healthCenterId}`);
-                }
-
-                const freeQuantity = stock.availableQuantity - stock.reservedQuantity;
-                const needed = req.quantityPerTest;
-
-                if (freeQuantity < needed) {
-                    throw new Error(`Insufficient stock for equipment ${req.equipmentId}. Needed ${needed}, available ${freeQuantity}`);
-                }
-
-                stock.reservedQuantity += needed;
-                await stock.save({ session });
-
-                await StockTransaction.create([
-                    {
-                        healthCenterId,
-                        equipmentId: req.equipmentId,
-                        quantity: needed,
-                        type: "RESERVE",
-                        referenceBookingId: bookingId,
-                        createdBy
-                    }
-                ], { session });
-
-                reservedItems.push({
-                    equipmentId: req.equipmentId,
-                    quantity: needed
-                });
-            }
-
-            result = {reservedItems, message: "Equipment reserved successfully"};
-        });
-
-    } catch (error) {
-
-        console.error("Error reserving equipment:", error);
-        result = {reservedItems: [], message: `Failed to reserve equipment: ${error.message}`};
-        throw error;        
-        
-    } finally {
-        session.endSession();
-    }
-    return result;
-};
-
-
-
-export const deductAfterTestCompletion = async (
+// Apply equipment usage for a completed booking.
+// This should be called by the booking module (via HTTP) only
+// when a booking moves to COMPLETED status.
+export const applyEquipmentUsageForBooking = async (
   bookingId,
   { changedBy = null } = {},
 ) => {
@@ -96,7 +19,6 @@ export const deductAfterTestCompletion = async (
     throw new Error("Booking not found");
   }
 
-  const healthCenterId = booking.healthCenterId;
   const testTypeId = booking.diagnosticTestId;
 
   const session = await mongoose.startSession();
@@ -111,7 +33,10 @@ export const deductAfterTestCompletion = async (
       }).session(session);
 
       if (!requirements.length) {
-        result = { deductedItems: [], message: "No equipment requirements for test" };
+        result = {
+          deductedItems: [],
+          message: "No equipment requirements for test",
+        };
         return;
       }
 
@@ -119,7 +44,6 @@ export const deductAfterTestCompletion = async (
 
       for (const req of requirements) {
         const stock = await InventoryStock.findOne({
-          healthCenterId,
           equipmentId: req.equipmentId,
         })
           .session(session)
@@ -127,17 +51,11 @@ export const deductAfterTestCompletion = async (
 
         if (!stock) {
           throw new Error(
-            "Inventory stock not configured for required equipment at this health center",
+            "Inventory stock not configured for required equipment",
           );
         }
 
         const quantity = req.quantityPerTest;
-
-        if (stock.reservedQuantity < quantity) {
-          throw new Error(
-            `Reserved quantity too low for equipment ${req.equipmentId}. Reserved ${stock.reservedQuantity}, trying to deduct ${quantity}`,
-          );
-        }
 
         if (stock.availableQuantity < quantity) {
           throw new Error(
@@ -146,13 +64,11 @@ export const deductAfterTestCompletion = async (
         }
 
         stock.availableQuantity -= quantity;
-        stock.reservedQuantity -= quantity;
         await stock.save({ session });
 
         await StockTransaction.create(
           [
             {
-              healthCenterId,
               equipmentId: req.equipmentId,
               quantity,
               type: "DEDUCT",
@@ -180,7 +96,6 @@ export const deductAfterTestCompletion = async (
 
 
 export const restockEquipment = async (
-  healthCenterId,
   equipmentId,
   quantity,
   { createdBy = null } = {},
@@ -192,7 +107,6 @@ export const restockEquipment = async (
 
     await session.withTransaction(async () => {
       const stock = await InventoryStock.findOne({
-        healthCenterId,
         equipmentId,
       })
         .session(session)
@@ -203,7 +117,6 @@ export const restockEquipment = async (
         updatedStock = await InventoryStock.create(
           [
             {
-              healthCenterId,
               equipmentId,
               availableQuantity: quantity,
               reservedQuantity: 0,
@@ -221,7 +134,6 @@ export const restockEquipment = async (
       await StockTransaction.create(
         [
           {
-            healthCenterId,
             equipmentId,
             quantity,
             type: "RESTOCK",
@@ -242,15 +154,8 @@ export const restockEquipment = async (
 // ---- Inventory stock overview (per health center) ----
 
 export const listInventoryStock = async ({ healthCenterId } = {}) => {
-  const query = {};
-
-  if (healthCenterId) {
-    query.healthCenterId = healthCenterId;
-  }
-
-  const docs = await InventoryStock.find(query)
+  const docs = await InventoryStock.find({})
     .populate("equipmentId", "name type")
-    .populate("healthCenterId", "name")
     .exec();
 
   return docs.map((doc) => {
@@ -289,11 +194,15 @@ export const upsertTestEquipmentRequirement = async ({
   isActive = true,
 }) => {
   if (id) {
+    // Return the updated document with equipment populated so the
+    // frontend can immediately display the equipment name/type
     return TestEquipmentRequirement.findByIdAndUpdate(
       id,
       { testTypeId, equipmentId, quantityPerTest, isActive },
       { new: true, runValidators: true },
-    ).exec();
+    )
+      .populate("equipmentId", "name type description isActive")
+      .exec();
   }
 
   const requirement = new TestEquipmentRequirement({
@@ -303,7 +212,10 @@ export const upsertTestEquipmentRequirement = async ({
     isActive,
   });
 
-  return requirement.save();
+  await requirement.save();
+  await requirement.populate("equipmentId", "name type description isActive");
+
+  return requirement;
 };
 
 export const deactivateTestEquipmentRequirement = async (id) => {
@@ -311,13 +223,14 @@ export const deactivateTestEquipmentRequirement = async (id) => {
     id,
     { isActive: false },
     { new: true },
-  ).exec();
+  )
+    .populate("equipmentId", "name type description isActive")
+    .exec();
 };
 
 
 export default {
-  reserveEquipement,
-  deductAfterTestCompletion,
+  applyEquipmentUsageForBooking,
   restockEquipment,
   listInventoryStock,
   getTestEquipmentRequirements,

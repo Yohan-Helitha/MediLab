@@ -7,8 +7,6 @@ import TestEquipmentRequirement from "./testEquipmentRequirement.model.js";
 import Booking from "../booking/booking.model.js";
 
 import {
-	reserveEquipement,
-	deductAfterTestCompletion,
 	restockEquipment,
 	getTestEquipmentRequirements,
 	upsertTestEquipmentRequirement,
@@ -41,74 +39,7 @@ describe("inventory.service", () => {
 		Booking.findById = jest.fn();
 	});
 
-	test("reserveEquipement reserves quantities and records transactions when stock is sufficient", async () => {
-		const testTypeId = "testType1";
-		const healthCenterId = "lab1";
-		const bookingId = "booking1";
-
-		const requirements = [
-			{ _id: "req1", equipmentId: "eq1", quantityPerTest: 2 },
-		];
-
-		// requirements query chain
-		const requirementsSessionMock = jest.fn().mockResolvedValue(requirements);
-		TestEquipmentRequirement.find.mockReturnValue({ session: requirementsSessionMock });
-
-		// stock lookup chain
-		const stockDoc = {
-			availableQuantity: 10,
-			reservedQuantity: 3,
-			save: jest.fn().mockResolvedValue(true),
-		};
-		const stockExecMock = jest.fn().mockResolvedValue(stockDoc);
-		const stockSessionMock = jest.fn().mockReturnValue({ exec: stockExecMock });
-		InventoryStock.findOne.mockReturnValue({ session: stockSessionMock });
-
-		StockTransaction.create.mockResolvedValue(true);
-
-		const result = await reserveEquipement(testTypeId, healthCenterId, {
-			bookingId,
-			createdBy: "user1",
-		});
-
-		expect(TestEquipmentRequirement.find).toHaveBeenCalledWith({
-			testTypeId: testTypeId,
-			isActive: true,
-		});
-		expect(InventoryStock.findOne).toHaveBeenCalledWith({
-			healthCenterId,
-			equipmentId: "eq1",
-		});
-		expect(stockDoc.save).toHaveBeenCalled();
-		expect(StockTransaction.create).toHaveBeenCalledWith(
-			[
-				{
-					healthCenterId,
-					equipmentId: "eq1",
-					quantity: 2,
-					type: "RESERVE",
-					referenceBookingId: bookingId,
-					createdBy: "user1",
-				},
-			],
-			{ session: expect.any(Object) },
-		);
-		expect(result.reservedItems).toEqual([
-			{ equipmentId: "eq1", quantity: 2 },
-		]);
-	});
-
-	test("deductAfterTestCompletion throws if booking not found", async () => {
-		const bookingExecMock = jest.fn().mockResolvedValue(null);
-		Booking.findById.mockReturnValue({ exec: bookingExecMock });
-
-		await expect(
-			deductAfterTestCompletion("missingBooking"),
-		).rejects.toThrow("Booking not found");
-	});
-
 	test("restockEquipment creates new stock record when none exists", async () => {
-		const healthCenterId = "lab1";
 		const equipmentId = "eq1";
 
 		// No existing stock
@@ -119,7 +50,6 @@ describe("inventory.service", () => {
 		const createdDocs = [
 			{
 				_id: "stock1",
-				healthCenterId,
 				equipmentId,
 				availableQuantity: 5,
 				reservedQuantity: 0,
@@ -128,14 +58,13 @@ describe("inventory.service", () => {
 		InventoryStock.create.mockResolvedValue(createdDocs);
 		StockTransaction.create.mockResolvedValue(true);
 
-		const stock = await restockEquipment(healthCenterId, equipmentId, 5, {
+		const stock = await restockEquipment(equipmentId, 5, {
 			createdBy: "admin1",
 		});
 
 		expect(InventoryStock.create).toHaveBeenCalledWith(
 			[
 				{
-					healthCenterId,
 					equipmentId,
 					availableQuantity: 5,
 					reservedQuantity: 0,

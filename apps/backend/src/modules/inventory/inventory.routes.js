@@ -1,15 +1,13 @@
 import express from "express";
 import {
   listInventoryStockController,
-  reserveForBookingController,
-  deductAfterCompletionController,
+  applyEquipmentUsageForBookingController,
   restockEquipmentController,
   listTestEquipmentRequirementsController,
   upsertTestEquipmentRequirementController,
   deactivateTestEquipmentRequirementController,
 } from "./inventory.controller.js";
 import {
-  reserveForBookingValidation,
   restockInventoryValidation,
   upsertTestEquipmentRequirementValidation,
 } from "./inventory.validation.js";
@@ -35,19 +33,10 @@ router.get(
 
 // Reserve equipment for a booking (based on test type requirements)
 router.post(
-  "/reserve",
-  protect,
-  isHealthOfficer, // only health officers can reserve inventory
-  reserveForBookingValidation,
-  reserveForBookingController,
-);
-
-// Deduct equipment after a test is completed for a booking
-router.post(
   "/deduct-after-completion/:bookingId",
   protect,
   isHealthOfficer, // only health officers can deduct after completion
-  deductAfterCompletionController,
+  applyEquipmentUsageForBookingController,
 );
 
 router.post(

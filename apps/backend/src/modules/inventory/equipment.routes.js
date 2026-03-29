@@ -25,6 +25,15 @@ router.post(
 	handleValidationErrors,
 	async (req, res) => {
 		try {
+			const initialQuantity =
+				req.body.initialQuantity !== undefined
+					? Number(req.body.initialQuantity)
+					: 0;
+			const minimumThreshold =
+				req.body.minimumThreshold !== undefined
+					? Number(req.body.minimumThreshold)
+					: 0;
+
 			const payload = {
 				name: req.body.name,
 				type: req.body.type,
@@ -32,7 +41,11 @@ router.post(
 				isActive: req.body.isActive !== undefined ? req.body.isActive : true,
 				createdBy: req.user?.id || null,
 			};
-			const created = await equipmentService.createEquipment(payload);
+			const created = await equipmentService.createEquipment(payload, {
+				initialQuantity,
+				minimumThreshold,
+				createdBy: req.user?.id || null,
+			});
 			return res.status(201).json(created);
 		} catch (error) {
 			console.error("Error creating equipment:", error);

@@ -3,11 +3,15 @@ import React, { useEffect, useState } from "react";
 // Form for creating or editing an Equipment record.
 // Mirrors the backend equipment model: name, type, description, isActive.
 function AdminEquipmentForm({ onSubmit, onCancel, initialValues, submitLabel }) {
+	const isEdit = Boolean(initialValues && initialValues._id);
+
 	const [formData, setFormData] = useState(() => ({
 		name: initialValues?.name || "",
 		type: initialValues?.type || "CONSUMABLE",
 		description: initialValues?.description || "",
 		isActive: initialValues?.isActive ?? true,
+		initialQuantity: "",
+		minimumThreshold: "",
 	}));
 
 	useEffect(() => {
@@ -16,6 +20,8 @@ function AdminEquipmentForm({ onSubmit, onCancel, initialValues, submitLabel }) 
 			type: initialValues?.type || "CONSUMABLE",
 			description: initialValues?.description || "",
 			isActive: initialValues?.isActive ?? true,
+			initialQuantity: "",
+			minimumThreshold: "",
 		});
 	}, [initialValues]);
 
@@ -29,9 +35,29 @@ function AdminEquipmentForm({ onSubmit, onCancel, initialValues, submitLabel }) 
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		if (onSubmit) {
-			onSubmit(formData);
+		if (!onSubmit) return;
+
+		const { name, type, description, isActive, initialQuantity, minimumThreshold } =
+			formData;
+
+		const payload = {
+			name,
+			type,
+			description,
+			isActive,
+		};
+
+		// Only send initialQuantity / minimumThreshold when creating
+		if (!isEdit) {
+			if (initialQuantity !== "" && initialQuantity !== null) {
+				payload.initialQuantity = Number(initialQuantity);
+			}
+			if (minimumThreshold !== "" && minimumThreshold !== null) {
+				payload.minimumThreshold = Number(minimumThreshold);
+			}
 		}
+
+		onSubmit(payload);
 	};
 
 	return (
@@ -86,6 +112,41 @@ function AdminEquipmentForm({ onSubmit, onCancel, initialValues, submitLabel }) 
 						</label>
 					</div>
 				</div>
+
+				{!isEdit && (
+					<>
+						<div className="space-y-1">
+							<label className="text-sm font-medium text-slate-700">
+								Initial Quantity (optional)
+							</label>
+							<input
+								type="number"
+								name="initialQuantity"
+								min={0}
+								step={1}
+								value={formData.initialQuantity}
+								onChange={handleChange}
+								placeholder="e.g. 100"
+								className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+							/>
+						</div>
+						<div className="space-y-1">
+							<label className="text-sm font-medium text-slate-700">
+								Minimum Threshold (optional)
+							</label>
+							<input
+								type="number"
+								name="minimumThreshold"
+								min={0}
+								step={1}
+								value={formData.minimumThreshold}
+								onChange={handleChange}
+								placeholder="e.g. 10"
+								className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+							/>
+						</div>
+					</>
+				)}
 			</div>
 
 			<div className="space-y-1">

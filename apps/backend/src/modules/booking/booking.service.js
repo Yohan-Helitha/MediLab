@@ -3,7 +3,6 @@ import Booking from './booking.model.js';
 import Member from '../patient/models/Member.js';
 import Lab from '../lab/lab.model.js';
 import TestType from '../test/testType.model.js';
-import { reserveEquipement } from '../inventory/inventory.service.js';
 
 export const createBooking = async (data, userId) => {
 
@@ -74,12 +73,6 @@ export const createBooking = async (data, userId) => {
         createdBy: userId
 
 
-    });
-
-    // Reserve required equipment for this booking based on the test type
-    await reserveEquipement(diagnosticTestId, healthCenterId, {
-        bookingId: booking._id,
-        createdBy: userId,
     });
 
     return booking;

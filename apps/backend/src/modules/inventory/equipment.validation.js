@@ -18,5 +18,15 @@ export const validateEquipmentPayload = [
 		.isLength({ max: 500 })
 		.withMessage("Description must be at most 500 characters"),
 
+	body("initialQuantity")
+		.optional()
+		.isInt({ min: 0 })
+		.withMessage("initialQuantity must be a non-negative integer"),
+
+	body("minimumThreshold")
+		.optional()
+		.isInt({ min: 0 })
+		.withMessage("minimumThreshold must be a non-negative integer"),
+
 	body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
 ];

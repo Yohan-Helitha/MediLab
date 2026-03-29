@@ -1,37 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Modal from "../components/Modal";
-import { fetchLabs } from "../api/labApi";
 import { fetchInventoryStock, restockInventory } from "../api/inventoryApi";
 
 function AdminInventoryDashboard() {
 	const [equipmentItems, setEquipmentItems] = useState([]);
-	const [labsById, setLabsById] = useState({});
 	const [isLoadingInventory, setIsLoadingInventory] = useState(false);
 	const [error, setError] = useState("");
 	const [isRestocking, setIsRestocking] = useState(false);
 	const [restockTarget, setRestockTarget] = useState(null);
 	const [restockQuantity, setRestockQuantity] = useState("10");
-
-	useEffect(() => {
-		let isMounted = true;
-		fetchLabs()
-			.then((data) => {
-				if (!isMounted) return;
-				const map = {};
-				(data || []).forEach((lab) => {
-					if (lab && lab._id) {
-						map[lab._id] = lab.name || "";
-					}
-				});
-				setLabsById(map);
-			})
-			.catch((err) => {
-				console.error("Failed to load labs for inventory view", err);
-			});
-		return () => {
-			isMounted = false;
-		};
-	}, []);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -42,12 +19,9 @@ function AdminInventoryDashboard() {
 				if (!isMounted) return;
 				const items = (data.items || []).map((row) => ({
 					id: row._id,
-						healthCenterName: row.healthCenterName || "-",
-						healthCenterId: row.healthCenterId || null,
 					name: row.equipmentId?.name || "Unknown equipment",
 					type: row.equipmentId?.type || "-",
 					availableQuantity: row.availableQuantity ?? 0,
-					reservedQuantity: row.reservedQuantity ?? 0,
 					minimumThreshold: row.minimumThreshold ?? 0,
 					equipmentId: row.equipmentId?._id || null,
 				}));
@@ -82,7 +56,7 @@ function AdminInventoryDashboard() {
 
 	const handleConfirmRestock = async (event) => {
 		if (event) event.preventDefault();
-		if (!restockTarget || !restockTarget.healthCenterId) {
+		if (!restockTarget || !restockTarget.equipmentId) {
 			setIsRestocking(false);
 			return;
 		}
@@ -93,7 +67,6 @@ function AdminInventoryDashboard() {
 		}
 		try {
 			await restockInventory({
-				healthCenterId: restockTarget.healthCenterId,
 				equipmentId: restockTarget.equipmentId,
 				quantity: quantityNumber,
 			});
@@ -104,12 +77,9 @@ function AdminInventoryDashboard() {
 			const data = await fetchInventoryStock();
 			const items = (data.items || []).map((row) => ({
 				id: row._id,
-					healthCenterName: row.healthCenterName || "-",
-					healthCenterId: row.healthCenterId || null,
 				name: row.equipmentId?.name || "Unknown equipment",
 				type: row.equipmentId?.type || "-",
 				availableQuantity: row.availableQuantity ?? 0,
-				reservedQuantity: row.reservedQuantity ?? 0,
 				minimumThreshold: row.minimumThreshold ?? 0,
 				equipmentId: row.equipmentId?._id || null,
 			}));
@@ -133,7 +103,7 @@ function AdminInventoryDashboard() {
 						Track critical lab equipment levels and restock before shortages.
 					</p>
 				</div>
-		</header>
+			</header>
 
 			<section className="rounded-xl bg-white p-4 shadow-sm">
 				<div className="mb-5 flex items-center justify-between gap-4">
@@ -161,11 +131,10 @@ function AdminInventoryDashboard() {
 				{/* Table header */}
 				<div className="hidden border-b border-slate-100 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:block">
 					<div className="grid grid-cols-12 gap-4">
-						<div className="col-span-3">Health Center</div>
-						<div className="col-span-3">Equipment Name</div>
+						<div className="col-span-4">Equipment Name</div>
+						<div className="col-span-2">Type</div>
 						<div className="col-span-2">Available Qty</div>
-						<div className="col-span-1">Reserved Qty</div>
-						<div className="col-span-1">Minimum Threshold</div>
+						<div className="col-span-2">Minimum Threshold</div>
 						<div className="col-span-1">Status</div>
 						<div className="col-span-1 text-right">Actions</div>
 					</div>
@@ -179,7 +148,7 @@ function AdminInventoryDashboard() {
 					)}
 					{!isLoadingInventory && equipmentItems.length === 0 && (
 						<div className="py-4 text-sm text-slate-500">
-							No inventory records found for this health center.
+							No inventory records found.
 						</div>
 					)}
 					{!isLoadingInventory &&
@@ -187,7 +156,6 @@ function AdminInventoryDashboard() {
 							<EquipmentRow
 								key={item.id}
 								item={item}
-								labsById={labsById}
 								onRestock={() => handleOpenRestock(item)}
 							/>
 						))}
@@ -255,45 +223,39 @@ function getStatusBadgeClasses(isLow) {
 	return "bg-emerald-100 text-emerald-700";
 }
 
-function EquipmentRow({ item, labsById, onRestock }) {
+function EquipmentRow({ item, onRestock }) {
 	const isLow = item.availableQuantity <= item.minimumThreshold;
-	const resolvedHealthCenterName =
-		(labsById && item.healthCenterId && labsById[item.healthCenterId]) ||
-		item.healthCenterName ||
-		"-";
 
 	return (
 		<div className="py-3 text-sm text-slate-700">
-				<div className="grid grid-cols-2 gap-3 md:grid-cols-12 md:gap-4">
-					<div className="md:col-span-3">
-						<div className="font-medium text-slate-900">
-							{resolvedHealthCenterName}
-						</div>
-						<p className="mt-0.5 text-xs text-slate-500">Health center</p>
-					</div>
-					<div className="md:col-span-3">
-						<div className="font-medium text-slate-900">{item.name}</div>
-						<p className="mt-0.5 text-xs text-slate-500">
-							{isLow ? "Low stock." : "Stock within safe range."}
-						</p>
-					</div>
-					<div className="md:col-span-2">
+			<div className="grid grid-cols-2 gap-3 md:grid-cols-12 md:gap-4">
+				<div className="md:col-span-4">
+					<div className="font-medium text-slate-900">{item.name}</div>
+					<p className="mt-0.5 text-xs text-slate-500">
+						{isLow ? "Low stock." : "Stock within safe range."}
+					</p>
+				</div>
+				<div className="md:col-span-2">
+					<span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+						{item.type}
+					</span>
+				</div>
+				<div className="md:col-span-2">
 					<div className="font-medium text-slate-900">
 						{item.availableQuantity}
 					</div>
 				</div>
-				<div className="md:col-span-1">
-					<div className="text-sm text-slate-800">
-						{item.reservedQuantity}
-					</div>
-				</div>
-				<div className="md:col-span-1">
+				<div className="md:col-span-2">
 					<div className="text-sm text-slate-800">
 						{item.minimumThreshold}
 					</div>
 				</div>
 				<div className="md:col-span-1 flex items-center">
-					<span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClasses(isLow)}`}>
+					<span
+						className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClasses(
+							isLow,
+						)}`}
+					>
 						{isLow ? "Low" : "OK"}
 					</span>
 				</div>
