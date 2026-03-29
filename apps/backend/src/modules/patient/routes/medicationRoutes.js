@@ -7,7 +7,11 @@ import {
 } from "../validations/medicationValidation.js";
 import { handleValidationErrors } from "../middlewares/medicationMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", medicationController.getAllMedications);
 

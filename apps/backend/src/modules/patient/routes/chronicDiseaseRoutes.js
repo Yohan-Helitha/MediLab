@@ -7,7 +7,11 @@ import {
 } from "../validations/chronicDiseaseValidation.js";
 import { handleValidationErrors } from "../middlewares/chronicDiseaseMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", chronicDiseaseController.getAllChronicDiseases);
 

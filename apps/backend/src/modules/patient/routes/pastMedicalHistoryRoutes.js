@@ -7,7 +7,11 @@ import {
 } from "../validations/pastMedicalHistoryValidation.js";
 import { handleValidationErrors } from "../middlewares/pastMedicalHistoryMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", pastMedicalHistoryController.getAllPastMedicalHistories);
 

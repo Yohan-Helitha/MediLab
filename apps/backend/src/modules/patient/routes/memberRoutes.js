@@ -7,7 +7,11 @@ import {
 } from "../validations/memberValidation.js";
 import { handleValidationErrors } from "../middlewares/memberMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", memberController.getAllMembers);
 

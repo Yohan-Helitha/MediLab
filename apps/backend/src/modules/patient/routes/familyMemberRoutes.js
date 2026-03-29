@@ -7,7 +7,11 @@ import {
 } from "../validations/familyMemberValidation.js";
 import { handleValidationErrors } from "../middlewares/familyMemberMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", familyMemberController.getAllFamilyMembers);
 

@@ -7,7 +7,11 @@ import {
 } from "../validations/householdValidation.js";
 import { handleValidationErrors } from "../middlewares/householdMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", householdController.getAllHouseholds);
 
