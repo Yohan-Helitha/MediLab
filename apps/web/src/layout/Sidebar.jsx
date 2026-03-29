@@ -1,4 +1,6 @@
 import React from "react";
+import { useAuth } from "../context/AuthContext";
+import { Link, useLocation } from "react-router-dom";
 import {
 	HiBuildingOffice2,
 	HiBeaker,
@@ -7,7 +9,13 @@ import {
 	HiGlobeAlt,
 } from "react-icons/hi2";
 
-function Sidebar({ activePage, onChangePage }) {
+function Sidebar() {
+	const { user } = useAuth();
+	const location = useLocation();
+	
+	const isLabTech = user?.role === "Lab_Technician";
+	const isHealthOfficer = user?.role !== "Lab_Technician" && user?.role !== "patient" && user?.role !== "MEMBER";
+
 	return (
 		<aside className="flex min-h-screen w-64 flex-col bg-[#0F172A] px-5 py-6 text-white">
 			{/* Logo */}
@@ -34,74 +42,72 @@ function Sidebar({ activePage, onChangePage }) {
 
 			{/* Navigation */}
 			<nav className="mt-2 flex-1 space-y-1">
-				<SidebarItem
-					label="Lab Management"
-					Icon={HiBuildingOffice2}
-					isActive={activePage === "labs"}
-					onClick={() => onChangePage && onChangePage("labs")}
-				/>
-				<SidebarItem
-					label="Test Management"
-					Icon={HiBeaker}
-					isActive={activePage === "tests"}
-					onClick={() => onChangePage && onChangePage("tests")}
-				/>
-				<SidebarItem
-					label="Test Availability"
-					Icon={HiAdjustmentsVertical}
-					isActive={activePage === "availability"}
-					onClick={() => onChangePage && onChangePage("availability")}
-				/>
-				<SidebarItem
-					label="Test Instructions"
-					Icon={HiDocumentText}
-					isActive={activePage === "instructions"}
-					onClick={() => onChangePage && onChangePage("instructions")}
-				/>
+				{isHealthOfficer && (
+					<SidebarItem
+						label="Lab Management"
+						Icon={HiBuildingOffice2}
+						isActive={location.pathname === "/staff/dashboard"}
+						to="/staff/dashboard"
+					/>
+				)}
+
+				{isLabTech && (
+					<>
+						<SidebarItem
+							label="Test Management"
+							Icon={HiBeaker}
+							isActive={location.pathname === "/staff/tests"}
+							to="/staff/tests"
+						/>
+						<SidebarItem
+							label="Test Availability"
+							Icon={HiAdjustmentsVertical}
+							isActive={location.pathname === "/staff/availability"}
+							to="/staff/availability"
+						/>
+						<SidebarItem
+							label="Test Instructions"
+							Icon={HiDocumentText}
+							isActive={location.pathname === "/staff/instructions"}
+							to="/staff/instructions"
+						/>
+					</>
+				)}
+
 				<SidebarItem
 					label="Language Management"
 					Icon={HiGlobeAlt}
 					isActive={false}
+					to="#"
 				/>
 			</nav>
 
 			{/* User summary at bottom */}
 			<div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-4 text-xs">
-				<div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0D9488] text-[11px] font-semibold">
-					JD
+				<div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0D9488] text-[11px] font-semibold uppercase">
+					{(user?.fullName || user?.firstName || "JD").substring(0, 2)}
 				</div>
 				<div>
-					<div className="font-semibold">Jane Doe</div>
-					<div className="text-gray-400">Lab Technician</div>
+					<div className="font-semibold">{user?.fullName || "Staff Member"}</div>
+					<div className="text-gray-400">{user?.role?.replace('_', ' ') || "Health Professional"}</div>
 				</div>
 			</div>
 		</aside>
 	);
 }
 
-function SidebarItem({ label, isActive, Icon, onClick }) {
+function SidebarItem({ label, isActive, Icon, to }) {
 	const baseClasses =
-		"flex items-center rounded-full px-3 py-2 text-sm cursor-pointer transition-colors";
+		"flex items-center rounded-full px-3 py-2 text-sm cursor-pointer transition-all duration-200";
 	const activeClasses = isActive
-		? " bg-[#16C79A] text-[#022135] font-semibold"
-		: " text-gray-300 hover:bg-white/5";
+		? "bg-[#16C79A] text-[#022135] font-semibold"
+		: "text-gray-400 hover:bg-white/5 hover:text-white";
 
 	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={baseClasses + activeClasses}
-		>
-			{Icon && (
-				<Icon
-					className={
-						"mr-2.5 h-4 w-4 " +
-						(isActive ? "text-[#022135]" : "text-gray-400")
-					}
-				/>
-			)}
+		<Link to={to} className={`${baseClasses} ${activeClasses}`}>
+			<Icon className={`mr-3 h-5 w-5 ${isActive ? "text-[#022135]" : "text-gray-400"}`} />
 			<span>{label}</span>
-		</button>
+		</Link>
 	);
 }
 
