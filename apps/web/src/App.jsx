@@ -1,48 +1,39 @@
-import React, { useState } from "react";
-import DashboardLayout from "./layout/DashboardLayout.jsx";
-import LabManagementPage from "./pages/LabManagementPage.jsx";
-import TestManagementPage from "./pages/TestManagementPage.jsx";
-import TestAvailabilityPage from "./pages/TestAvailabilityPage.jsx";
-import TestInstructionsPage from "./pages/TestInstructionsPage.jsx";
-import PublicRoutes from "./routes/PublicRoutes.jsx";
+import React from "react";
+import AppRoutes from "./routes/AppRoutes.jsx";
+import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 
-function App() {
-	const [activePage, setActivePage] = useState("labs");
-	const [showPublic, setShowPublic] = useState(false);
+const AppContent = () => {
+	const { user, logout, loading } = useAuth();
 
-	const renderPage = () => {
-		switch (activePage) {
-			case "tests":
-				return <TestManagementPage />;
-			case "availability":
-				return <TestAvailabilityPage />;
-			case "instructions":
-				return <TestInstructionsPage />;
-			case "labs":
-			default:
-				return <LabManagementPage />;
-		}
-	};
+	if (loading) {
+		return <div className="flex h-screen items-center justify-center font-medium">Loading session...</div>;
+	}
 
 	return (
 		<>
-			<div className="p-3 flex justify-end">
-				<button
-					className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
-					onClick={() => setShowPublic((s) => !s)}
-				>
-					{showPublic ? "View Staff Dashboard" : "View Patient Site"}
-				</button>
-			</div>
-
-			{showPublic ? (
-				<PublicRoutes />
-			) : (
-				<DashboardLayout activePage={activePage} onChangePage={setActivePage}>
-					{renderPage()}
-				</DashboardLayout>
+			{user && (
+				<div className="p-3 flex justify-end gap-4 bg-white border-b border-slate-100">
+					<span className="text-sm text-slate-600 flex items-center">
+						Logged in as: <strong className="ml-1 text-slate-900">{user.email || user.fullName}</strong> ({user.role})
+					</span>
+					<button
+						className="px-3 py-1 rounded bg-rose-50 text-rose-600 hover:bg-rose-100 text-sm font-medium transition-colors"
+						onClick={logout}
+					>
+						Logout
+					</button>
+				</div>
 			)}
+			<AppRoutes />
 		</>
+	);
+};
+
+function App() {
+	return (
+		<AuthProvider>
+			<AppContent />
+		</AuthProvider>
 	);
 }
 
