@@ -242,16 +242,31 @@ export const restockEquipment = async (
 // ---- Inventory stock overview (per health center) ----
 
 export const listInventoryStock = async ({ healthCenterId } = {}) => {
-
   const query = {};
 
   if (healthCenterId) {
     query.healthCenterId = healthCenterId;
   }
 
-  return InventoryStock.find(query)
+  const docs = await InventoryStock.find(query)
     .populate("equipmentId", "name type")
+    .populate("healthCenterId", "name")
     .exec();
+
+  return docs.map((doc) => {
+    const plain = doc.toObject();
+    const healthCenter = doc.healthCenterId;
+    const normalizedHealthCenterId =
+      healthCenter && healthCenter._id ? healthCenter._id : healthCenter;
+    const healthCenterName =
+      healthCenter && healthCenter.name ? healthCenter.name : null;
+
+    return {
+      ...plain,
+      healthCenterId: normalizedHealthCenterId,
+      healthCenterName,
+    };
+  });
 };
 
 

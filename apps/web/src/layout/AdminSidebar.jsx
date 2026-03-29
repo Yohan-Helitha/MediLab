@@ -54,6 +54,11 @@ function AdminSidebar() {
 					Icon={HiClipboardDocumentList}
 				/>
 				<AdminNavItem
+					to="/admin/inventory/requirements"
+					label="Test Requirements"
+					Icon={HiDocumentText}
+				/>
+				<AdminNavItem
 					to="/admin/users"
 					label="Users"
 					Icon={HiDocumentText}
