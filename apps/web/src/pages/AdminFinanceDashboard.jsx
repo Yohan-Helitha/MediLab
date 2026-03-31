@@ -1,61 +1,99 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
+
+import Modal from "../components/Modal";
+import { fetchFinanceSummary, fetchPayments, recordCashPayment } from "../api/financeApi";
+import UnpaidBookingsPanel from "../components/UnpaidBookingsPanel";
 
 function AdminFinanceDashboard() {
-	const payments = [
-		{
-			id: "BK-1001",
-			patientName: "John Carter",
-			testName: "Full Blood Count",
-			amount: 7500,
-			method: "Credit Card",
-			status: "PAID",
-			date: "2026-03-20",
-		},
-		{
-			id: "BK-1002",
-			patientName: "Emily Rose",
-			testName: "Lipid Profile",
-			amount: 6400,
-			method: "Cash",
-			status: "PAID",
-			date: "2026-03-21",
-		},
-		{
-			id: "BK-1003",
-			patientName: "Michael Lee",
-			testName: "COVID-19 PCR",
-			amount: 5200,
-			method: "Online Transfer",
-			status: "UNPAID",
-			date: "2026-03-21",
-		},
-		{
-			id: "BK-1004",
-			patientName: "Sarah Ahmed",
-			testName: "Thyroid Panel",
-			amount: 8800,
-			method: "Credit Card",
-			status: "UNPAID",
-			date: "2026-03-22",
-		},
-		{
-			id: "BK-1005",
-			patientName: "Daniel Kim",
-			testName: "Renal Function Test",
-			amount: 6100,
-			method: "Cash",
-			status: "PAID",
-			date: "2026-03-22",
-		},
-	];
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState("");
+	const [summary, setSummary] = useState(null);
+	const [payments, setPayments] = useState([]);
+	const [activeMainTab, setActiveMainTab] = useState("PAYMENTS");
+	const [activeTab, setActiveTab] = useState("ALL");
+	const [isRecordingCash, setIsRecordingCash] = useState(false);
+	const [cashBookingId, setCashBookingId] = useState("");
+	const [cashAmount, setCashAmount] = useState("");
+	const [cashNotes, setCashNotes] = useState("");
+	const [isSubmittingCash, setIsSubmittingCash] = useState(false);
+	const [unpaidRefreshKey, setUnpaidRefreshKey] = useState(0);
 
-	const totalRevenue = payments
-		.filter((p) => p.status === "PAID")
-		.reduce((sum, p) => sum + p.amount, 0);
-	const totalPaymentsReceived = totalRevenue;
-	const pendingPayments = payments
-		.filter((p) => p.status !== "PAID")
-		.reduce((sum, p) => sum + p.amount, 0);
+	const paymentMethodFilter = useMemo(() => {
+		if (activeTab === "CASH") return "CASH";
+		if (activeTab === "ONLINE") return "ONLINE";
+		return null;
+	}, [activeTab]);
+
+	const mapPaymentRows = (items) =>
+		(items || []).map((row) => {
+			const createdAt = row.createdAt ? new Date(row.createdAt) : null;
+			const dateString = createdAt
+				? createdAt.toISOString().slice(0, 10)
+				: "-";
+
+			return {
+				id: row.bookingId || row.transactionId,
+				patientName: row.patientName || "-",
+				testName: row.testName || "-",
+				amount: row.amount ?? 0,
+				method: row.paymentMethod || "-",
+				status: row.paymentStatus || "-",
+				date: dateString,
+			};
+		});
+
+	const reloadFinance = async ({ methodFilter } = {}) => {
+		setIsLoading(true);
+		setError("");
+		try {
+			const [summaryData, paymentsData] = await Promise.all([
+				fetchFinanceSummary(),
+				fetchPayments({ paymentMethod: methodFilter || null, limit: 5000 }),
+			]);
+			setSummary(summaryData);
+			setPayments(mapPaymentRows(paymentsData.items));
+			setUnpaidRefreshKey((k) => k + 1);
+		} catch (err) {
+			console.error("Failed to load finance dashboard", err);
+			setError(err.message || "Failed to load finance data");
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		let isMounted = true;
+		setIsLoading(true);
+		setError("");
+
+		Promise.all([
+			fetchFinanceSummary(),
+			fetchPayments({ limit: 5000 }),
+		])
+			.then(([summaryData, paymentsData]) => {
+				if (!isMounted) return;
+				setSummary(summaryData);
+				setPayments(mapPaymentRows(paymentsData.items));
+				setUnpaidRefreshKey((k) => k + 1);
+			})
+			.catch((err) => {
+				console.error("Failed to load finance dashboard", err);
+				if (isMounted)
+					setError(err.message || "Failed to load finance data");
+			})
+			.finally(() => {
+				if (isMounted) setIsLoading(false);
+			});
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
+
+	const totalRevenue = summary?.totalRevenue ?? 0;
+	const totalPaymentsReceived = summary?.totalPaid ?? totalRevenue;
+	const pendingPaymentsCount =
+		summary?.pendingCount ?? summary?.pendingPayments ?? 0;
 
 	const formatCurrency = (value) =>
 		new Intl.NumberFormat("en-LK", {
@@ -63,6 +101,49 @@ function AdminFinanceDashboard() {
 			currency: "LKR",
 			maximumFractionDigits: 0,
 		}).format(value);
+
+	const pendingDisplayValue = useMemo(() => {
+		if (isLoading && !summary) return "-";
+		return String(pendingPaymentsCount);
+	}, [isLoading, pendingPaymentsCount, summary]);
+
+	const handleOpenCashModal = (bookingId = "") => {
+		setCashBookingId(bookingId ? String(bookingId) : "");
+		setCashAmount("");
+		setCashNotes("");
+		setIsRecordingCash(true);
+	};
+
+	const handleSubmitCashPayment = async (event) => {
+		if (event) event.preventDefault();
+
+		if (!cashBookingId.trim()) {
+			alert("Please enter a booking id.");
+			return;
+		}
+
+		const amountNumber = Number(cashAmount);
+		if (!Number.isFinite(amountNumber) || amountNumber < 0) {
+			alert("Please enter a valid amount (>= 0). ");
+			return;
+		}
+
+		try {
+			setIsSubmittingCash(true);
+			await recordCashPayment({
+				bookingId: cashBookingId.trim(),
+				amount: amountNumber,
+				notes: cashNotes.trim() || undefined,
+			});
+			setIsRecordingCash(false);
+			await reloadFinance({ methodFilter: paymentMethodFilter });
+		} catch (err) {
+			console.error("Failed to record cash payment", err);
+			alert(err.message || "Failed to record cash payment");
+		} finally {
+			setIsSubmittingCash(false);
+		}
+	};
 
 	return (
 		<div className="space-y-6">
@@ -75,35 +156,100 @@ function AdminFinanceDashboard() {
 						Monitor lab revenue, payments received, and pending balances.
 					</p>
 				</div>
+				<button
+					type="button"
+					className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+					onClick={() => handleOpenCashModal()}
+				>
+					Record Cash Payment
+				</button>
 			</header>
 
 			{/* Summary cards */}
 			<section className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<SummaryCard
 					label="Total Revenue"
-					value={formatCurrency(totalRevenue)}
+					value={isLoading && !summary ? "-" : formatCurrency(totalRevenue)}
 				/>
 				<SummaryCard
 					label="Total Payments Received"
-					value={formatCurrency(totalPaymentsReceived)}
+					value={
+						isLoading && !summary
+							? "-"
+							: formatCurrency(totalPaymentsReceived)
+					}
 				/>
 				<SummaryCard
 					label="Pending Payments"
-					value={formatCurrency(pendingPayments)}
+					value={pendingDisplayValue}
 					accent="warning"
 				/>
 			</section>
 
-			{/* Payments table */}
-			<section className="rounded-xl bg-white p-4 shadow-sm">
-				<div className="mb-3 flex items-center justify-between">
-					<h2 className="text-sm font-semibold text-slate-800">
-						Recent Payments
-					</h2>
-					<p className="text-xs text-slate-500">
-						Showing latest booking payments.
-					</p>
+			<div className="space-y-2">
+				<div className="flex items-center gap-2">
+					<TabButton
+						active={activeMainTab === "PAYMENTS"}
+						onClick={() => setActiveMainTab("PAYMENTS")}
+					>
+						Payments
+					</TabButton>
+					<TabButton
+						active={activeMainTab === "UNPAID"}
+						onClick={() => setActiveMainTab("UNPAID")}
+					>
+						Unpaid
+					</TabButton>
 				</div>
+
+				{activeMainTab === "PAYMENTS" && (
+					<div className="flex items-center gap-2">
+						<TabButton
+							active={activeTab === "ALL"}
+							onClick={async () => {
+								setActiveTab("ALL");
+								await reloadFinance({ methodFilter: null });
+							}}
+						>
+							All
+						</TabButton>
+						<TabButton
+							active={activeTab === "ONLINE"}
+							onClick={async () => {
+								setActiveTab("ONLINE");
+								await reloadFinance({ methodFilter: "ONLINE" });
+							}}
+						>
+							Online
+						</TabButton>
+						<TabButton
+							active={activeTab === "CASH"}
+							onClick={async () => {
+								setActiveTab("CASH");
+								await reloadFinance({ methodFilter: "CASH" });
+							}}
+						>
+							Cash
+						</TabButton>
+					</div>
+				)}
+			</div>
+
+			{activeMainTab === "UNPAID" ? (
+				<UnpaidBookingsPanel
+					refreshKey={unpaidRefreshKey}
+					onMarkPaid={(row) => handleOpenCashModal(row.bookingId)}
+				/>
+			) : (
+				<section className="rounded-xl bg-white p-4 shadow-sm">
+					<div className="mb-3 flex items-center justify-between">
+						<h2 className="text-sm font-semibold text-slate-800">
+							Payments
+						</h2>
+						<p className="text-xs text-slate-500">
+							Showing all time payments.
+						</p>
+					</div>
 
 				{/* Table header */}
 				<div className="hidden border-b border-slate-100 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:block">
@@ -118,17 +264,120 @@ function AdminFinanceDashboard() {
 					</div>
 				</div>
 
-				<div className="divide-y divide-slate-50">
-					{payments.map((payment) => (
-						<PaymentRow
-							key={payment.id}
-							payment={payment}
-							formatCurrency={formatCurrency}
+					<div className="divide-y divide-slate-50">
+						{error && (
+							<div className="py-4 text-sm text-rose-700">
+								{error}
+							</div>
+						)}
+						{!error && isLoading && (
+							<div className="py-4 text-sm text-slate-500">
+								Loading payments...
+							</div>
+						)}
+						{!error && !isLoading && payments.length === 0 && (
+							<div className="py-4 text-sm text-slate-500">
+								No payments found.
+							</div>
+						)}
+						{!error &&
+							!isLoading &&
+							payments.map((payment) => (
+								<PaymentRow
+									key={payment.id}
+									payment={payment}
+									formatCurrency={formatCurrency}
+								/>
+							))}
+					</div>
+				</section>
+			)}
+
+			<Modal
+				isOpen={isRecordingCash}
+				title="Record Cash Payment"
+				onClose={() => {
+					if (isSubmittingCash) return;
+					setIsRecordingCash(false);
+				}}
+			>
+				<form onSubmit={handleSubmitCashPayment} className="space-y-4">
+					<p className="text-sm text-slate-700">
+						Record a cash payment for a booking (marks booking payment status
+						 as PAID).
+					</p>
+					<div>
+						<label className="block text-xs font-medium text-slate-600">
+							Booking ID
+						</label>
+						<input
+							type="text"
+							className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+							value={cashBookingId}
+							onChange={(e) => setCashBookingId(e.target.value)}
+							placeholder="e.g. 65f2..."
 						/>
-					))}
-				</div>
-			</section>
+					</div>
+					<div>
+						<label className="block text-xs font-medium text-slate-600">
+							Amount (LKR)
+						</label>
+						<input
+							type="number"
+							min="0"
+							className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+							value={cashAmount}
+							onChange={(e) => setCashAmount(e.target.value)}
+							placeholder="e.g. 1500"
+						/>
+					</div>
+					<div>
+						<label className="block text-xs font-medium text-slate-600">
+							Notes (optional)
+						</label>
+						<textarea
+							className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+							value={cashNotes}
+							onChange={(e) => setCashNotes(e.target.value)}
+							maxLength={500}
+							rows={3}
+							placeholder="Paid at counter"
+						/>
+					</div>
+					<div className="flex justify-end gap-2">
+						<button
+							type="button"
+							className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+							onClick={() => setIsRecordingCash(false)}
+							disabled={isSubmittingCash}
+						>
+							Cancel
+						</button>
+						<button
+							type="submit"
+							className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
+							disabled={isSubmittingCash}
+						>
+							{isSubmittingCash ? "Recording..." : "Confirm Payment"}
+						</button>
+					</div>
+				</form>
+			</Modal>
 		</div>
+	);
+}
+
+function TabButton({ active, onClick, children }) {
+	const base =
+		"rounded-full px-3 py-1 text-xs font-medium transition-colors";
+	const activeStyles = active
+		? "bg-slate-900 text-white"
+		: "bg-slate-100 text-slate-700 hover:bg-slate-200";
+
+	return (
+		<button type="button" className={`${base} ${activeStyles}`} onClick={onClick}>
+			{children}
+		</button>
 	);
 }
 

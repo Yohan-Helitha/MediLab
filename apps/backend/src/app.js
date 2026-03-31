@@ -12,6 +12,7 @@ import testInstructionRoutes from "./modules/lab/testInstruction.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 import equipmentRoutes from "./modules/inventory/equipment.routes.js";
+import financeRoutes from "./modules/finance/finance.routes.js";
 
 //patient module
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -78,6 +79,7 @@ app.use("/api/referrals", referralRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/equipment", equipmentRoutes);
+app.use("/api/finance", financeRoutes);
 
 // Test Management Component Routes
 // Note: TestType CRUD endpoints (/api/test-types) are managed by Lab Operations Component (Arani)
