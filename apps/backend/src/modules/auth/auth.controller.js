@@ -132,6 +132,26 @@ class AuthController {
       message: 'Logout successful. Please remove the token from client storage.'
     });
   }
+
+  /**
+   * Update user profile
+   * PUT /api/auth/update
+   */
+  async updateProfile(req, res) {
+    try {
+      const result = await authService.updateProfile(req.user, req.body);
+      res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully',
+        data: result
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
 }
 
 export default new AuthController();

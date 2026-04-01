@@ -15,7 +15,7 @@ const authSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['patient', 'Lab_Technician', 'HealthOfficer', 'MOH', 'PHI', 'Nurse', 'Admin', 'Doctor'],
+      enum: ['patient', 'Lab_Technician', 'HealthOfficer', 'MOH', 'PHI', 'Nurse', 'Admin', 'Doctor', 'Staff'],
       required: true
     },
     systemId: {
