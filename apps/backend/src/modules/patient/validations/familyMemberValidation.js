@@ -57,6 +57,11 @@ export const validateFamilyMemberUpdate = [
     .isLength({ max: 50 })
     .withMessage("Household ID must be less than 50 characters"),
   
+  body("diseases")
+    .optional()
+    .isArray()
+    .withMessage("Diseases must be an array of strings"),
+  
   body("full_name")
     .optional()
     .isLength({ max: 150 })
