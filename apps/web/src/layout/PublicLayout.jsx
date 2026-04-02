@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function PublicLayout({ children, onNavigate, onLanguageChange }) {
   const { user, logout } = useAuth();
+  const routerNavigate = useNavigate();
   const [language, setLanguage] = useState("en");
   const [isLangOpen, setIsLangOpen] = useState(false);
 
@@ -18,6 +19,32 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
     setIsLangOpen(false);
     if (onLanguageChange) onLanguageChange(code);
   };
+
+  const navigate = useMemo(() => {
+    if (onNavigate) return onNavigate;
+
+    return (name, params = {}) => {
+      switch (name) {
+        case "home":
+          routerNavigate("/");
+          return;
+        case "health-centers": {
+          const query = (params?.query || "").toString().trim();
+          const search = query ? `?query=${encodeURIComponent(query)}` : "";
+          routerNavigate(`/health-centers${search}`);
+          return;
+        }
+        case "lab": {
+          const labId = params?.labId;
+          if (labId) routerNavigate(`/labs/${labId}`);
+          return;
+        }
+        default:
+          return;
+      }
+    };
+  }, [onNavigate, routerNavigate]);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
@@ -25,31 +52,29 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
           {/* Left: logo */}
           <button
             type="button"
-            onClick={() => onNavigate && onNavigate("home")}
+            onClick={() => navigate("home")}
             className="text-teal-700 font-bold text-lg whitespace-nowrap"
           >
             MediLab
           </button>
 
           {/* Center: navigation */}
-          {onNavigate && (
-            <nav className="hidden md:flex flex-1 justify-center gap-6 text-sm text-slate-600">
+          <nav className="hidden md:flex flex-1 justify-center gap-6 text-sm text-slate-600">
             <button
               type="button"
-              onClick={() => onNavigate && onNavigate("home")}
+              onClick={() => navigate("home")}
               className="hover:text-teal-600"
             >
               Home
             </button>
             <button
               type="button"
-              onClick={() => onNavigate && onNavigate("health-centers")}
+              onClick={() => navigate("health-centers")}
               className="hover:text-teal-600"
             >
               Health Centers
             </button>
-            </nav>
-          )}
+          </nav>
 
           {/* Right side: User Info, Login/Signup & Language Selector */}
           <div className="flex items-center gap-4">

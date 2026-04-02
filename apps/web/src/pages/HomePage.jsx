@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { HiBuildingOffice2, HiBeaker } from "react-icons/hi2";
+import { useNavigate } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import SearchBar from "../components/patient/SearchBar";
 import CategoryPill from "../components/patient/CategoryPill";
@@ -8,9 +9,28 @@ import TestCard from "../components/patient/TestCard";
 import { fetchLabs, fetchTestTypes } from "../api/patientApi";
 
 function HomePage({ navigate }) {
+  const routerNavigate = useNavigate();
   const [labs, setLabs] = useState([]);
   const [tests, setTests] = useState([]);
   const [search, setSearch] = useState("");
+
+  const onNavigate = (name, params = {}) => {
+    if (navigate) return navigate(name, params);
+
+    switch (name) {
+      case "home":
+        routerNavigate("/");
+        return;
+      case "health-centers": {
+        const query = (params?.query || "").toString().trim();
+        const searchParams = query ? `?query=${encodeURIComponent(query)}` : "";
+        routerNavigate(`/health-centers${searchParams}`);
+        return;
+      }
+      default:
+        return;
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -47,7 +67,7 @@ function HomePage({ navigate }) {
   );
 
   return (
-    <PublicLayout onNavigate={navigate}>
+    <PublicLayout onNavigate={onNavigate}>
       <div className="space-y-8">
         <section className="rounded-2xl bg-gradient-to-r from-teal-500 to-teal-800 p-8 text-white shadow-md">
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -69,8 +89,7 @@ function HomePage({ navigate }) {
                   value={search}
                   onChange={setSearch}
                   onSubmit={(query) => {
-                    if (!navigate) return;
-                    navigate("health-centers", { query });
+                    onNavigate("health-centers", { query });
                   }}
                 />
               </div>
