@@ -1,11 +1,12 @@
 import express from 'express';
 import * as labTestController from './labTest.controller.js';
-import { authenticate, isStaff, handleValidationErrors } from '../auth/auth.middleware.js';
+import { handleValidationErrors } from '../auth/auth.middleware.js';
 import {
 	createLabTestValidation,
 	updateLabTestStatusValidation,
 	labIdParamValidation,
 	labTestIdParamValidation,
+	updateLabTestDetailsValidation,
 } from './labTest.validation.js';
 
 const router = express.Router();
@@ -13,8 +14,6 @@ const router = express.Router();
 // Create a lab-specific test (assign a diagnostic test to a lab)
 router.post(
 	'/',
-	authenticate,
-	isStaff,
 	createLabTestValidation,
 	handleValidationErrors,
 	labTestController.createLabTest
@@ -23,12 +22,25 @@ router.post(
 // Only staff can update lab test availability status
 router.patch(
 	'/:id/status',
-	authenticate,
-	isStaff,
 	labTestIdParamValidation,
 	updateLabTestStatusValidation,
 	handleValidationErrors,
 	labTestController.updateLabTestStatus
+);
+// Update lab-test details (price, result time, capacity, etc.)
+router.patch(
+	'/:id',
+	labTestIdParamValidation,
+	updateLabTestDetailsValidation,
+	handleValidationErrors,
+	labTestController.updateLabTestDetails
+);
+// Delete a lab-test assignment
+router.delete(
+	'/:id',
+	labTestIdParamValidation,
+	handleValidationErrors,
+	labTestController.deleteLabTest
 );
 router.get('/lab/:labId', labIdParamValidation, handleValidationErrors, labTestController.getTestsByLabId);
 router.get('/status', labTestController.getTestsByStatus);

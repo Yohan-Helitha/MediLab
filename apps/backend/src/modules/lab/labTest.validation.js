@@ -46,6 +46,30 @@ export const updateLabTestStatusValidation = [
 		.withMessage('status must be one of: AVAILABLE, UNAVAILABLE, TEMPORARILY_SUSPENDED'),
 ];
 
+// Validation for updating lab-test details (e.g., price, result time, capacity)
+export const updateLabTestDetailsValidation = [
+	body('price')
+		.optional()
+		.isFloat({ min: 0 })
+		.withMessage('price must be a number greater than or equal to 0'),
+	body('estimatedResultTimeHours')
+		.optional()
+		.isFloat({ min: 0 })
+		.withMessage('estimatedResultTimeHours must be a number greater than or equal to 0'),
+	body('dailyCapacity')
+		.optional()
+		.isInt({ min: 0 })
+		.withMessage('dailyCapacity must be an integer greater than or equal to 0'),
+	body('availabilityStatus')
+		.optional()
+		.isIn(['AVAILABLE', 'UNAVAILABLE', 'TEMPORARILY_SUSPENDED'])
+		.withMessage('availabilityStatus must be one of: AVAILABLE, UNAVAILABLE, TEMPORARILY_SUSPENDED'),
+	body('isActive')
+		.optional()
+		.isBoolean()
+		.withMessage('isActive must be a boolean'),
+];
+
 export const labIdParamValidation = [
 	param('labId')
 		.isHexadecimal()

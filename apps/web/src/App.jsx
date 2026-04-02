@@ -1,67 +1,39 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import DashboardLayout from "./layout/DashboardLayout.jsx";
-import AdminDashboardLayout from "./layout/AdminDashboardLayout.jsx";
-import LabManagementPage from "./pages/LabManagementPage.jsx";
-import AdminFinanceDashboard from "./pages/AdminFinanceDashboard.jsx";
-import AdminInventoryDashboard from "./pages/AdminInventoryDashboard.jsx";
-import AdminOverviewDashboard from "./pages/AdminOverviewDashboard.jsx";
-import AdminEquipmentCatalog from "./pages/AdminEquipmentCatalog.jsx";
-import AdminTestEquipmentRequirements from "./pages/AdminTestEquipmentRequirements.jsx";
+import AppRoutes from "./routes/AppRoutes.jsx";
+import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
+
+const AppContent = () => {
+	const { user, logout, loading } = useAuth();
+
+	if (loading) {
+		return <div className="flex h-screen items-center justify-center font-medium">Loading session...</div>;
+	}
+
+	return (
+		<>
+			{user && (
+				<div className="p-3 flex justify-end gap-4 bg-white border-b border-slate-100">
+					<span className="text-sm text-slate-600 flex items-center">
+						Logged in as: <strong className="ml-1 text-slate-900">{user.email || user.fullName}</strong> ({user.role})
+					</span>
+					<button
+						className="px-3 py-1 rounded bg-rose-50 text-rose-600 hover:bg-rose-100 text-sm font-medium transition-colors"
+						onClick={logout}
+					>
+						Logout
+					</button>
+				</div>
+			)}
+			<AppRoutes />
+		</>
+	);
+};
 
 function App() {
 	return (
-		<Routes>
-			<Route
-				path="/"
-				 element={
-					<DashboardLayout>
-						<LabManagementPage />
-					</DashboardLayout>
-				}
-			/>
-			<Route
-				path="/admin/overview"
-				 element={
-					<AdminDashboardLayout title="Overview">
-						<AdminOverviewDashboard />
-					</AdminDashboardLayout>
-				}
-			/>
-			<Route
-				path="/admin/finance"
-				 element={
-					<AdminDashboardLayout title="Finance Management">
-						<AdminFinanceDashboard />
-					</AdminDashboardLayout>
-				}
-			/>
-			<Route
-				path="/admin/inventory"
-				 element={
-					<AdminDashboardLayout title="Inventory Management">
-						<AdminInventoryDashboard />
-					</AdminDashboardLayout>
-				}
-			/>
-			<Route
-				path="/admin/inventory/equipment"
-				 element={
-					<AdminDashboardLayout title="Equipment Catalog">
-						<AdminEquipmentCatalog />
-					</AdminDashboardLayout>
-				}
-			/>
-			<Route
-				path="/admin/inventory/requirements"
-				 element={
-					<AdminDashboardLayout title="Test Equipment Requirements">
-						<AdminTestEquipmentRequirements />
-					</AdminDashboardLayout>
-				}
-			/>
-			<Route path="*" element={<Navigate to="/" replace />} />
-		</Routes>
+		<AuthProvider>
+			<AppContent />
+		</AuthProvider>
 	);
 }
 

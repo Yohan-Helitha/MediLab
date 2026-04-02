@@ -5,6 +5,10 @@ export const createLabTest = async (labTestData) => {
     return labTest.save();
 };
 
+export const updateLabTest = async (labTestId, updates) => {
+	return LabTest.findByIdAndUpdate(labTestId, updates, { new: true });
+};
+
 export const updateStatus = async (labTestId, status) => {
     return LabTest.findByIdAndUpdate(
         labTestId,
@@ -32,4 +36,8 @@ export const findTestByName = async (name) => {
 
 export const getTestsAvailabilityById = async (labTestId) => {
     return LabTest.findById(labTestId).select('availabilityStatus');
+};
+
+export const deleteLabTest = async (labTestId) => {
+	return LabTest.findByIdAndDelete(labTestId);
 };

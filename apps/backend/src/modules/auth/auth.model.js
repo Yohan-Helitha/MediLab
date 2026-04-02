@@ -1,12 +1,48 @@
-/**
- * Auth Models - Central export point
- * 
- * This file re-exports the user models used for authentication.
- * There's no separate "Auth" model because authentication works with
- * existing user entities: Members (patients) and HealthOfficers.
- */
+import mongoose from 'mongoose';
 
-import Member from '../patient/models/Member.js';
-import HealthOfficer from './healthOfficer.model.js';
+const authSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true
+    },
+    passwordHash: {
+      type: String,
+      required: true
+    },
+    role: {
+      type: String,
+      enum: ['patient', 'Lab_Technician', 'HealthOfficer', 'MOH', 'PHI', 'Nurse', 'Admin', 'Doctor'],
+      required: true
+    },
+    systemId: {
+      type: String,
+      required: true,
+      unique: true
+    },
+    profileId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      refPath: 'onModel'
+    },
+    onModel: {
+      type: String,
+      required: true,
+      enum: ['Member', 'HealthOfficer']
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  },
+  {
+    timestamps: true
+  }
+);
 
-export { Member, HealthOfficer };
+const Auth = mongoose.model('Auth', authSchema);
+
+export default Auth;
