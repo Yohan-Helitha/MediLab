@@ -5,7 +5,8 @@ const inventoryStockSchema = new mongoose.Schema(
     healthCenterId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lab",
-      required: true,
+      // Optional legacy field: global inventory is tracked per equipment.
+      required: false,
       index: true,
     },
     equipmentId: {
@@ -35,11 +36,8 @@ const inventoryStockSchema = new mongoose.Schema(
   },
 );
 
-// One stock record per equipment per health center
-inventoryStockSchema.index(
-  { healthCenterId: 1, equipmentId: 1 },
-  { unique: true },
-);
+// One stock record per equipment (global inventory)
+inventoryStockSchema.index({ equipmentId: 1 }, { unique: true });
 
 const InventoryStock = mongoose.model("InventoryStock", inventoryStockSchema);
 

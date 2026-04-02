@@ -72,19 +72,19 @@ const bookingSchema = new mongoose.Schema(
     // STATUS TRACKING
     status: {
       type: String,
-      enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'],
+      enum: ['PENDING', 'CANCELLED', 'COMPLETED', 'NO_SHOW'],
       default: 'PENDING'
     },
 
     // PAYMENT
     paymentStatus: {
       type: String,
-      enum: ['UNPAID', 'PAID', 'WAIVED'],
+      enum: ['UNPAID', 'PAID'],
       default: 'UNPAID'
     },
     paymentMethod: {
       type: String,
-      enum: ['CASH', 'ONLINE', 'GOVERNMENT']
+      enum: ['CASH', 'ONLINE']
     },
 
     // SAFETY FLAGS
