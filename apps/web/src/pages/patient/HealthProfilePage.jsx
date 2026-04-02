@@ -83,16 +83,22 @@ const HealthProfilePage = () => {
     });
 
     const [chronicStates, setChronicStates] = useState({
-        "Diabetes": false,
-        "High Blood Pressure": false,
+        "Diabetes Mellitus": false,
+        "Hypertension (High Blood Pressure)": false,
+        "Heart Disease (e.g., coronary artery disease)": false,
+        "Stroke / Cerebrovascular Disease": false,
         "Asthma": false,
-        "Heart disease": false,
-        "Kidney disease": false,
-        "Epilepsy": false,
-        "Thyroid disease": false,
-        "Mental Health condition": false,
-        "Cancer": false,
-        "Other": false
+        "Chronic Lung Disease (e.g., COPD)": false,
+        "Chronic Kidney Disease": false,
+        "Thyroid Disorders (Hypo/Hyperthyroidism)": false,
+        "Epilepsy / Seizure Disorders": false,
+        "Cancer (any type)": false,
+        "Mental Health Disorders (Depression, Anxiety, etc.)": false,
+        "Obesity": false,
+        "High Cholesterol (Hyperlipidemia)": false,
+        "Arthritis (Osteoarthritis / Rheumatoid)": false,
+        "Liver Disease (Chronic)": false,
+        "Other (Specify)": false
     });
 
     // Handle "Other" expansion specifically
@@ -120,10 +126,16 @@ const HealthProfilePage = () => {
             });
             
             // Special check for 'Other' - if any medical condition exists that isn't in the standard list, mark 'Other' as true
-            const standardConditions = ["Diabetes", "High Blood Pressure", "Asthma", "Heart disease", "Kidney disease", "Epilepsy", "Thyroid disease", "Mental Health condition", "Cancer"];
+            const standardConditions = [
+                "Diabetes Mellitus", "Hypertension (High Blood Pressure)", "Heart Disease (e.g., coronary artery disease)",
+                "Stroke / Cerebrovascular Disease", "Asthma", "Chronic Lung Disease (e.g., COPD)",
+                "Chronic Kidney Disease", "Thyroid Disorders (Hypo/Hyperthyroidism)", "Epilepsy / Seizure Disorders",
+                "Cancer (any type)", "Mental Health Disorders (Depression, Anxiety, etc.)", "Obesity",
+                "High Cholesterol (Hyperlipidemia)", "Arthritis (Osteoarthritis / Rheumatoid)", "Liver Disease (Chronic)"
+            ];
             const hasOther = profile.chronic_diseases.some(c => !standardConditions.includes(c.disease_name || c.condition));
             if (hasOther) {
-                newStates["Other"] = true;
+                newStates["Other (Specify)"] = true;
             }
 
             setChronicStates(newStates);
@@ -1416,37 +1428,55 @@ const HealthProfilePage = () => {
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
                                                     {[
-                                                        "Diabetes", "High Blood Pressure", "Asthma", "Heart disease", 
-                                                        "Kidney disease", "Epilepsy", "Thyroid disease", 
-                                                        "Mental Health condition", "Cancer", "Other"
+                                                        "Diabetes Mellitus", "Hypertension (High Blood Pressure)", "Heart Disease (e.g., coronary artery disease)",
+                                                        "Stroke / Cerebrovascular Disease", "Asthma", "Chronic Lung Disease (e.g., COPD)",
+                                                        "Chronic Kidney Disease", "Thyroid Disorders (Hypo/Hyperthyroidism)", "Epilepsy / Seizure Disorders",
+                                                        "Cancer (any type)", "Mental Health Disorders (Depression, Anxiety, etc.)", "Obesity",
+                                                        "High Cholesterol (Hyperlipidemia)", "Arthritis (Osteoarthritis / Rheumatoid)", "Liver Disease (Chronic)",
+                                                        "Other (Specify)"
                                                     ].map((condition) => {
                                                         const memberId = profile?.member_id || profile?.systemId;
-                                                        const standardConditions = ["Diabetes", "High Blood Pressure", "Asthma", "Heart disease", "Kidney disease", "Epilepsy", "Thyroid disease", "Mental Health condition", "Cancer"];
-                                                        const alreadyHasCondition = condition !== 'Other' && profile?.chronic_diseases?.some(c => (c.condition === condition || c.disease_name === condition));
+                                                        const standardConditions = [
+                                                            "Diabetes Mellitus", "Hypertension (High Blood Pressure)", "Heart Disease (e.g., coronary artery disease)",
+                                                            "Stroke / Cerebrovascular Disease", "Asthma", "Chronic Lung Disease (e.g., COPD)",
+                                                            "Chronic Kidney Disease", "Thyroid Disorders (Hypo/Hyperthyroidism)", "Epilepsy / Seizure Disorders",
+                                                            "Cancer (any type)", "Mental Health Disorders (Depression, Anxiety, etc.)", "Obesity",
+                                                            "High Cholesterol (Hyperlipidemia)", "Arthritis (Osteoarthritis / Rheumatoid)", "Liver Disease (Chronic)"
+                                                        ];
+                                                        const alreadyHasCondition = condition !== 'Other (Specify)' && profile?.chronic_diseases?.some(c => (c.condition === condition || c.disease_name === condition));
                                                         
+                                                        // Determine if we should show 'Yes' (either because state is true OR because they already have it)
+                                                        const isYesChecked = chronicStates[condition] === true || alreadyHasCondition;
+                                                        const isNoChecked = chronicStates[condition] === false && !alreadyHasCondition;
+
                                                         return (
                                                             <React.Fragment key={condition}>
                                                                 <tr className="hover:bg-slate-50/50 transition-colors">
                                                                     <td className="px-6 py-4">
                                                                         <div className="flex items-center gap-3">
-                                                                            <div className="text-sm font-semibold text-slate-700">{condition}</div>
+                                                                            <div className={`text-sm font-semibold ${alreadyHasCondition ? 'text-teal-700' : 'text-slate-700'}`}>
+                                                                                {condition}
+                                                                                {alreadyHasCondition && (
+                                                                                    <span className="ml-2 text-[8px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Recorded</span>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                     </td>
-                                                                            <td className="px-6 py-4 text-center">
+                                                                    <td className="px-6 py-4 text-center">
                                                                         <div className="flex flex-col items-center gap-2">
                                                                             <input 
                                                                                 type="radio" 
                                                                                 name={`has_${condition}`} 
-                                                                                checked={chronicStates[condition] === true}
+                                                                                checked={isYesChecked}
                                                                                 onChange={() => {
                                                                                     setChronicStates(prev => ({...prev, [condition]: true}));
-                                                                                    // If they select Yes for Other, expand the form
-                                                                                    if (condition === 'Other') {
+                                                                                    if (condition === 'Other (Specify)') {
                                                                                         setIsOtherExpanded(true);
                                                                                     }
                                                                                 }}
-                                                                                disabled={alreadyHasCondition}
-                                                                                className={`w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300 ${alreadyHasCondition ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                                className={`w-4 h-4 text-teal-600 focus:ring-0 transition-all cursor-pointer ${
+                                                                                    isYesChecked ? 'scale-110' : ''
+                                                                                }`}
                                                                             />
                                                                         </div>
                                                                     </td>
@@ -1454,21 +1484,22 @@ const HealthProfilePage = () => {
                                                                         <input 
                                                                             type="radio" 
                                                                             name={`has_${condition}`} 
-                                                                            checked={chronicStates[condition] === false}
+                                                                            checked={isNoChecked}
                                                                             onChange={() => {
                                                                                 setChronicStates(prev => ({...prev, [condition]: false}));
-                                                                                if (condition === 'Other') setIsOtherExpanded(false);
+                                                                                if (condition === 'Other (Specify)') setIsOtherExpanded(false);
                                                                             }}
-                                                                            disabled={alreadyHasCondition}
-                                                                            className={`w-4 h-4 text-rose-600 focus:ring-rose-500 border-slate-300 ${alreadyHasCondition ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                            className={`w-4 h-4 text-rose-600 focus:ring-0 transition-all cursor-pointer ${
+                                                                                isNoChecked ? 'scale-110' : ''
+                                                                            }`}
                                                                         />
                                                                     </td>
                                                                 </tr>
                                                                 {/* Nested Detail Form for this specifically selected condition */}
-                                                                {((condition !== 'Other' && chronicStates[condition] && !alreadyHasCondition) || (condition === 'Other' && isOtherExpanded)) && (
+                                                                {((condition !== 'Other (Specify)' && chronicStates[condition] && !alreadyHasCondition) || (condition === 'Other (Specify)' && isOtherExpanded)) && (
                                                                     <tr>
                                                                         <td colSpan="3" className="px-6 py-6 bg-slate-50/80 border-t border-slate-200 shadow-inner">
-                                                                            {condition === 'Other' && profile?.chronic_diseases?.some(c => !standardConditions.includes(c.disease_name || c.condition)) && (
+                                                                            {condition === 'Other (Specify)' && profile?.chronic_diseases?.some(c => !standardConditions.includes(c.disease_name || c.condition)) && (
                                                                                 <button 
                                                                                     type="button"
                                                                                     onClick={() => setIsOtherExpanded(false)}
@@ -1488,7 +1519,7 @@ const HealthProfilePage = () => {
                                                                                         const calculatedMemberId = profile?.member_id || profile?.systemId || profile?._id;
                                                                                         const payload = {
                                                                                             member_id: calculatedMemberId,
-                                                                                            disease_name: condition === "Other" ? chronicData.condition : condition,
+                                                                                            disease_name: condition === "Other (Specify)" ? chronicData.condition : condition,
                                                                                             since_year: Number(chronicData.onset_year),
                                                                                             currently_on_medication: !!chronicData.on_medication
                                                                                         };
