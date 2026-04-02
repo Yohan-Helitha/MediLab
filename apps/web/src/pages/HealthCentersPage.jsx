@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import LabCard from "../components/patient/LabCard";
 import SearchBar from "../components/patient/SearchBar";
@@ -6,10 +7,36 @@ import Modal from "../components/Modal";
 import { fetchLabs, fetchLabTestsByLab } from "../api/patientApi";
 
 function HealthCentersPage({ navigate, initialQuery = "" }) {
+  const routerNavigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlQuery = searchParams.get("query") || "";
   const [labs, setLabs] = useState([]);
   const [labTestsByLab, setLabTestsByLab] = useState({});
-  const [search, setSearch] = useState(initialQuery || "");
+  const [search, setSearch] = useState(initialQuery || urlQuery || "");
   const [statusModalLab, setStatusModalLab] = useState(null);
+
+  const onNavigate = (name, params = {}) => {
+    if (navigate) return navigate(name, params);
+
+    switch (name) {
+      case "home":
+        routerNavigate("/");
+        return;
+      case "health-centers": {
+        const query = (params?.query || "").toString().trim();
+        const searchPart = query ? `?query=${encodeURIComponent(query)}` : "";
+        routerNavigate(`/health-centers${searchPart}`);
+        return;
+      }
+      case "lab": {
+        const labId = params?.labId;
+        if (labId) routerNavigate(`/labs/${labId}`);
+        return;
+      }
+      default:
+        return;
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -40,8 +67,8 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
   }, []);
 
   useEffect(() => {
-    setSearch(initialQuery || "");
-  }, [initialQuery]);
+    setSearch(initialQuery || urlQuery || "");
+  }, [initialQuery, urlQuery]);
 
   const filteredLabs = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -66,11 +93,11 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
       return;
     }
 
-    if (navigate) navigate("lab", { labId: lab._id });
+    onNavigate("lab", { labId: lab._id });
   };
 
   return (
-    <PublicLayout onNavigate={navigate}>
+    <PublicLayout onNavigate={onNavigate}>
       <div className="space-y-6">
         <header className="flex items-center justify-between gap-4">
           <div>
