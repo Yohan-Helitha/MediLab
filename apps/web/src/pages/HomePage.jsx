@@ -28,6 +28,11 @@ function HomePage({ navigate }) {
         routerNavigate(`/health-centers${searchParams}`);
         return;
       }
+      case "lab": {
+        const labId = params?.labId;
+        if (labId) routerNavigate(`/labs/${labId}`);
+        return;
+      }
       default:
         return;
     }
@@ -151,7 +156,13 @@ function HomePage({ navigate }) {
           <h2 className="text-lg font-bold text-slate-800 mb-4">Featured Health Centers</h2>
           <div className="grid grid-cols-4 gap-6">
             {labs.slice(0, 4).map((lab) => (
-              <LabCard key={lab._id} lab={lab} onView={() => {}} />
+              <LabCard
+                key={lab._id}
+                lab={lab}
+                onView={(selectedLab) =>
+                  onNavigate("lab", { labId: selectedLab._id })
+                }
+              />
             ))}
           </div>
         </section>
