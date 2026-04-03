@@ -23,6 +23,8 @@ import AdminTestEquipmentRequirements from "../pages/AdminTestEquipmentRequireme
 import BookingCreatePage from "../pages/BookingCreatePage";
 import PayHereReturnPage from "../pages/PayHereReturnPage";
 
+const POST_AUTH_REDIRECT_KEY = "medilab.postAuthRedirect";
+
 const AppRoutes = () => {
 	const { user, logout } = useAuth();
 	const location = useLocation();
@@ -54,7 +56,29 @@ const AppRoutes = () => {
 
 	const PostAuthRedirect = ({ fallback }) => {
 		const from = location?.state?.from;
-		const fromPath = typeof from?.pathname === "string" ? from.pathname : "";
+		let fromPath = typeof from?.pathname === "string" ? from.pathname : "";
+		let fromSearch = from?.search || "";
+		let fromState = from?.state;
+
+		if (!fromPath) {
+			try {
+				const raw = sessionStorage.getItem(POST_AUTH_REDIRECT_KEY);
+				if (raw) {
+					const stored = JSON.parse(raw);
+					fromPath = typeof stored?.pathname === "string" ? stored.pathname : "";
+					fromSearch = typeof stored?.search === "string" ? stored.search : "";
+					fromState = stored?.state;
+				}
+			} catch {
+				// Ignore parsing/storage errors
+			}
+		}
+
+		try {
+			sessionStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+		} catch {
+			// Ignore
+		}
 		const disallowed = new Set([
 			"/login",
 			"/register",
@@ -63,8 +87,8 @@ const AppRoutes = () => {
 		]);
 
 		if (fromPath && !disallowed.has(fromPath)) {
-			const to = `${fromPath}${from?.search || ""}`;
-			return <Navigate to={to} state={from?.state} replace />;
+			const to = `${fromPath}${fromSearch || ""}`;
+			return <Navigate to={to} state={fromState} replace />;
 		}
 
 		return <Navigate to={fallback} replace />;
