@@ -100,6 +100,7 @@ const AppRoutes = () => {
 			<Route path="/" element={<HomePage />} />
 			<Route path="/health-centers" element={<HealthCentersPage />} />
 			<Route path="/labs/:labId" element={<LabDetailsPage />} />
+			<Route path="/payments/payhere/return" element={<PayHereReturnPage />} />
 			<Route
 				path="/login"
 				element={!user ? <LoginPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
@@ -197,7 +198,6 @@ const AppRoutes = () => {
 			{/* Protected Patient Routes */}
 			<Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
 				<Route path="/bookings/new" element={<BookingCreatePage />} />
-				<Route path="/payments/payhere/return" element={<PayHereReturnPage />} />
 				<Route path="/dashboard" element={<div className="p-8">Patient Dashboard Coming Soon</div>} />
 			</Route>
 
