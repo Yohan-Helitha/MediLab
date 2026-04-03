@@ -20,6 +20,8 @@ import AdminFinanceDashboard from "../pages/AdminFinanceDashboard";
 import AdminInventoryDashboard from "../pages/AdminInventoryDashboard";
 import AdminEquipmentCatalog from "../pages/AdminEquipmentCatalog";
 import AdminTestEquipmentRequirements from "../pages/AdminTestEquipmentRequirements";
+import BookingCreatePage from "../pages/BookingCreatePage";
+import PayHereReturnPage from "../pages/PayHereReturnPage";
 
 const AppRoutes = () => {
 	const { user, logout } = useAuth();
@@ -151,6 +153,8 @@ const AppRoutes = () => {
 
 			{/* Protected Patient Routes */}
 			<Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
+				<Route path="/bookings/new" element={<BookingCreatePage />} />
+				<Route path="/payments/payhere/return" element={<PayHereReturnPage />} />
 				<Route path="/dashboard" element={<div className="p-8">Patient Dashboard Coming Soon</div>} />
 			</Route>
 

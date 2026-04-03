@@ -80,7 +80,7 @@ export const isHealthOfficer = (req, res, next) => {
     });
   }
 
-  if (req.user.userType !== 'healthOfficer') {
+  if (req.user.userType !== 'staff' && req.user.userType !== 'healthOfficer') {
     return res.status(403).json({
       success: false,
       message: 'Access denied. This endpoint is only for health officers.'
@@ -103,7 +103,7 @@ export const checkRole = (allowedRoles) => {
       });
     }
 
-    if (req.user.userType !== 'healthOfficer') {
+    if (req.user.userType !== 'staff' && req.user.userType !== 'healthOfficer') {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Role-based access is only for health officers.'
