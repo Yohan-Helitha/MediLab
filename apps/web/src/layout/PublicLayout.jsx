@@ -79,43 +79,8 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
             </button>
           </nav>
 
-          {/* Right side: User Info, Login/Signup & Language Selector */}
+          {/* Right side: Language Selector & User Info / Auth Buttons */}
           <div className="flex items-center gap-4">
-            {user ? (
-              <div className="flex items-center gap-4">
-                <div className="hidden sm:flex flex-col items-end text-sm leading-tight">
-                  <span className="font-semibold text-slate-800">
-                    {user.firstName || user.fullName || "User"}
-                  </span>
-                  <span className="text-slate-500 text-xs">
-                    {user.email || user.role}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600 shadow-sm transition-all duration-200 hover:bg-rose-100 hover:text-rose-700 active:scale-95"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-teal-700 transition-colors"
-                >
-                  {t("navbar.signIn")}
-                </Link>
-                <Link
-                  to="/register"
-                  className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 transition-all active:scale-95"
-                >
-                  {t("navbar.createAccount")}
-                </Link>
-              </div>
-            )}
-
             <div className="relative">
               <button
                 type="button"
@@ -165,6 +130,41 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                 </div>
               )}
             </div>
+
+            {user ? (
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:flex flex-col items-end text-sm leading-tight">
+                  <span className="font-semibold text-slate-800">
+                    {user.firstName || user.fullName || "User"}
+                  </span>
+                  <span className="text-slate-500 text-xs">
+                    {user.email || user.role}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600 shadow-sm transition-all duration-200 hover:bg-rose-100 hover:text-rose-700 active:scale-95"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-teal-700 transition-colors"
+                >
+                  {t("navbar.signIn")}
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 transition-all active:scale-95"
+                >
+                  {t("navbar.createAccount")}
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </header>
