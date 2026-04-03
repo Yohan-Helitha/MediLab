@@ -1,0 +1,26 @@
+{
+  "navbar.brand": "MediLab",
+  "navbar.home": "Home",
+  "navbar.healthCenters": "Health Centers",
+  "navbar.language.english": "English",
+  "navbar.language.sinhala": "සිංහල",
+  "navbar.language.tamil": "தமிழ்",
+
+  "hero.badge": "Welcome to Rural Health Diagnostics",
+  "hero.title": "Find nearby health centers and book diagnostic tests easily.",
+  "hero.subtitle": "Access quality diagnostic services at affordable prices across rural health centers in Sri Lanka.",
+  "hero.search.placeholder": "Search for labs or tests...",
+
+  "home.browseByCategory": "Browse by Category",
+  "home.howItWorks": "How It Works",
+  "home.howItWorks.step1.title": "Find a Health Center",
+  "home.howItWorks.step1.body": "Browse nearby labs or search by name and location.",
+  "home.howItWorks.step2.title": "Choose Your Test",
+  "home.howItWorks.step2.body": "View available tests, prices, and preparation instructions.",
+  "home.howItWorks.step3.title": "Book & Visit",
+  "home.howItWorks.step3.body": "Book your test online and visit the lab at your convenience.",
+
+  "healthCenters.title": "Health Centers",
+  "healthCenters.subtitle": "Find all registred Health Centers in your are area...",
+  "healthCenters.search.placeholder": "Search by lab or test name..."
+}

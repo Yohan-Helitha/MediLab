@@ -1,21 +1,24 @@
 import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 function PublicLayout({ children, onNavigate, onLanguageChange }) {
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const routerNavigate = useNavigate();
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState(i18n.language || "en");
   const [isLangOpen, setIsLangOpen] = useState(false);
 
   const languageLabels = {
-    en: "English",
-    si: "සිංහල",
-    ta: "தமிழ்",
+    en: t("navbar.language.english"),
+    si: t("navbar.language.sinhala"),
+    ta: t("navbar.language.tamil"),
   };
 
   const handleSelectLanguage = (code) => {
     setLanguage(code);
+    i18n.changeLanguage(code);
     setIsLangOpen(false);
     if (onLanguageChange) onLanguageChange(code);
   };
@@ -55,7 +58,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
             onClick={() => navigate("home")}
             className="text-teal-700 font-bold text-lg whitespace-nowrap"
           >
-            MediLab
+            {t("navbar.brand")}
           </button>
 
           {/* Center: navigation */}
@@ -65,14 +68,14 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
               onClick={() => navigate("home")}
               className="hover:text-teal-600"
             >
-              Home
+              {t("navbar.home")}
             </button>
             <button
               type="button"
               onClick={() => navigate("health-centers")}
               className="hover:text-teal-600"
             >
-              Health Centers
+              {t("navbar.healthCenters")}
             </button>
           </nav>
 
