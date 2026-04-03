@@ -8,17 +8,28 @@ import {
   validateNotifySignature,
 } from './payhere.service.js';
 
+const cleanEnv = (value) => {
+  const trimmed = String(value || '').trim();
+  // Render/Vercel env UI sometimes leads to quoted values; strip a single pair.
+  return trimmed.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
+};
+
+const stripTrailingSlashes = (url) => cleanEnv(url).replace(/\/+$/g, '');
+
 const getEnv = () => {
-  const merchantId = process.env.MERCHANT_ID || '';
-  const merchantSecret = process.env.MERCHANT_SECRET || '';
+  const merchantId = cleanEnv(process.env.MERCHANT_ID);
+  const merchantSecret = cleanEnv(process.env.MERCHANT_SECRET);
 
   // Allow overriding the checkout URL for sandbox/live.
   // Defaults to PayHere sandbox checkout.
   const checkoutUrl =
-    process.env.PAYHERE_CHECKOUT_URL || 'https://sandbox.payhere.lk/pay/checkout';
+    cleanEnv(process.env.PAYHERE_CHECKOUT_URL) ||
+    'https://sandbox.payhere.lk/pay/checkout';
 
-  const appUrl = process.env.APP_URL || 'http://localhost:5000';
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const appUrl = stripTrailingSlashes(process.env.APP_URL || 'http://localhost:5000');
+  const frontendUrl = stripTrailingSlashes(
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+  );
 
   return { merchantId, merchantSecret, checkoutUrl, appUrl, frontendUrl };
 };
