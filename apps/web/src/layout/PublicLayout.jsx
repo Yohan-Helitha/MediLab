@@ -105,13 +105,13 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                   to="/login"
                   className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-teal-700 transition-colors"
                 >
-                  Sign In
+                  {t("navbar.signIn")}
                 </Link>
                 <Link
                   to="/register"
                   className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 transition-all active:scale-95"
                 >
-                  Create Account
+                  {t("navbar.createAccount")}
                 </Link>
               </div>
             )}

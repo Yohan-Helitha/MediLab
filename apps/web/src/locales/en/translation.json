@@ -5,6 +5,8 @@
   "navbar.language.english": "English",
   "navbar.language.sinhala": "සිංහල",
   "navbar.language.tamil": "தமிழ்",
+  "navbar.signIn": "Sign In",
+  "navbar.createAccount": "Create Account",
 
   "hero.badge": "Welcome to Rural Health Diagnostics",
   "hero.title": "Find nearby health centers and book diagnostic tests easily.",

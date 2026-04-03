@@ -5,6 +5,8 @@
   "navbar.language.english": "English",
   "navbar.language.sinhala": "සිංහල",
   "navbar.language.tamil": "தமிழ்",
+  "navbar.signIn": "ප්‍රවේශ වන්න",
+  "navbar.createAccount": "ගිණුමක් සෑදීම",
 
   "hero.badge": "ග්‍රාමීය සෞඛ්ය අංශය වෙත සාදරයෙන් පිළිගනිමු",
   "hero.title": "සමීපතම සෞඛ්ය මධ්‍යස්ථාන සහ නිරෝධායන පරීක්ෂණ පහසුවෙන් සොයන්න.",
