@@ -6,6 +6,7 @@ function SearchBar({
   onSubmit,
   placeholder = "Search for labs or tests...",
   size = "lg",
+  buttonLabel = "Search",
 }) {
   const isSmall = size === "sm";
 
@@ -56,7 +57,7 @@ function SearchBar({
             isSmall ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
           }`}
         >
-          Search
+          {buttonLabel}
         </button>
       </div>
     </div>

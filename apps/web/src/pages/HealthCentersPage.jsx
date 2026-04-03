@@ -114,6 +114,7 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
               onChange={setSearch}
               placeholder={t("healthCenters.search.placeholder")}
               size="sm"
+              buttonLabel={t("search.button")}
               onSubmit={(value) => setSearch(value)}
             />
           </div>

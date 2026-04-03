@@ -24,5 +24,6 @@
 
   "healthCenters.title": "සෞඛ්ය මධ්‍යස්ථාන",
   "healthCenters.subtitle": "ඔබගේ ප්‍රදේශයේ ලියාපදිංචි සියළු සෞඛ්ය මධ්‍යස්ථාන සොයන්න...",
-  "healthCenters.search.placeholder": "ලැබ් නාමය හෝ පරීක්ෂණ නාමය පුරස්ථානයෙන් සොයන්න..."
+  "healthCenters.search.placeholder": "ලැබ් නාමය හෝ පරීක්ෂණ නාමය පුරස්ථානයෙන් සොයන්න...",
+  "search.button": "සොයන්න"
 }

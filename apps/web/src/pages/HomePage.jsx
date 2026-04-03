@@ -97,6 +97,7 @@ function HomePage({ navigate }) {
                   value={search}
                   onChange={setSearch}
                   placeholder={t("hero.search.placeholder")}
+                  buttonLabel={t("search.button")}
                   onSubmit={(query) => {
                     onNavigate("health-centers", { query });
                   }}

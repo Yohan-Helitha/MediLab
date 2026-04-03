@@ -24,5 +24,6 @@
 
   "healthCenters.title": "Health Centers",
   "healthCenters.subtitle": "Find all registred Health Centers in your are area...",
-  "healthCenters.search.placeholder": "Search by lab or test name..."
+  "healthCenters.search.placeholder": "Search by lab or test name...",
+  "search.button": "Search"
 }

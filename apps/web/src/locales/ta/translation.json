@@ -24,5 +24,6 @@
 
   "healthCenters.title": "சுகாதார மையங்கள்",
   "healthCenters.subtitle": "உங்கள் பகுதியிலுள்ள அனைத்து பதிவு செய்யப்பட்ட சுகாதார மையங்களையும் கண்டறியுங்கள்...",
-  "healthCenters.search.placeholder": "ஆய்வகம் அல்லது பரிசோதனை பெயரால் தேடுங்கள்..."
+  "healthCenters.search.placeholder": "ஆய்வகம் அல்லது பரிசோதனை பெயரால் தேடுங்கள்...",
+  "search.button": "தேடுங்கள்"
 }
