@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../layout/DashboardLayout";
 import AdminDashboardLayout from "../layout/AdminDashboardLayout";
@@ -25,6 +25,7 @@ import PayHereReturnPage from "../pages/PayHereReturnPage";
 
 const AppRoutes = () => {
 	const { user, logout } = useAuth();
+	const location = useLocation();
 
 	const normalize = (value) =>
 		(value || "")
@@ -51,6 +52,24 @@ const AppRoutes = () => {
 		return "/staff/dashboard";
 	};
 
+	const PostAuthRedirect = ({ fallback }) => {
+		const from = location?.state?.from;
+		const fromPath = typeof from?.pathname === "string" ? from.pathname : "";
+		const disallowed = new Set([
+			"/login",
+			"/register",
+			"/staff/login",
+			"/staff/register",
+		]);
+
+		if (fromPath && !disallowed.has(fromPath)) {
+			const to = `${fromPath}${from?.search || ""}`;
+			return <Navigate to={to} state={from?.state} replace />;
+		}
+
+		return <Navigate to={fallback} replace />;
+	};
+
 	return (
 		<Routes>
 			{/* Public Patient Routes */}
@@ -59,7 +78,7 @@ const AppRoutes = () => {
 			<Route path="/labs/:labId" element={<LabDetailsPage />} />
 			<Route
 				path="/login"
-				element={!user ? <LoginPage /> : <Navigate to={getPostAuthRedirect()} />}
+				element={!user ? <LoginPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
 			/>
 			<Route
 				path="/register"
@@ -69,7 +88,7 @@ const AppRoutes = () => {
 			{/* Staff Auth Routes */}
 			<Route
 				path="/staff/login"
-				element={!user ? <StaffLoginPage /> : <Navigate to={getPostAuthRedirect()} />}
+				element={!user ? <StaffLoginPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
 			/>
 			<Route
 				path="/staff/register"

@@ -1,5 +1,5 @@
 import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const normalize = (value) =>
@@ -11,6 +11,7 @@ const normalize = (value) =>
 
 const ProtectedRoute = ({ allowedRoles = [], redirectTo = "/login" }) => {
 	const { user, loading } = useAuth();
+	const location = useLocation();
 	const allowed = allowedRoles.map(normalize);
 	const userRole = normalize(user?.role || user?.profile?.role);
 	const userType = normalize(user?.userType);
@@ -20,7 +21,7 @@ const ProtectedRoute = ({ allowedRoles = [], redirectTo = "/login" }) => {
 	}
 
 	if (!user) {
-		return <Navigate to={redirectTo} replace />;
+		return <Navigate to={redirectTo} state={{ from: location }} replace />;
 	}
 
 	if (allowed.length > 0 && !allowed.includes(userRole) && !allowed.includes(userType)) {
