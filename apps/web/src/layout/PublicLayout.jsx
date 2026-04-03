@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
+import { HiGlobeAlt } from "react-icons/hi2";
 
 function PublicLayout({ children, onNavigate, onLanguageChange }) {
   const { t, i18n } = useTranslation();
@@ -87,6 +88,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                 onClick={() => setIsLangOpen((open) => !open)}
                 className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
               >
+                <HiGlobeAlt className="h-4 w-4 text-teal-600" />
                 <span>{languageLabels[language] || "English"}</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
