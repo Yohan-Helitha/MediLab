@@ -155,7 +155,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
   }, [onNavigate, routerNavigate]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="bg-white border-b border-slate-200">
         <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between gap-6">
           {/* Left: logo */}
@@ -168,10 +168,30 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
             }}
           >
             <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center group-hover:bg-teal-100 transition-colors overflow-hidden">
-               <img src="/images/logo.png" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
-               <svg style={{display: 'none'}} xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0012 18.75c-1.03 0-1.9-.4-2.453-.914l-.547-.547z" />
-               </svg>
+              <img
+                src="/images/logo.png"
+                alt="Logo"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "block";
+                }}
+              />
+              <svg
+                style={{ display: "none" }}
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-teal-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0012 18.75c-1.03 0-1.9-.4-2.453-.914l-.547-.547z"
+                />
+              </svg>
             </div>
             <span className="tracking-tight">MediLab</span>
           </Link>
@@ -179,29 +199,29 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
           {/* Center: navigation */}
           {user ? (
             <nav className="hidden lg:flex flex-1 justify-center gap-8 text-[13px] font-semibold text-slate-600">
-              <NavDropdown 
-                title="Health Profile" 
+              <NavDropdown
+                title="Health Profile"
                 items={[
                   { label: "User Health Profile", to: "/health-profile" },
-                  { label: "User Health Reports", to: "/health-reports" }
-                ]} 
-              />
-              
-              <NavDropdown 
-                title="Appointments" 
-                items={[
-                  { label: "Book an Appointment", to: "/booking" },
-                  { label: "Visits & Referrals", to: "/visits-referrals" }
-                ]} 
+                  { label: "User Health Reports", to: "/health-reports" },
+                ]}
               />
 
-              <NavDropdown 
-                title="Family & Care" 
+              <NavDropdown
+                title="Appointments"
+                items={[
+                  { label: "Book an Appointment", to: "/booking" },
+                  { label: "Visits & Referrals", to: "/visits-referrals" },
+                ]}
+              />
+
+              <NavDropdown
+                title="Family & Care"
                 items={[
                   { label: "Household Management", to: "/household-registration" },
                   { label: "Family Tree", to: "/family-tree" },
-                  { label: "Emergency Contact", to: "/emergency-contact" }
-                ]} 
+                  { label: "Emergency Contact", to: "/emergency-contact" },
+                ]}
               />
 
               <Link
@@ -231,8 +251,8 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
             </nav>
           )}
 
-          {/* Right side: Language Selector & User Info */}
-          <div className="flex items-center gap-8">
+          {/* Right side */}
+          <div className="flex items-center gap-4">
             {!user && (
               <Link
                 to="/health-centers"
@@ -264,9 +284,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
               <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-rose-500 border-2 border-white" />
             </button>
 
-          {/* Right side: Language Selector & User Info / Auth Buttons */}
-          <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative" ref={langMenuRef}>
               <button
                 type="button"
                 onClick={() => setIsLangOpen((open) => !open)}
@@ -295,67 +313,26 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                   <button
                     type="button"
                     onClick={() => handleSelectLanguage("en")}
-                    className="flex w-full px-4 py-2-5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
+                    className="flex w-full px-4 py-2.5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
                   >
                     English
                   </button>
                   <button
                     type="button"
                     onClick={() => handleSelectLanguage("si")}
-                    className="flex w-full px-4 py-2-5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
+                    className="flex w-full px-4 py-2.5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
                   >
                     සිංහල
                   </button>
                   <button
                     type="button"
                     onClick={() => handleSelectLanguage("ta")}
-                    className="flex w-full px-4 py-2-5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
+                    className="flex w-full px-4 py-2.5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
                   >
                     தமிழ்
                   </button>
                 </div>
-                <span>MediLab</span>
-              </Link>
-              <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                Revolutionizing healthcare management with digital accessibility and family-centric profiles. Your health, our priority.
-              </p>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="font-bold text-slate-900 mb-5">Quick Links</h3>
-              <ul className="space-y-3 text-sm">
-                <li><Link to="/health-centers" className="text-slate-500 hover:text-teal-600 transition-colors">Health Centers</Link></li>
-                <li><Link to="/symptom-checker" className="text-slate-500 hover:text-teal-600 transition-colors">Symptom Checker</Link></li>
-              </ul>
-            </div>
-
-            {/* Services */}
-            <div>
-              <h3 className="font-bold text-slate-900 mb-5">Our Services</h3>
-              <ul className="space-y-3 text-sm">
-                <li><Link to="/health-profile" className="text-slate-500 hover:text-teal-600 transition-colors">User Health Profile</Link></li>
-                <li><Link to="/household-registration" className="text-slate-500 hover:text-teal-600 transition-colors">Household Management</Link></li>
-                <li><Link to="/emergency-contact" className="text-slate-500 hover:text-teal-600 transition-colors">Emergency Contact</Link></li>
-                <li><Link to="/visits-referrals" className="text-slate-500 hover:text-teal-600 transition-colors">Visits & Referrals</Link></li>
-                <li><Link to="/family-tree" className="text-slate-500 hover:text-teal-600 transition-colors">Family Tree</Link></li>
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h3 className="font-bold text-slate-900 mb-5">Contact Us</h3>
-              <ul className="space-y-4 text-sm">
-                
-                <li className="flex items-center gap-4 group cursor-pointer">
-                  <div className="w-8 h-8 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.0 w-4.0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <span className="text-slate-500 group-hover:text-teal-600 transition-colors">support@medilab.lk</span>
-                </li>
-              </ul>
+              )}
             </div>
 
             {user ? (
@@ -364,13 +341,11 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                   <span className="font-semibold text-slate-800">
                     {user.firstName || user.fullName || "User"}
                   </span>
-                  <span className="text-slate-500 text-xs">
-                    {user.email || user.role}
-                  </span>
+                  <span className="text-slate-500 text-xs">{user.email || user.role}</span>
                 </div>
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600 shadow-sm transition-all duration-200 hover:bg-rose-100 hover:text-rose-700 active:scale-95"
                 >
                   Logout
@@ -393,15 +368,117 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
               </div>
             )}
           </div>
+        </div>
+      </header>
+
+      <main className="flex-1 mx-auto w-full max-w-7xl px-6 py-6">{children}</main>
+
+      <footer className="mt-20 border-t border-slate-200 bg-gradient-to-r from-teal-50/50 to-teal-600/20">
+        <div className="mx-auto max-w-7xl px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            {/* Branding Section */}
+            <div className="col-span-1 md:col-span-1">
+              <Link to="/" className="flex items-center gap-2 text-teal-700 font-bold text-xl mb-4">
+                <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center overflow-hidden border border-slate-100">
+                  <img src="/images/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                </div>
+                <span>MediLab</span>
+              </Link>
+              <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                Revolutionizing healthcare management with digital accessibility and family-centric profiles. Your health, our priority.
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h3 className="font-bold text-slate-900 mb-5">Quick Links</h3>
+              <ul className="space-y-3 text-sm">
+                <li>
+                  <Link to="/health-centers" className="text-slate-500 hover:text-teal-600 transition-colors">
+                    Health Centers
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/symptom-checker" className="text-slate-500 hover:text-teal-600 transition-colors">
+                    Symptom Checker
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Services */}
+            <div>
+              <h3 className="font-bold text-slate-900 mb-5">Our Services</h3>
+              <ul className="space-y-3 text-sm">
+                <li>
+                  <Link to="/health-profile" className="text-slate-500 hover:text-teal-600 transition-colors">
+                    User Health Profile
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/household-registration"
+                    className="text-slate-500 hover:text-teal-600 transition-colors"
+                  >
+                    Household Management
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/emergency-contact" className="text-slate-500 hover:text-teal-600 transition-colors">
+                    Emergency Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/visits-referrals" className="text-slate-500 hover:text-teal-600 transition-colors">
+                    Visits & Referrals
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/family-tree" className="text-slate-500 hover:text-teal-600 transition-colors">
+                    Family Tree
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h3 className="font-bold text-slate-900 mb-5">Contact Us</h3>
+              <ul className="space-y-4 text-sm">
+                <li className="flex items-center gap-4 group cursor-pointer">
+                  <div className="w-8 h-8 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4.0 w-4.0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-slate-500 group-hover:text-teal-600 transition-colors">support@medilab.lk</span>
+                </li>
+              </ul>
+            </div>
+          </div>
 
           <div className="mt-12 pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-slate-500 font-medium">
               © {new Date().getFullYear()} MediLab. All rights reserved.
             </p>
-            
           </div>
         </div>
       </footer>
+
+      {showProfileForm && isPatient && (
+        <MemberProfileForm onProfileUpdated={handleProfileUpdated} />
+      )}
     </div>
   );
 }
