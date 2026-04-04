@@ -2,9 +2,11 @@
 import { Link } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 function RegisterPage() {
 const { login } = useAuth();
+const { t } = useTranslation();
 const [step, setStep] = useState(1);
 const [formData, setFormData] = useState({
 firstName: "",
@@ -50,7 +52,7 @@ login(response.data.user, response.data.token);
 setError("Patient registration failed");
 }
 } catch (err) {
-setError(err.message || "An error occurred during registration");
+setError(err.message || t("register.errorGeneric"));
 } finally {
 setLoading(false);
 }
@@ -80,7 +82,7 @@ className="group inline-flex items-center gap-2 rounded-full bg-teal-50 px-4 py-
 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3 group-hover:translate-x-0.5 transition-transform">
 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
 </svg>
-Join as Staff
+{t("register.joinAsStaff")}
 </Link>
 </div>
 
@@ -89,7 +91,7 @@ Join as Staff
 <img src="/images/logo.png" alt="MediLab Logo" className="h-10 w-auto drop-shadow-sm" />
 </div>
 <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-Patient Portal
+{t("register.title")}
 </h2>
 <div className="flex items-center justify-center gap-2">
 {[1, 2, 3].map((s) => (
@@ -100,9 +102,9 @@ className={`h-1.5 w-8 rounded-full transition-all duration-300 ${s <= step ? "bg
 ))}
 </div>
 <p className="text-slate-500 text-sm font-medium">
-{step === 1 && "Personal Information"}
-{step === 2 && "Contact Details"}
-{step === 3 && "Secure your account"}
+{step === 1 && t("register.step1Subtitle")}
+{step === 2 && t("register.step2Subtitle")}
+{step === 3 && t("register.step3Subtitle")}
 </p>
 </div>
 </div>
@@ -113,7 +115,7 @@ className={`h-1.5 w-8 rounded-full transition-all duration-300 ${s <= step ? "bg
 <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
 <div className="grid grid-cols-2 gap-3">
 <div className="space-y-1">
-<label htmlFor="firstName" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">First Name</label>
+<label htmlFor="firstName" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">{t("register.firstNameLabel")}</label>
 <input
 id="firstName"
 name="firstName"
@@ -122,11 +124,11 @@ required
 value={formData.firstName}
 onChange={handleChange}
 className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-500/10 transition-all font-medium text-sm"
-placeholder="First name"
+placeholder={t("register.firstNamePlaceholder")}
 />
 </div>
 <div className="space-y-1">
-<label htmlFor="lastName" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">Last Name</label>
+<label htmlFor="lastName" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">{t("register.lastNameLabel")}</label>
 <input
 id="lastName"
 name="lastName"
@@ -135,7 +137,7 @@ required
 value={formData.lastName}
 onChange={handleChange}
 className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-500/10 transition-all font-medium text-sm"
-placeholder="Last name"
+placeholder={t("register.lastNamePlaceholder")}
 />
 </div>
 </div>
@@ -145,7 +147,7 @@ placeholder="Last name"
 {step === 2 && (
 <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
 <div className="space-y-1">
-<label htmlFor="email" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">Email address</label>
+<label htmlFor="email" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">{t("login.emailLabel")}</label>
 <input
 id="email"
 name="email"
@@ -154,11 +156,11 @@ required
 value={formData.email}
 onChange={handleChange}
 className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-sm"
-placeholder="Email"
+placeholder={t("register.emailPlaceholder")}
 />
 </div>
 <div className="space-y-1">
-<label htmlFor="phone" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">Phone Number</label>
+<label htmlFor="phone" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">{t("register.phoneLabel")}</label>
 <input
 id="phone"
 name="phone"
@@ -167,7 +169,7 @@ required
 value={formData.phone}
 onChange={handleChange}
 className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-sm"
-placeholder="Phone number"
+placeholder={t("register.phonePlaceholder")}
 />
 </div>
 </div>
@@ -176,7 +178,7 @@ placeholder="Phone number"
 {step === 3 && (
 <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-500">
 <div className="space-y-1">
-<label htmlFor="password" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">Set Password</label>
+<label htmlFor="password" className="text-[11px] font-bold text-slate-700 ml-1 uppercase">{t("register.setPasswordLabel")}</label>
 <input
 id="password"
 name="password"
@@ -190,7 +192,7 @@ placeholder="••••••••"
 </div>
 <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
 <p className="text-[10px] text-teal-600 font-medium leading-relaxed">
-By clicking register, you agree to MediLab\'s patient terms of service and privacy policy.
+{t("register.termsText")}
 </p>
 </div>
 </div>
@@ -214,7 +216,7 @@ type="button"
 onClick={prevStep}
 className="flex-1 max-w-[100px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all active:scale-95"
 >
-Back
+{t("register.back")}
 </button>
 )}
 <button
@@ -228,17 +230,17 @@ className={`group relative flex justify-center rounded-xl bg-teal-600 px-6 py-2.
 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
 </svg>
-Processing...
+{t("register.processing")}
 </span>
-) : step === 3 ? "Complete Registration" : "Next Step"}
+) : step === 3 ? t("register.completeButton") : t("register.nextButton")}
 </button>
 </div>
 
 <div className="text-center pt-2">
 <p className="text-slate-500 font-medium text-sm">
-Already have an account?{" "}
+{t("login.noAccount")} {" "}
 <Link to="/login" className="text-teal-600 font-bold hover:text-teal-800 transition-colors">
-Log in
+{t("register.loginLink")}
 </Link>
 </p>
 </div>
