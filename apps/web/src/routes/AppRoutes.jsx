@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../layout/DashboardLayout";
 import AdminDashboardLayout from "../layout/AdminDashboardLayout";
@@ -20,9 +20,22 @@ import AdminFinanceDashboard from "../pages/AdminFinanceDashboard";
 import AdminInventoryDashboard from "../pages/AdminInventoryDashboard";
 import AdminEquipmentCatalog from "../pages/AdminEquipmentCatalog";
 import AdminTestEquipmentRequirements from "../pages/AdminTestEquipmentRequirements";
+import AccountPage from "../pages/patient/AccountPage";
+import AIDoctorChatPage from "../pages/patient/AIDoctorChatPage";
+import BookingPage from "../pages/patient/BookingPage";
+import EmergencyContactPage from "../pages/patient/EmergencyContactPage";
+import FamilyTreePage from "../pages/patient/FamilyTreePage";
+import HealthProfilePage from "../pages/patient/HealthProfilePage";
+import HealthReportsPage from "../pages/patient/HealthReportsPage";
+import HouseholdRegistrationPage from "../pages/patient/HouseholdRegistrationPage";
+import SymptomCheckerPage from "../pages/patient/SymptomCheckerPage";
+import VisitReferralPage from "../pages/patient/VisitReferralPage";
+
+const POST_AUTH_REDIRECT_KEY = "medilab.postAuthRedirect";
 
 const AppRoutes = () => {
 	const { user, logout } = useAuth();
+	const location = useLocation();
 
 	const normalize = (value) =>
 		(value || "")
@@ -49,6 +62,46 @@ const AppRoutes = () => {
 		return "/staff/dashboard";
 	};
 
+	const PostAuthRedirect = ({ fallback }) => {
+		const from = location?.state?.from;
+		let fromPath = typeof from?.pathname === "string" ? from.pathname : "";
+		let fromSearch = from?.search || "";
+		let fromState = from?.state;
+
+		if (!fromPath) {
+			try {
+				const raw = sessionStorage.getItem(POST_AUTH_REDIRECT_KEY);
+				if (raw) {
+					const stored = JSON.parse(raw);
+					fromPath = typeof stored?.pathname === "string" ? stored.pathname : "";
+					fromSearch = typeof stored?.search === "string" ? stored.search : "";
+					fromState = stored?.state;
+				}
+			} catch {
+				// Ignore parsing/storage errors
+			}
+		}
+
+		try {
+			sessionStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+		} catch {
+			// Ignore
+		}
+		const disallowed = new Set([
+			"/login",
+			"/register",
+			"/staff/login",
+			"/staff/register",
+		]);
+
+		if (fromPath && !disallowed.has(fromPath)) {
+			const to = `${fromPath}${fromSearch || ""}`;
+			return <Navigate to={to} state={fromState} replace />;
+		}
+
+		return <Navigate to={fallback} replace />;
+	};
+
 	return (
 		<Routes>
 			{/* Public Patient Routes */}
@@ -57,21 +110,21 @@ const AppRoutes = () => {
 			<Route path="/labs/:labId" element={<LabDetailsPage />} />
 			<Route
 				path="/login"
-				element={!user ? <LoginPage /> : <Navigate to={getPostAuthRedirect()} />}
+				element={!user ? <LoginPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
 			/>
 			<Route
 				path="/register"
-				element={!user ? <RegisterPage /> : <Navigate to={getPostAuthRedirect()} />}
+				element={!user ? <RegisterPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
 			/>
 
 			{/* Staff Auth Routes */}
 			<Route
 				path="/staff/login"
-				element={!user ? <StaffLoginPage /> : <Navigate to={getPostAuthRedirect()} />}
+				element={!user ? <StaffLoginPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
 			/>
 			<Route
 				path="/staff/register"
-				element={!user ? <StaffRegisterPage /> : <Navigate to={getPostAuthRedirect()} />}
+				element={!user ? <StaffRegisterPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
 			/>
 
 			{/* Protected Staff Routes */}
@@ -151,6 +204,16 @@ const AppRoutes = () => {
 
 			{/* Protected Patient Routes */}
 			<Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
+				<Route path="/account" element={<AccountPage />} />
+				<Route path="/health-profile" element={<HealthProfilePage />} />
+				<Route path="/health-reports" element={<HealthReportsPage />} />
+				<Route path="/booking" element={<BookingPage />} />
+				<Route path="/visits-referrals" element={<VisitReferralPage />} />
+				<Route path="/household-registration" element={<HouseholdRegistrationPage />} />
+				<Route path="/family-tree" element={<FamilyTreePage />} />
+				<Route path="/emergency-contact" element={<EmergencyContactPage />} />
+				<Route path="/symptom-checker" element={<SymptomCheckerPage />} />
+				<Route path="/ai-doctor" element={<AIDoctorChatPage />} />
 				<Route path="/dashboard" element={<div className="p-8">Patient Dashboard Coming Soon</div>} />
 			</Route>
 

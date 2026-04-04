@@ -79,7 +79,16 @@ class AuthService {
       fullName: patientProfile.full_name
     });
 
-    return { user: { email: authRecord.email, role: authRecord.role, systemId: patientProfile.member_id, profile: patientProfile }, token };
+    return { 
+      user: { 
+        email: authRecord.email, 
+        role: authRecord.role, 
+        systemId: patientProfile.member_id, 
+        isProfileComplete: patientProfile.isProfileComplete || false,
+        profile: patientProfile 
+      }, 
+      token 
+    };
   }
 
   /**
@@ -122,7 +131,7 @@ class AuthService {
       id: authRecord._id,
       systemId: officerProfile.employeeId,
       profileId: officerProfile._id,
-      userType: 'staff',
+      userType: 'healthOfficer',
       role: authRecord.role,
       fullName: officerProfile.fullName
     });
@@ -131,6 +140,7 @@ class AuthService {
       user: { 
         email: authRecord.email, 
         role: authRecord.role, 
+        userType: 'healthOfficer',
         systemId: officerProfile.employeeId, 
         profile: officerProfile 
       }, 
@@ -174,7 +184,7 @@ class AuthService {
       id: authRecord._id,
       systemId: authRecord.systemId,
       profileId: authRecord.profileId,
-      userType: authRecord.onModel === 'Member' ? 'patient' : 'staff',
+      userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
       role: authRecord.role,
       fullName: profile.full_name || profile.fullName
     });
@@ -183,8 +193,10 @@ class AuthService {
       user: { 
         email: authRecord.email, 
         role: authRecord.role, 
+        userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
         systemId: authRecord.systemId,
         firstName: profile.full_name?.split(' ')[0] || profile.fullName?.split(' ')[0],
+        isProfileComplete: profile.isProfileComplete || false,
         profile 
       }, 
       token 
@@ -248,6 +260,72 @@ class AuthService {
 
   async loginHealthOfficer(credentials) {
     return this.login(credentials);
+  }
+
+  /**
+   * Update user profile and security settings
+   */
+  async updateProfile(decodedUser, updateData) {
+    const { email, contact_number, currentPassword, newPassword } = updateData;
+
+    // 1. Find the Auth record
+    const authRecord = await Auth.findById(decodedUser.id);
+    if (!authRecord) {
+      throw new Error('User not found');
+    }
+
+    // 2. Fetch the Profile
+    const ProfileModel = mongoose.model(authRecord.onModel);
+    const profile = await ProfileModel.findById(authRecord.profileId);
+    if (!profile) {
+      throw new Error('Profile not found');
+    }
+
+    // 3. Handle Password Change (if requested)
+    if (newPassword) {
+      if (!currentPassword) {
+        throw new Error('Current password is required to set a new one');
+      }
+
+      const isMatch = await this.comparePassword(currentPassword, authRecord.passwordHash);
+      if (!isMatch) {
+        throw new Error('Incorrect current password');
+      }
+
+      const newHash = await this.hashPassword(newPassword);
+      authRecord.passwordHash = newHash;
+      
+      // Update password_hash in Profile too if it exists (for compatibility)
+      if (profile.password_hash !== undefined) {
+        profile.password_hash = newHash;
+      }
+    }
+
+    // 4. Update Email & Contact Number
+    if (email && email !== authRecord.email) {
+      const emailExists = await Auth.findOne({ email, _id: { $ne: authRecord._id } });
+      if (emailExists) {
+        throw new Error('This email is already taken');
+      }
+      authRecord.email = email;
+      profile.email = email;
+    }
+
+    if (contact_number) {
+      profile.contact_number = contact_number;
+    }
+
+    // 5. Save changes
+    await authRecord.save();
+    await profile.save();
+
+    return {
+      email: authRecord.email,
+      role: authRecord.role,
+      userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
+      systemId: authRecord.systemId,
+      profile: profile
+    };
   }
 }
 

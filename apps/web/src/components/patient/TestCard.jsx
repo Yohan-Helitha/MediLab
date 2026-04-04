@@ -23,7 +23,7 @@ function TestCard({
     : "bg-emerald-50 text-emerald-700";
 
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-md border border-slate-200">
+    <div className="rounded-2xl bg-white p-5 shadow-md border border-slate-200 hover:scale-[1.02] hover:shadow-lg hover:border-teal-500/50 hover:bg-slate-50/50 transition-all duration-300">
       {/* Top row: icon + name + optional availability */}
       <div className="flex items-start gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50">

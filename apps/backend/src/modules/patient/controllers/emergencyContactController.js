@@ -3,7 +3,12 @@ import emergencyContactService from "../services/emergencyContactService.js";
 class EmergencyContactController {
   async getAllEmergencyContacts(req, res) {
     try {
-      const emergencyContacts = await emergencyContactService.getAllEmergencyContacts(req.query);
+      // Auto-filter by logged-in patient's member_id from JWT token
+      const query = { ...req.query };
+      if (req.user?.systemId && !query.member_id) {
+        query.member_id = req.user.systemId;
+      }
+      const emergencyContacts = await emergencyContactService.getAllEmergencyContacts(query);
       res.status(200).json({
         success: true,
         data: emergencyContacts
@@ -33,7 +38,12 @@ class EmergencyContactController {
 
   async createEmergencyContact(req, res) {
     try {
-      const emergencyContact = await emergencyContactService.createEmergencyContact(req.body);
+      // Auto-inject member_id from the authenticated user's token
+      const contactData = {
+        ...req.body,
+        member_id: req.body.member_id || req.user?.systemId
+      };
+      const emergencyContact = await emergencyContactService.createEmergencyContact(contactData);
       res.status(201).json({
         success: true,
         data: emergencyContact

@@ -6,6 +6,7 @@ import {
 	HiBeaker,
 	HiAdjustmentsVertical,
 	HiDocumentText,
+	HiHome,
 	HiGlobeAlt,
 } from "react-icons/hi2";
 
@@ -59,6 +60,14 @@ function Sidebar() {
 						to="/staff/dashboard"
 					/>
 				)}
+
+				<SidebarItem
+					label="Household Registration"
+					Icon={HiHome}
+					isActive={location.pathname === "/household-registration"}
+					to="/household-registration"
+				/>
+
 				{isStaffUser && (
 					<>
 						<SidebarItem

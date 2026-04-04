@@ -10,6 +10,11 @@ const referralSchema = new mongoose.Schema({
     required: true,
     maxlength: 50
   },
+  member_id: {
+    type: String,
+    required: true,
+    maxlength: 50
+  },
   referred_to: {
     type: String,
     required: true,

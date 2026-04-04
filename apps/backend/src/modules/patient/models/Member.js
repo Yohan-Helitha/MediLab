@@ -87,6 +87,14 @@ const memberSchema = new mongoose.Schema({
   pregnancy_status: {
     type: Boolean,
     default: false
+  },
+  isProfileComplete: {
+    type: Boolean,
+    default: false
+  },
+  diseases: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true

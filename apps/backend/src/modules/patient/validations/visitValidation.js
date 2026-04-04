@@ -29,9 +29,6 @@ export const validateVisitCreate = [
       if (isNaN(inputDate.getTime())) {
         throw new Error('Invalid date');
       }
-      if (inputDate < today) {
-        throw new Error('Visit date cannot be in the past; must be today or a future date');
-      }
       return true;
     }),
   

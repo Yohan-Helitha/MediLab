@@ -17,7 +17,7 @@ export const validateChronicDiseaseCreate = [
   body("since_year")
     .optional()
     .isInt({ min: 1900, max: new Date().getFullYear() })
-    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()} (past years and current year only, no future years)`),
+    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()}`),
   
   body("currently_on_medication")
     .optional()
@@ -42,7 +42,7 @@ export const validateChronicDiseaseUpdate = [
   body("since_year")
     .optional()
     .isInt({ min: 1900, max: new Date().getFullYear() })
-    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()} (past years and current year only, no future years)`),
+    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()}`),
   
   body("currently_on_medication")
     .optional()
