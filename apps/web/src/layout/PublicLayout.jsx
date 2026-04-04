@@ -375,9 +375,13 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
 
       <footer className="mt-20 border-t border-slate-200 bg-gradient-to-r from-teal-50/50 to-teal-600/20">
         <div className="mx-auto max-w-7xl px-6 py-12">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            {/* Branding Section */}
+            <div className="col-span-1 md:col-span-1">
               <Link to="/" className="flex items-center gap-2 text-teal-700 font-bold text-xl mb-4">
+                <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center overflow-hidden border border-slate-100">
+                  <img src="/images/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                </div>
                 <span>MediLab</span>
               </Link>
               <p className="text-slate-500 text-sm leading-relaxed mb-6">
@@ -385,36 +389,29 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
               </p>
             </div>
 
+            {/* Quick Links */}
             <div>
               <h3 className="font-bold text-slate-900 mb-5">Quick Links</h3>
               <ul className="space-y-3 text-sm">
                 <li>
-                  <Link
-                    to="/health-centers"
-                    className="text-slate-500 hover:text-teal-600 transition-colors"
-                  >
+                  <Link to="/health-centers" className="text-slate-500 hover:text-teal-600 transition-colors">
                     Health Centers
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    to="/symptom-checker"
-                    className="text-slate-500 hover:text-teal-600 transition-colors"
-                  >
+                  <Link to="/symptom-checker" className="text-slate-500 hover:text-teal-600 transition-colors">
                     Symptom Checker
                   </Link>
                 </li>
               </ul>
             </div>
 
+            {/* Services */}
             <div>
               <h3 className="font-bold text-slate-900 mb-5">Our Services</h3>
               <ul className="space-y-3 text-sm">
                 <li>
-                  <Link
-                    to="/health-profile"
-                    className="text-slate-500 hover:text-teal-600 transition-colors"
-                  >
+                  <Link to="/health-profile" className="text-slate-500 hover:text-teal-600 transition-colors">
                     User Health Profile
                   </Link>
                 </li>
@@ -427,40 +424,32 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    to="/emergency-contact"
-                    className="text-slate-500 hover:text-teal-600 transition-colors"
-                  >
+                  <Link to="/emergency-contact" className="text-slate-500 hover:text-teal-600 transition-colors">
                     Emergency Contact
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    to="/visits-referrals"
-                    className="text-slate-500 hover:text-teal-600 transition-colors"
-                  >
+                  <Link to="/visits-referrals" className="text-slate-500 hover:text-teal-600 transition-colors">
                     Visits & Referrals
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    to="/family-tree"
-                    className="text-slate-500 hover:text-teal-600 transition-colors"
-                  >
+                  <Link to="/family-tree" className="text-slate-500 hover:text-teal-600 transition-colors">
                     Family Tree
                   </Link>
                 </li>
               </ul>
             </div>
 
+            {/* Contact */}
             <div>
               <h3 className="font-bold text-slate-900 mb-5">Contact Us</h3>
               <ul className="space-y-4 text-sm">
-                <li className="flex items-center gap-4 group">
+                <li className="flex items-center gap-4 group cursor-pointer">
                   <div className="w-8 h-8 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
+                      className="h-4.0 w-4.0"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -473,9 +462,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                       />
                     </svg>
                   </div>
-                  <span className="text-slate-500 group-hover:text-teal-600 transition-colors">
-                    support@medilab.lk
-                  </span>
+                  <span className="text-slate-500 group-hover:text-teal-600 transition-colors">support@medilab.lk</span>
                 </li>
               </ul>
             </div>
