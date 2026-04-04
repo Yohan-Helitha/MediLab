@@ -22,6 +22,11 @@ router.get("/visit/:visitId",
   referralController.getReferralsByVisitId
 );
 
+router.get("/member/:memberId",
+  handleValidationErrors,
+  referralController.getReferralsByMemberId
+);
+
 router.get("/:id", 
   validateReferralId,
   handleValidationErrors,

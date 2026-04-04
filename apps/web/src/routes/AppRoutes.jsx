@@ -15,6 +15,15 @@ import ProtectedRoute from "./ProtectedRoute";
 import HomePage from "../pages/HomePage";
 import HealthCentersPage from "../pages/HealthCentersPage";
 import LabDetailsPage from "../pages/LabDetailsPage";
+import AccountPage from "../pages/patient/AccountPage";
+import HealthProfilePage from "../pages/patient/HealthProfilePage";
+import HouseholdRegistrationPage from "../pages/patient/HouseholdRegistrationPage";
+import EmergencyContactPage from "../pages/patient/EmergencyContactPage";
+import VisitReferralPage from "../pages/patient/VisitReferralPage";
+import FamilyTreePage from "../pages/patient/FamilyTreePage";
+import SymptomCheckerPage from "../pages/patient/SymptomCheckerPage";
+import AIDoctorChatPage from "../pages/patient/AIDoctorChatPage";
+import HealthReportsPage from "../pages/patient/HealthReportsPage";
 import AdminOverviewDashboard from "../pages/AdminOverviewDashboard";
 import AdminFinanceDashboard from "../pages/AdminFinanceDashboard";
 import AdminInventoryDashboard from "../pages/AdminInventoryDashboard";
@@ -55,6 +64,21 @@ const AppRoutes = () => {
 			<Route path="/" element={<HomePage />} />
 			<Route path="/health-centers" element={<HealthCentersPage />} />
 			<Route path="/labs/:labId" element={<LabDetailsPage />} />
+			
+			<Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
+			<Route path="/health-profile" element={<ProtectedRoute><HealthProfilePage /></ProtectedRoute>} />
+			<Route path="/health-reports" element={<ProtectedRoute><HealthReportsPage /></ProtectedRoute>} />
+			<Route path="/household-registration" element={<ProtectedRoute><HouseholdRegistrationPage /></ProtectedRoute>} />
+			<Route path="/emergency-contact" element={<ProtectedRoute><EmergencyContactPage /></ProtectedRoute>} />
+			<Route path="/visits-referrals" element={<ProtectedRoute><VisitReferralPage /></ProtectedRoute>} />
+			<Route path="/family-tree" element={<ProtectedRoute><FamilyTreePage /></ProtectedRoute>} />
+			<Route path="/symptom-checker" element={<ProtectedRoute><SymptomCheckerPage /></ProtectedRoute>} />
+			<Route path="/ai-doctor" element={<ProtectedRoute><AIDoctorChatPage /></ProtectedRoute>} />
+			
+			<Route element={<ProtectedRoute />}>
+				<Route path="/dashboard" element={<div className="p-8">Patient Dashboard Coming Soon</div>} />
+			</Route>
+
 			<Route
 				path="/login"
 				element={!user ? <LoginPage /> : <Navigate to={getPostAuthRedirect()} />}
@@ -75,6 +99,8 @@ const AppRoutes = () => {
 			/>
 
 			{/* Protected Staff Routes */}
+			<Route element={<ProtectedRoute />}>
+				<Route path="/staff/dashboard" element={<DashboardLayout activePage="labs"><LabManagementPage /></DashboardLayout>} />
 				<Route
 					element={
 						isAdminUser() ? (

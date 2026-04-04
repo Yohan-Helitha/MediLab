@@ -21,6 +21,10 @@ router.get("/:id",
   householdController.getHouseholdById
 );
 
+router.get("/submitted-by/:id", 
+  householdController.getHouseholdBySubmittedBy
+);
+
 router.post("/",
   validateHouseholdCreate,
   handleValidationErrors,

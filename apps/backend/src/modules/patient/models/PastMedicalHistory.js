@@ -10,6 +10,10 @@ const pastMedicalHistorySchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  surgery_location: {
+    type: [String],
+    default: []
+  },
   hospital_admissions: {
     type: String
   },
