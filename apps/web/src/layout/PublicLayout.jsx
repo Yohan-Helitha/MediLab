@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
+import { HiGlobeAlt } from "react-icons/hi2";
 import MemberProfileForm from "../components/patient/MemberProfileForm";
 
 const NavDropdown = ({ title, items }) => {
@@ -52,9 +54,10 @@ const NavDropdown = ({ title, items }) => {
 };
 
 function PublicLayout({ children, onNavigate, onLanguageChange }) {
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const routerNavigate = useNavigate();
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState(i18n.language || "en");
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isUserOpen, setIsUserOpen] = useState(false);
   const userMenuRef = React.useRef(null);
@@ -114,13 +117,14 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
   };
 
   const languageLabels = {
-    en: "English",
-    si: "සිංහල",
-    ta: "தமிழ்",
+    en: t("navbar.language.english"),
+    si: t("navbar.language.sinhala"),
+    ta: t("navbar.language.tamil"),
   };
 
   const handleSelectLanguage = (code) => {
     setLanguage(code);
+    i18n.changeLanguage(code);
     setIsLangOpen(false);
     if (onLanguageChange) onLanguageChange(code);
   };
@@ -260,16 +264,19 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
               <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-rose-500 border-2 border-white" />
             </button>
 
-            <div className="relative" ref={langMenuRef}>
+          {/* Right side: Language Selector & User Info / Auth Buttons */}
+          <div className="flex items-center gap-4">
+            <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsLangOpen((open) => !open)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 transition-all active:scale-95"
-                title={languageLabels[language] || "Language"}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
               >
+                <HiGlobeAlt className="h-4 w-4 text-teal-600" />
+                <span>{languageLabels[language] || "English"}</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
+                  className="h-4 w-4 text-slate-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -278,121 +285,34 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                    d="M19 9l-7 7-7-7"
                   />
                 </svg>
               </button>
 
               {isLangOpen && (
-                <div className="absolute right-0 mt-2 w-36 rounded-xl bg-white shadow-xl border border-slate-100 py-2 text-sm z-50 animate-in fade-in zoom-in duration-200">
-                  {Object.entries(languageLabels).map(([code, label]) => (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => handleSelectLanguage(code)}
-                      className={`flex w-full px-4 py-2 text-left hover:bg-teal-50 hover:text-teal-700 transition-colors ${
-                        language === code ? "text-teal-700 font-bold bg-teal-50/30" : "text-slate-700 font-medium"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {user ? (
-              <div className="relative flex items-center gap-3" ref={userMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsUserOpen((open) => !open)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white shadow-md hover:bg-teal-700 transition-all hover:scale-105"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <div className="absolute right-0 mt-2 w-42 rounded-xl bg-white shadow-xl border border-slate-100 py-2 text-sm z-50 animate-in fade-in zoom-in duration-200">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectLanguage("en")}
+                    className="flex w-full px-4 py-2-5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </button>
-
-                {isUserOpen && (
-                  <div 
-                    className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300" 
-                    onMouseEnter={() => { if(timeoutRef.current) clearTimeout(timeoutRef.current); }}
+                    English
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectLanguage("si")}
+                    className="flex w-full px-4 py-2-5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
                   >
-                    <div className="px-5 py-2 border-b border-slate-100 bg-teal-700">
-                      <p className="font-bold text-slate-900 truncate text-base">
-                        {user.fullName || user.firstName || "User"}
-                      </p>
-                      <p className="text-xs text-slate-200 truncate font-semibold mt-0.5">
-                        {user.email}
-                      </p>
-                    </div>
-                    
-                    <div className="p-1 bg-white">
-                      <Link
-                        to="/account"
-                        className="flex items-center w-full px-4 py-2.5 text-sm text-slate-700 font-medium hover:bg-slate-50 transition-colors"
-                        onClick={() => setIsUserOpen(false)}
-                      >
-                        My Profile
-                      </Link>
-
-                      <div className="h-px bg-slate-100 my-1 mx-2" />
-                      
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2.5 text-sm text-rose-600 font-semibold hover:bg-rose-50 transition-colors"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-teal-700 transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 transition-all active:scale-95"
-                >
-                  Create Account
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-6 py-4">{children}</main>
-      
-      {showProfileForm && user && !user.isProfileComplete && (
-        <MemberProfileForm onProfileUpdated={handleProfileUpdated} />
-      )}
-
-      <footer className="mt-20 border-t border-slate-200 bg-gradient-to-r from-teal-50/50 to-teal-600/20">
-        <div className="mx-auto max-w-7xl px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Branding Section */}
-            <div className="col-span-1 md:col-span-1">
-              <Link to="/" className="flex items-center gap-2 text-teal-700 font-bold text-xl mb-4">
-                <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center overflow-hidden border border-slate-100">
-                  <img src="/images/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                    සිංහල
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectLanguage("ta")}
+                    className="flex w-full px-4 py-2-5 text-left hover:bg-slate-50 text-slate-700 font-medium transition-colors"
+                  >
+                    தமிழ்
+                  </button>
                 </div>
                 <span>MediLab</span>
               </Link>
@@ -437,6 +357,41 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                 </li>
               </ul>
             </div>
+
+            {user ? (
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:flex flex-col items-end text-sm leading-tight">
+                  <span className="font-semibold text-slate-800">
+                    {user.firstName || user.fullName || "User"}
+                  </span>
+                  <span className="text-slate-500 text-xs">
+                    {user.email || user.role}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600 shadow-sm transition-all duration-200 hover:bg-rose-100 hover:text-rose-700 active:scale-95"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-teal-700 transition-colors"
+                >
+                  {t("navbar.signIn")}
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 transition-all active:scale-95"
+                >
+                  {t("navbar.createAccount")}
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="mt-12 pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">

@@ -8,6 +8,7 @@ import LabCard from "../components/patient/LabCard";
 import TestCard from "../components/patient/TestCard";
 import HeroCarousel from "../components/patient/HeroCarousel";
 import { fetchLabs, fetchTestTypes } from "../api/patientApi";
+import { useTranslation } from "react-i18next";
 
 function CountUp({ end, duration = 2000 }) {
   const [count, setCount] = useState(0);
@@ -72,6 +73,11 @@ function HomePage({ navigate }) {
         routerNavigate(`/health-centers${searchParams}`);
         return;
       }
+      case "lab": {
+        const labId = params?.labId;
+        if (labId) routerNavigate(`/labs/${labId}`);
+        return;
+      }
       default:
         return;
     }
@@ -110,6 +116,8 @@ function HomePage({ navigate }) {
     () => tests.filter((t) => t.isActive !== false).length,
     [tests],
   );
+
+  const { t } = useTranslation();
 
   return (
     <PublicLayout onNavigate={onNavigate}>
