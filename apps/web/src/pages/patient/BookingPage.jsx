@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PublicLayout from "../../layout/PublicLayout";
 import { useAuth } from "../../context/AuthContext";
 import { getBookingsByPatientId } from "../../api/bookingApi";
 
 const BookingPage = () => {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { user } = useAuth();
 	const patientProfileId = user?.profile?._id || null;
@@ -90,9 +92,9 @@ const BookingPage = () => {
 			<div className="space-y-6">
 				<header className="flex flex-wrap items-start justify-between gap-4">
 					<div>
-						<h1 className="text-3xl font-bold text-slate-900">My Bookings</h1>
+						<h1 className="text-3xl font-bold text-slate-900">{t("bookings.title")}</h1>
 						<p className="mt-1 text-sm text-slate-600">
-							View your booked tests and their status.
+							{t("bookings.subtitle")}
 						</p>
 					</div>
 					<button
@@ -100,7 +102,7 @@ const BookingPage = () => {
 						onClick={() => navigate("/health-centers")}
 						className="rounded-full bg-teal-600 px-6 py-2 text-sm font-semibold text-white hover:bg-teal-700"
 					>
-						Book a test
+						{t("bookings.bookTest")}
 					</button>
 				</header>
 
@@ -126,7 +128,7 @@ const BookingPage = () => {
 								onClick={() => navigate("/health-centers")}
 								className="rounded-full bg-teal-600 px-6 py-2 text-sm font-semibold text-white hover:bg-teal-700"
 							>
-								Book a test
+								{t("bookings.bookTest")}
 							</button>
 						</div>
 					</div>
