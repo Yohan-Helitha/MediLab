@@ -13,3 +13,10 @@ export function createPayHereCheckout({ bookingId }) {
 		body: JSON.stringify({ bookingId }),
 	});
 }
+
+export function getBookingsByPatientId(patientProfileId) {
+	if (!patientProfileId) {
+		throw new Error("patientProfileId is required");
+	}
+	return apiRequest(`/api/bookings/patient/${patientProfileId}`);
+}
