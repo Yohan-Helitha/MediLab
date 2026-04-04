@@ -95,15 +95,40 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
   // Logic to show profile form modal
   const isPatient = user && (user.role === 'patient' || user.userType === 'patient');
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [profilePromptDismissed, setProfilePromptDismissed] = useState(false);
+
+  const profilePromptKey = useMemo(() => {
+    const id = user?._id || user?.id || user?.profile?._id || "anon";
+    return `medilab.profilePromptDismissed.${id}`;
+  }, [user]);
+
+  useEffect(() => {
+    // Reset dismissal when switching users
+    try {
+      const raw = sessionStorage.getItem(profilePromptKey);
+      setProfilePromptDismissed(raw === "1");
+    } catch {
+      setProfilePromptDismissed(false);
+    }
+  }, [profilePromptKey]);
 
   // Update modal state if user changes (e.g. after login)
   useEffect(() => {
-    if (user && isPatient && !user.isProfileComplete) {
+    if (user && isPatient && !user.isProfileComplete && !profilePromptDismissed) {
       setShowProfileForm(true);
     } else {
       setShowProfileForm(false);
     }
-  }, [user, isPatient]);
+    // If profile is complete, clear any prior dismissal.
+    if (user && user.isProfileComplete) {
+      try {
+        sessionStorage.removeItem(profilePromptKey);
+      } catch {
+        // ignore
+      }
+      setProfilePromptDismissed(false);
+    }
+  }, [user, isPatient, profilePromptDismissed, profilePromptKey]);
 
   const handleLogout = () => {
     setIsUserOpen(false);
@@ -114,6 +139,17 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
 
   const handleProfileUpdated = () => {
     setShowProfileForm(false);
+  };
+
+  const handleProfileCancelled = () => {
+    setShowProfileForm(false);
+    setProfilePromptDismissed(true);
+    try {
+      sessionStorage.setItem(profilePromptKey, "1");
+    } catch {
+      // ignore
+    }
+    routerNavigate("/", { replace: true });
   };
 
   const languageLabels = {
@@ -477,7 +513,10 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
       </footer>
 
       {showProfileForm && isPatient && (
-        <MemberProfileForm onProfileUpdated={handleProfileUpdated} />
+        <MemberProfileForm
+          onProfileUpdated={handleProfileUpdated}
+          onCancel={handleProfileCancelled}
+        />
       )}
     </div>
   );

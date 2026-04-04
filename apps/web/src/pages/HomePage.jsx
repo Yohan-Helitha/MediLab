@@ -146,6 +146,13 @@ function HomePage({ navigate }) {
                   Access professional diagnostic services at affordable prices across rural health centers in Sri Lanka.
                 </p>
 
+                <div className="w-full max-w-2xl">
+                  <SearchBar
+                    value={search}
+                    onChange={setSearch}
+                    onSubmit={(value) => onNavigate("health-centers", { query: value })}
+                  />
+                </div>
                 
               </div>
 

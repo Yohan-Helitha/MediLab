@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 
@@ -8,6 +8,13 @@ function PayHereReturnPage() {
 
 	const status = (params.get("status") || "").toLowerCase();
 	const orderId = params.get("order_id") || params.get("order") || "";
+
+	useEffect(() => {
+		// After a successful payment, take the user directly to their bookings list.
+		if (status === "success") {
+			navigate("/booking", { replace: true, state: { orderId, payHereStatus: status } });
+		}
+	}, [navigate, orderId, status]);
 
 	const title = status === "success" ? "Payment Submitted" : "Payment Cancelled";
 	const message =
@@ -51,10 +58,10 @@ function PayHereReturnPage() {
 							</button>
 							<button
 								type="button"
-								onClick={() => navigate("/dashboard")}
+								onClick={() => navigate("/booking")}
 								className="rounded-full bg-slate-100 px-6 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200"
 							>
-								Go to dashboard
+								View my bookings
 							</button>
 						</div>
 					</div>
