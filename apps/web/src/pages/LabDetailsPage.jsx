@@ -94,7 +94,12 @@ function LabDetailsPage({ labId, navigate }) {
       return;
     }
 
-    // TODO: integrate patient booking flow for available tests
+    routerNavigate("/bookings/new", {
+      state: {
+        lab,
+        labTest,
+      },
+    });
   };
 
   if (!lab)

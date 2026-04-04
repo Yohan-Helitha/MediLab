@@ -14,6 +14,9 @@ import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 import equipmentRoutes from "./modules/inventory/equipment.routes.js";
 import financeRoutes from "./modules/finance/finance.routes.js";
 
+// Payment gateway routes (PayHere)
+import payHereRoutes from "./modules/payment/payhere.routes.js";
+
 //patient module
 import authRoutes from "./modules/auth/auth.routes.js";
 // Consultation module routes (AI Doctor)
@@ -93,6 +96,9 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/finance", financeRoutes);
+
+// PayHere (checkout + notify)
+app.use("/api/payments/payhere", payHereRoutes);
 
 // Test Management Component Routes
 // Note: TestType CRUD endpoints (/api/test-types) are managed by Lab Operations Component (Arani)

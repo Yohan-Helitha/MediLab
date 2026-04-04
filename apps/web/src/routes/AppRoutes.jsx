@@ -20,6 +20,8 @@ import AdminFinanceDashboard from "../pages/AdminFinanceDashboard";
 import AdminInventoryDashboard from "../pages/AdminInventoryDashboard";
 import AdminEquipmentCatalog from "../pages/AdminEquipmentCatalog";
 import AdminTestEquipmentRequirements from "../pages/AdminTestEquipmentRequirements";
+import BookingCreatePage from "../pages/BookingCreatePage";
+import PayHereReturnPage from "../pages/PayHereReturnPage";
 import AccountPage from "../pages/patient/AccountPage";
 import AIDoctorChatPage from "../pages/patient/AIDoctorChatPage";
 import BookingPage from "../pages/patient/BookingPage";
@@ -108,6 +110,7 @@ const AppRoutes = () => {
 			<Route path="/" element={<HomePage />} />
 			<Route path="/health-centers" element={<HealthCentersPage />} />
 			<Route path="/labs/:labId" element={<LabDetailsPage />} />
+			<Route path="/payments/payhere/return" element={<PayHereReturnPage />} />
 			<Route
 				path="/login"
 				element={!user ? <LoginPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
@@ -204,6 +207,7 @@ const AppRoutes = () => {
 
 			{/* Protected Patient Routes */}
 			<Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
+				<Route path="/bookings/new" element={<BookingCreatePage />} />
 				<Route path="/account" element={<AccountPage />} />
 				<Route path="/health-profile" element={<HealthProfilePage />} />
 				<Route path="/health-reports" element={<HealthReportsPage />} />
