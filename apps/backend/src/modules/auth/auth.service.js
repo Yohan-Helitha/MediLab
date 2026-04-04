@@ -131,7 +131,7 @@ class AuthService {
       id: authRecord._id,
       systemId: officerProfile.employeeId,
       profileId: officerProfile._id,
-      userType: 'staff',
+      userType: 'healthOfficer',
       role: authRecord.role,
       fullName: officerProfile.fullName
     });
@@ -140,7 +140,7 @@ class AuthService {
       user: { 
         email: authRecord.email, 
         role: authRecord.role, 
-        userType: officerProfile.role === 'patient' ? 'patient' : 'staff',
+        userType: 'healthOfficer',
         systemId: officerProfile.employeeId, 
         profile: officerProfile 
       }, 
@@ -184,7 +184,7 @@ class AuthService {
       id: authRecord._id,
       systemId: authRecord.systemId,
       profileId: authRecord.profileId,
-      userType: authRecord.onModel === 'Member' ? 'patient' : 'staff',
+      userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
       role: authRecord.role,
       fullName: profile.full_name || profile.fullName
     });
@@ -193,7 +193,7 @@ class AuthService {
       user: { 
         email: authRecord.email, 
         role: authRecord.role, 
-        userType: authRecord.onModel === 'Member' ? 'patient' : 'staff',
+        userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
         systemId: authRecord.systemId,
         firstName: profile.full_name?.split(' ')[0] || profile.fullName?.split(' ')[0],
         isProfileComplete: profile.isProfileComplete || false,
@@ -322,7 +322,7 @@ class AuthService {
     return {
       email: authRecord.email,
       role: authRecord.role,
-      userType: authRecord.onModel === 'Member' ? 'patient' : 'staff',
+      userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
       systemId: authRecord.systemId,
       profile: profile
     };

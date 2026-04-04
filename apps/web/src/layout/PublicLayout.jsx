@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import MemberProfileForm from "../components/patient/MemberProfileForm";
@@ -54,7 +53,7 @@ const NavDropdown = ({ title, items }) => {
 
 function PublicLayout({ children, onNavigate, onLanguageChange }) {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const routerNavigate = useNavigate();
   const [language, setLanguage] = useState("en");
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isUserOpen, setIsUserOpen] = useState(false);
@@ -106,7 +105,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
   const handleLogout = () => {
     setIsUserOpen(false);
     logout();
-    navigate("/", { replace: true });
+    routerNavigate("/", { replace: true });
     window.location.reload(); // Force reload to show public layout
   };
 
@@ -159,10 +158,10 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
           <Link
             to="/"
             className="flex items-center gap-3 text-teal-700 font-bold text-lg whitespace-nowrap group"
-          <button
-            type="button"
-            onClick={() => navigate("home")}
-            className="text-teal-700 font-bold text-lg whitespace-nowrap"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("home");
+            }}
           >
             <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center group-hover:bg-teal-100 transition-colors overflow-hidden">
                <img src="/images/logo.png" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />

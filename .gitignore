@@ -17,6 +17,10 @@ yarn.lock
 .env.test.local
 .env.production.local
 
+# Deployment/env templates (keep out of git)
+payment-backend.env.template
+payment-frontend.env.template
+
 # IDE
 .vscode/
 .idea/
