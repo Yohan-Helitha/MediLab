@@ -135,21 +135,23 @@ function HomePage({ navigate }) {
               <div className="relative z-10 w-full max-w-2xl text-left">
                 <div className="inline-flex items-center gap-2 bg-teal-900/50 backdrop-blur-sm text-teal-300 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] mb-8 border border-teal-500/30 shadow-inner">
                   <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse"></span>
-                  Welcome to rural health diagnostics
+                  {t("hero.badge")}
                 </div>
 
                 <h1 className="text-4xl md:text-5xl font-bold text-white leading-[1.05] tracking-tight mb-6">
-                  Find nearby <span className="text-teal-500  decoration-teal-500/30">health centers</span> and book diagnostic tests.
+                  {t("hero.title")}
                 </h1>
                 
                 <p className="mt-4 text-white text-lg leading-relaxed max-w-lg mb-10">
-                  Access professional diagnostic services at affordable prices across rural health centers in Sri Lanka.
+                  {t("hero.subtitle")}
                 </p>
 
                 <div className="w-full max-w-2xl">
                   <SearchBar
                     value={search}
                     onChange={setSearch}
+                    placeholder={t("hero.search.placeholder")}
+                    buttonLabel={t("search.button")}
                     onSubmit={(value) => onNavigate("health-centers", { query: value })}
                   />
                 </div>
@@ -174,7 +176,7 @@ function HomePage({ navigate }) {
                   </span>
                   <HiBuildingOffice2 className="h-8 w-8 text-teal-200 group-hover:scale-110 group-hover:text-teal-300 transition-all duration-300" />
                 </div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200 group-hover:text-teal-200/70 transition-colors">Active Centers</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200 group-hover:text-teal-200/70 transition-colors">{t("stats.activeCenters")}</div>
               </div>
 
               <div className="flex flex-col items-center group">
@@ -185,7 +187,7 @@ function HomePage({ navigate }) {
                   </span>
                   <HiBeaker className="h-8 w-8 text-teal-200 group-hover:scale-110 group-hover:text-teal-300 transition-all duration-300" />
                 </div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200 group-hover:text-teal-200/70 transition-colors">Tests Available</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200 group-hover:text-teal-200/70 transition-colors">{t("stats.testsAvailable")}</div>
               </div>
 
               <div className="flex flex-col items-center group">
@@ -206,7 +208,7 @@ function HomePage({ navigate }) {
                     />
                   </svg>
                 </div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200 group-hover:text-teal-200/70 transition-colors">Support Available</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-200 group-hover:text-teal-200/70 transition-colors">{t("stats.supportAvailable")}</div>
               </div>
             </div>
           </div>
@@ -215,8 +217,8 @@ function HomePage({ navigate }) {
         <section className="mt-12">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-bold text-slate-800 pt-8 tracking-tight">Browse by Category</h2>
-              <p className="text-slate-500 mt-1 font-medium">Explore all available diagnostic test categories.</p>
+              <h2 className="text-3xl font-bold text-slate-800 pt-8 tracking-tight">{t("home.browseByCategory")}</h2>
+              <p className="text-slate-500 mt-1 font-medium">{t("home.browseByCategory.subtitle")}</p>
             </div>
             <div className="h-px flex-1 bg-slate-100 mx-8 mb-3 opacity-50"></div>
           </div>
@@ -231,8 +233,8 @@ function HomePage({ navigate }) {
           <section className="mt-16">
             <div className="max-w-6xl mx-auto px-6 py-8 bg-teal-800 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
               <div className="text-center mb-16 relative">
-                <h3 className="text-3xl font-bold text-slate-200 tracking-tight mb-3">How It Works</h3>
-                <p className="text-slate-200 font-medium">Get your diagnostic tests done in three simple steps.</p>
+                <h3 className="text-3xl font-bold text-slate-200 tracking-tight mb-3">{t("home.howItWorks")}</h3>
+                <p className="text-slate-200 font-medium">{t("home.howItWorks.subtitle")}</p>
                 <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-12 h-1 bg-teal-500 rounded-full"></div>
               </div>
 
@@ -247,8 +249,8 @@ function HomePage({ navigate }) {
                     </svg>
                   </div>
                   <div className="bg-teal-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mx-auto -mt-10 mb-6 border-4 border-white shadow-sm relative z-20">1</div>
-                  <h4 className="font-bold text-xl text-slate-200 mb-3 group-hover:text-teal-200 transition-colors">Find a Health Center</h4>
-                  <p className="text-slate-200 leading-relaxed px-4">Browse nearby labs or search by name and location in our verification network.</p>
+                  <h4 className="font-bold text-xl text-slate-200 mb-3 group-hover:text-teal-200 transition-colors">{t("home.howItWorks.step1.title")}</h4>
+                  <p className="text-slate-200 leading-relaxed px-4">{t("home.howItWorks.step1.body")}</p>
                 </div>
 
                 <div className="text-center group relative z-10">
@@ -258,8 +260,8 @@ function HomePage({ navigate }) {
                     </svg>
                   </div>
                   <div className="bg-teal-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mx-auto -mt-10 mb-6 border-4 border-white shadow-sm relative z-20">2</div>
-                  <h4 className="font-bold text-xl text-slate-200 mb-3 group-hover:text-teal-200 transition-colors">Choose Your Test</h4>
-                  <p className="text-slate-200 leading-relaxed px-4">View available tests, transparent prices, and necessary preparation instructions.</p>
+                  <h4 className="font-bold text-xl text-slate-200 mb-3 group-hover:text-teal-200 transition-colors">{t("home.howItWorks.step2.title")}</h4>
+                  <p className="text-slate-200 leading-relaxed px-4">{t("home.howItWorks.step2.body")}</p>
                 </div>
 
                 <div className="text-center group relative z-10">
@@ -269,8 +271,8 @@ function HomePage({ navigate }) {
                     </svg>
                   </div>
                   <div className="bg-teal-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mx-auto -mt-10 mb-6 border-4 border-white shadow-sm relative z-20">3</div>
-                  <h4 className="font-bold text-xl text-slate-200 mb-3 group-hover:text-teal-200 transition-colors">Book & Visit</h4>
-                  <p className="text-slate-200 leading-relaxed px-4">Secure your slot online and visit the center with your digital confirmation.</p>
+                  <h4 className="font-bold text-xl text-slate-200 mb-3 group-hover:text-teal-200 transition-colors">{t("home.howItWorks.step3.title")}</h4>
+                  <p className="text-slate-200 leading-relaxed px-4">{t("home.howItWorks.step3.body")}</p>
                 </div>
               </div>
             </div>
@@ -279,15 +281,15 @@ function HomePage({ navigate }) {
         <section className="mt-16">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Featured Health Centers</h2>
-              <p className="text-slate-500 mt-1 font-medium">Top-rated diagnostic centers near you.</p>
+              <h2 className="text-3xl font-bold text-slate-800 tracking-tight">{t("home.featured.title")}</h2>
+              <p className="text-slate-500 mt-1 font-medium">{t("home.featured.subtitle")}</p>
             </div>
             <div className="h-px flex-1 bg-slate-100 mx-8 mb-3 opacity-50"></div>
             <button 
               onClick={() => navigate('/labs')}
               className="mb-1 text-teal-600 font-bold text-sm hover:text-teal-700 transition-colors"
             >
-              View All Centers
+              {t("home.featured.viewAll")}
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -306,15 +308,15 @@ function HomePage({ navigate }) {
         <section className="mt-16">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-bold pt-8 text-slate-800 tracking-tight">Popular Diagnostic Tests</h2>
-              <p className="text-slate-500 mt-1 font-medium">Most frequently booked tests by our members.</p>
+              <h2 className="text-3xl font-bold pt-8 text-slate-800 tracking-tight">{t("home.popular.title")}</h2>
+              <p className="text-slate-500 mt-1 font-medium">{t("home.popular.subtitle")}</p>
             </div>
             <div className="h-px flex-1 bg-slate-100 mx-8 mb-3 opacity-50"></div>
             <button 
               onClick={() => navigate('/tests')}
               className="mb-1 text-teal-600 font-bold text-sm hover:text-teal-700 transition-colors"
             >
-              Browse All Tests
+              {t("home.popular.browseAll")}
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
