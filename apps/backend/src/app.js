@@ -20,7 +20,8 @@ import payHereRoutes from "./modules/payment/payhere.routes.js";
 //patient module
 import authRoutes from "./modules/auth/auth.routes.js";
 // Consultation module routes (AI Doctor)
-//import consultationRoutes from "./modules/consultation/consultation.routes.js";
+import consultationRoutes from "./modules/consultation/routes/consultationRoutes.js";
+import geminiRoutes from "./modules/consultation/routes/geminiRoutes.js";
 //patient module routes
 import memberRoutes from "./modules/patient/routes/memberRoutes.js";
 import householdRoutes from "./modules/patient/routes/householdRoutes.js";
@@ -39,6 +40,14 @@ import referralRoutes from "./modules/patient/routes/referralRoutes.js";
 import resultRoutes from "./modules/result/result.routes.js";
 import notificationRoutes from "./modules/notification/notification.routes.js";
 
+import { fileURLToPath } from 'url';
+import path from 'path';
+import dotenv from "dotenv";
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 // Core middleware
@@ -46,6 +55,9 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(morgan(config.isDev ? "dev" : "combined"));
+
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Feature routes
 app.use("/api/labs", labRoutes);
@@ -61,8 +73,9 @@ app.get("/api/health", (req, res) => {
 // Auth module routes
 app.use("/api/auth", authRoutes);
 
-// Consultation module (AI Doctor) - TODO
-//app.use("/api/consultation", consultationRoutes);
+// Consultation module (AI Doctor)
+app.use("/api/consultation", consultationRoutes);
+app.use("/api/ai", geminiRoutes);
 
 // Patient module - api routes
 app.use("/api/members", memberRoutes);

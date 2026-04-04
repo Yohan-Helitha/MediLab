@@ -129,16 +129,23 @@ export const validateMemberCreate = [
   
   body("photo")
     .optional()
-    .isLength({ max: 255 })
-    .withMessage("Photo path must be less than 255 characters"),
+    .custom((value, { req }) => {
+      // If a file was uploaded, skip this string validation
+      if (req.file) return true;
+      // Otherwise, check if it's a valid path string (if provided)
+      if (typeof value === 'string' && value.length > 255) {
+        throw new Error("Photo path must be less than 255 characters");
+      }
+      return true;
+    }),
   
   body("disability_status")
-    .optional()
+    .optional({ checkFalsy: true })
     .isBoolean()
     .withMessage("Disability status must be boolean"),
   
   body("pregnancy_status")
-    .optional()
+    .optional({ checkFalsy: true })
     .isBoolean()
     .withMessage("Pregnancy status must be boolean")
 ];
@@ -180,6 +187,11 @@ export const validateMemberUpdate = [
     .optional()
     .isLength({ max: 150 })
     .withMessage("Full name must be less than 150 characters"),
+  
+  body("diseases")
+    .optional()
+    .isArray()
+    .withMessage("Diseases must be an array of strings"),
   
   body("contact_number")
     .optional()
@@ -269,16 +281,23 @@ export const validateMemberUpdate = [
   
   body("photo")
     .optional()
-    .isLength({ max: 255 })
-    .withMessage("Photo path must be less than 255 characters"),
+    .custom((value, { req }) => {
+      // If a file was uploaded, skip this string validation
+      if (req.file) return true;
+      // Otherwise, check if it's a valid path string (if provided)
+      if (typeof value === 'string' && value.length > 255) {
+        throw new Error("Photo path must be less than 255 characters");
+      }
+      return true;
+    }),
   
   body("disability_status")
-    .optional()
+    .optional({ checkFalsy: true })
     .isBoolean()
     .withMessage("Disability status must be boolean"),
   
   body("pregnancy_status")
-    .optional()
+    .optional({ checkFalsy: true })
     .isBoolean()
     .withMessage("Pregnancy status must be boolean")
 ];

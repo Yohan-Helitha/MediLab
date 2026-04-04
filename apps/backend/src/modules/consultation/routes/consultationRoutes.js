@@ -1,14 +1,17 @@
 import express from 'express';
-import consultationController from './consultation.controller.js';
+import consultationController from '../controllers/consultationController.js';
+import {
+  authenticate,
+  optionalAuth,
+  handleValidationErrors
+} from '../../auth/auth.middleware.js';
 import {
   validateAskAIDoctor,
   validateMedicalInfo,
   validateSymptomAnalysis,
   validateMedicationInfo,
   validateLifestyleAdvice
-} from './consultation.validation.js';
-import { handleValidationErrors, authenticate, optionalAuth } from '../auth/auth.middleware.js';
-
+} from '../validations/consultationValidation.js';
 const router = express.Router();
 
 /**
@@ -47,7 +50,7 @@ router.post(
  */
 router.post(
   '/analyze-symptoms',
-  authenticate,
+  optionalAuth,
   validateSymptomAnalysis,
   handleValidationErrors,
   consultationController.analyzeSymptoms

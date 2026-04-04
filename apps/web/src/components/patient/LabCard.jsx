@@ -4,7 +4,7 @@ import { formatHours } from "../../utils/format";
 
 function LabCard({ lab, onView }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-md border border-slate-200">
+    <div className="rounded-2xl bg-white p-3 shadow-md border border-slate-200 hover:scale-[1.02] hover:shadow-lg hover:border-teal-500/50 hover:bg-slate-50/50 transition-all duration-300">
       {/* Top: icon + name + location */}
       <div className="flex items-center gap-4">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50">
@@ -37,10 +37,6 @@ function LabCard({ lab, onView }) {
           <span>{lab.phoneNumber || "-"}</span>
         </div>
 
-        <div className="ml-auto text-xs font-semibold text-emerald-600">
-          {lab.operationalStatus || ""}
-        </div>
-
         <div className="flex items-center gap-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -61,6 +57,10 @@ function LabCard({ lab, onView }) {
               ? formatHours(lab.operatingHours)
               : "Hours not set"}
           </span>
+        </div>
+
+        <div className="ml-auto text-xs font-semibold text-emerald-600">
+          {lab.operationalStatus || ""}
         </div>
       </div>
 

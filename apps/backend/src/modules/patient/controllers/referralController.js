@@ -46,6 +46,22 @@ class ReferralController {
     }
   }
 
+  async getReferralsByMemberId(req, res) {
+    try {
+      const memberId = req.params.memberId === 'me' ? (req.user.member_id || req.user.systemId) : req.params.memberId;
+      const referrals = await referralService.getReferralsByMemberId(memberId);
+      res.status(200).json({
+        success: true,
+        data: referrals
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
   async createReferral(req, res) {
     try {
       const referral = await referralService.createReferral(req.body);

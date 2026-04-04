@@ -2,8 +2,7 @@ import { body, param } from "express-validator";
 
 export const validateEmergencyContactCreate = [
   body("member_id")
-    .notEmpty()
-    .withMessage("Member ID is required")
+    .optional({ values: 'falsy' })
     .matches(/^MEM-ANU-PADGNDIV-\d{4}-\d{5}$/)
     .withMessage("Invalid member ID format. Expected format: MEM-ANU-PADGNDIV-YYYY-NNNNN"),
   
@@ -26,7 +25,7 @@ export const validateEmergencyContactCreate = [
     .withMessage("Primary phone must be exactly 10 digits with no symbols or letters"),
   
   body("secondary_phone")
-    .optional()
+    .optional({ values: 'falsy' })
     .matches(/^[0-9]{10}$/)
     .withMessage("Secondary phone must be exactly 10 digits with no symbols or letters"),
   
@@ -43,18 +42,21 @@ export const validateEmergencyContactCreate = [
   
   body("best_time_to_contact")
     .optional()
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-    .withMessage("Best time to contact must be a valid time in HH:MM format (e.g., 09:00, 14:30)"),
+    .custom((value) => {
+      if (!value) return true;
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      const wordValues = ["ANYTIME", "MORNING", "AFTERNOON", "EVENING", "NIGHT"];
+      if (timeRegex.test(value) || wordValues.includes(value.toUpperCase())) return true;
+      throw new Error("Best time to contact must be a valid time (HH:MM) or one of: ANYTIME, MORNING, AFTERNOON, EVENING, NIGHT");
+    }),
   
   body("address")
-    .notEmpty()
-    .withMessage("Address is required")
+    .optional({ values: 'falsy' })
     .isLength({ max: 150 })
     .withMessage("Address must be less than 150 characters"),
   
   body("gn_division")
-    .notEmpty()
-    .withMessage("GN Division is required")
+    .optional({ values: 'falsy' })
     .isLength({ max: 100 })
     .withMessage("GN Division must be less than 100 characters"),
   
@@ -107,7 +109,7 @@ export const validateEmergencyContactUpdate = [
     .withMessage("Primary phone must be exactly 10 digits with no symbols or letters"),
   
   body("secondary_phone")
-    .optional()
+    .optional({ values: 'falsy' })
     .matches(/^[0-9]{10}$/)
     .withMessage("Secondary phone must be exactly 10 digits with no symbols or letters"),
   
@@ -123,8 +125,13 @@ export const validateEmergencyContactUpdate = [
   
   body("best_time_to_contact")
     .optional()
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-    .withMessage("Best time to contact must be a valid time in HH:MM format (e.g., 09:00, 14:30)"),
+    .custom((value) => {
+      if (!value) return true;
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      const wordValues = ["ANYTIME", "MORNING", "AFTERNOON", "EVENING", "NIGHT"];
+      if (timeRegex.test(value) || wordValues.includes(value.toUpperCase())) return true;
+      throw new Error("Best time to contact must be a valid time (HH:MM) or one of: ANYTIME, MORNING, AFTERNOON, EVENING, NIGHT");
+    }),
   
   body("address")
     .optional()

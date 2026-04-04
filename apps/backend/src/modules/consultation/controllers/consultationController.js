@@ -1,4 +1,4 @@
-import consultationService from './consultation.service.js';
+import consultationService from '../services/consultationService.js';
 
 class ConsultationController {
   /**

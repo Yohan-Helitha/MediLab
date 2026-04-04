@@ -30,13 +30,17 @@ export async function apiRequest(path, options = {}) {
 	const response = await fetch(url, { ...options, headers });
 	if (!response.ok) {
 		let message = `Request failed with status ${response.status}`;
+		let errors = null;
 		try {
 			const data = await response.json();
 			if (data && data.message) message = data.message;
+			if (data && data.errors) errors = data.errors;
 		} catch {
 			// ignore JSON parse errors
 		}
-		throw new Error(message);
+		const error = new Error(message);
+		error.errors = errors;
+		throw error;
 	}
 	return response.json();
 }

@@ -5,6 +5,7 @@ import LabCard from "../components/patient/LabCard";
 import SearchBar from "../components/patient/SearchBar";
 import Modal from "../components/Modal";
 import { fetchLabs, fetchLabTestsByLab } from "../api/patientApi";
+import { useTranslation } from "react-i18next";
 
 function HealthCentersPage({ navigate, initialQuery = "" }) {
   const routerNavigate = useNavigate();
@@ -14,6 +15,7 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
   const [labTestsByLab, setLabTestsByLab] = useState({});
   const [search, setSearch] = useState(initialQuery || urlQuery || "");
   const [statusModalLab, setStatusModalLab] = useState(null);
+  const { t } = useTranslation();
 
   const onNavigate = (name, params = {}) => {
     if (navigate) return navigate(name, params);
@@ -101,17 +103,18 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
       <div className="space-y-6">
         <header className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Health Centers</h1>
+            <h1 className="text-3xl font-bold">{t("healthCenters.title")}</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Find all registred Health Centers in your are area...
+              {t("healthCenters.subtitle")}
             </p>
           </div>
           <div className="w-full max-w-sm">
             <SearchBar
               value={search}
               onChange={setSearch}
-              placeholder="Search by lab or test name..."
+              placeholder={t("healthCenters.search.placeholder")}
               size="sm"
+              buttonLabel={t("search.button")}
               onSubmit={(value) => setSearch(value)}
             />
           </div>

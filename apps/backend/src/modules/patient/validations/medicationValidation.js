@@ -51,7 +51,7 @@ export const validateMedicationCreate = [
     .custom((value) => {
       const inputDate = new Date(value);
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+      today.setHours(23, 59, 59, 999); // Allow today full day
       
       if (inputDate > today) {
         throw new Error('Start date cannot be a future date');

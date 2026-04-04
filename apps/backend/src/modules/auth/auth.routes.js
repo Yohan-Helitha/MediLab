@@ -98,4 +98,15 @@ router.post(
   authController.logout
 );
 
+/**
+ * @route   PUT /api/auth/update
+ * @desc    Update user profile and password
+ * @access  Private
+ */
+router.put(
+  '/update',
+  authenticate,
+  authController.updateProfile
+);
+
 export default router;

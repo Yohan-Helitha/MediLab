@@ -22,6 +22,16 @@ import AdminEquipmentCatalog from "../pages/AdminEquipmentCatalog";
 import AdminTestEquipmentRequirements from "../pages/AdminTestEquipmentRequirements";
 import BookingCreatePage from "../pages/BookingCreatePage";
 import PayHereReturnPage from "../pages/PayHereReturnPage";
+import AccountPage from "../pages/patient/AccountPage";
+import AIDoctorChatPage from "../pages/patient/AIDoctorChatPage";
+import BookingPage from "../pages/patient/BookingPage";
+import EmergencyContactPage from "../pages/patient/EmergencyContactPage";
+import FamilyTreePage from "../pages/patient/FamilyTreePage";
+import HealthProfilePage from "../pages/patient/HealthProfilePage";
+import HealthReportsPage from "../pages/patient/HealthReportsPage";
+import HouseholdRegistrationPage from "../pages/patient/HouseholdRegistrationPage";
+import SymptomCheckerPage from "../pages/patient/SymptomCheckerPage";
+import VisitReferralPage from "../pages/patient/VisitReferralPage";
 
 const POST_AUTH_REDIRECT_KEY = "medilab.postAuthRedirect";
 
@@ -107,7 +117,7 @@ const AppRoutes = () => {
 			/>
 			<Route
 				path="/register"
-				element={!user ? <RegisterPage /> : <Navigate to={getPostAuthRedirect()} />}
+				element={!user ? <RegisterPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
 			/>
 
 			{/* Staff Auth Routes */}
@@ -117,7 +127,7 @@ const AppRoutes = () => {
 			/>
 			<Route
 				path="/staff/register"
-				element={!user ? <StaffRegisterPage /> : <Navigate to={getPostAuthRedirect()} />}
+				element={!user ? <StaffRegisterPage /> : <PostAuthRedirect fallback={getPostAuthRedirect()} />}
 			/>
 
 			{/* Protected Staff Routes */}
@@ -198,6 +208,16 @@ const AppRoutes = () => {
 			{/* Protected Patient Routes */}
 			<Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
 				<Route path="/bookings/new" element={<BookingCreatePage />} />
+				<Route path="/account" element={<AccountPage />} />
+				<Route path="/health-profile" element={<HealthProfilePage />} />
+				<Route path="/health-reports" element={<HealthReportsPage />} />
+				<Route path="/booking" element={<BookingPage />} />
+				<Route path="/visits-referrals" element={<VisitReferralPage />} />
+				<Route path="/household-registration" element={<HouseholdRegistrationPage />} />
+				<Route path="/family-tree" element={<FamilyTreePage />} />
+				<Route path="/emergency-contact" element={<EmergencyContactPage />} />
+				<Route path="/symptom-checker" element={<SymptomCheckerPage />} />
+				<Route path="/ai-doctor" element={<AIDoctorChatPage />} />
 				<Route path="/dashboard" element={<div className="p-8">Patient Dashboard Coming Soon</div>} />
 			</Route>
 

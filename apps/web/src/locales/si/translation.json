@@ -1,0 +1,29 @@
+{
+  "navbar.brand": "MediLab",
+  "navbar.home": "මුල් පිටුව",
+  "navbar.healthCenters": "සෞඛ්ය මධ්‍යස්ථාන",
+  "navbar.language.english": "English",
+  "navbar.language.sinhala": "සිංහල",
+  "navbar.language.tamil": "தமிழ்",
+  "navbar.signIn": "ප්‍රවේශ වන්න",
+  "navbar.createAccount": "ගිණුමක් සෑදීම",
+
+  "hero.badge": "ග්‍රාමීය සෞඛ්ය අංශය වෙත සාදරයෙන් පිළිගනිමු",
+  "hero.title": "සමීපතම සෞඛ්ය මධ්‍යස්ථාන සහ නිරෝධායන පරීක්ෂණ පහසුවෙන් සොයන්න.",
+  "hero.subtitle": "ශ්‍රී ලංකාවේ ග්‍රාමීය සෞඛ්ය මධ්‍යස්ථාන හරහා සරළ වියදමකට ගුණාත්මක නිරෝධායන සේවා ලබාගන්න.",
+  "hero.search.placeholder": "ලැබ් නාමයක් හෝ පරීක්ෂණයක් සොයන්න...",
+
+  "home.browseByCategory": "වර්ග අනුව සෙවීම",
+  "home.howItWorks": "ක්‍රියාවලිය කෙසේද",
+  "home.howItWorks.step1.title": "සෞඛ්ය මධ්‍යස්ථානයක් සොයන්න",
+  "home.howItWorks.step1.body": "අසළ ලැබ් සෙවීම හෝ නම සහ ස්ථානය මගින් සෙවීම කරන්න.",
+  "home.howItWorks.step2.title": "ඔබේ පරීක්ෂණය තෝරන්න",
+  "home.howItWorks.step2.body": "ලැබෙන පරීක්ෂණ, මිල, සහ පෙර/පසු උපදෙස් බලන්න.",
+  "home.howItWorks.step3.title": "බුක් කර රෝහලට යන්න",
+  "home.howItWorks.step3.body": "පරීක්ෂණය ඔන්ලයින් බුක් කර ඔබට පහසු වේලාවකට ලැබ් වෙත පිවිසෙන්න.",
+
+  "healthCenters.title": "සෞඛ්ය මධ්‍යස්ථාන",
+  "healthCenters.subtitle": "ඔබගේ ප්‍රදේශයේ ලියාපදිංචි සියළු සෞඛ්ය මධ්‍යස්ථාන සොයන්න...",
+  "healthCenters.search.placeholder": "ලැබ් නාමය හෝ පරීක්ෂණ නාමය පුරස්ථානයෙන් සොයන්න...",
+  "search.button": "සොයන්න"
+}
