@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { HiBuildingOffice2, HiBeaker } from "react-icons/hi2";
+import { useNavigate } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import SearchBar from "../components/patient/SearchBar";
 import CategoryPill from "../components/patient/CategoryPill";
@@ -53,9 +54,28 @@ function CountUp({ end, duration = 2000 }) {
 }
 
 function HomePage({ navigate }) {
+  const routerNavigate = useNavigate();
   const [labs, setLabs] = useState([]);
   const [tests, setTests] = useState([]);
   const [search, setSearch] = useState("");
+
+  const onNavigate = (name, params = {}) => {
+    if (navigate) return navigate(name, params);
+
+    switch (name) {
+      case "home":
+        routerNavigate("/");
+        return;
+      case "health-centers": {
+        const query = (params?.query || "").toString().trim();
+        const searchParams = query ? `?query=${encodeURIComponent(query)}` : "";
+        routerNavigate(`/health-centers${searchParams}`);
+        return;
+      }
+      default:
+        return;
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -92,7 +112,7 @@ function HomePage({ navigate }) {
   );
 
   return (
-    <PublicLayout onNavigate={navigate}>
+    <PublicLayout onNavigate={onNavigate}>
       <div className="space-y-8">
         <section className="rounded-3xl bg-teal-800 shadow-2xl border border-slate-700/30 overflow-hidden">
           <div className="flex flex-col lg:flex-row min-h-[420px]">

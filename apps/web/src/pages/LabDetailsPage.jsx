@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import {
   fetchLabById,
@@ -10,6 +11,33 @@ import { formatHours } from "../utils/format";
 import Modal from "../components/Modal";
 
 function LabDetailsPage({ labId, navigate }) {
+  const routerNavigate = useNavigate();
+  const params = useParams();
+  const effectiveLabId = useMemo(() => labId || params.labId, [labId, params.labId]);
+
+  const onNavigate = (name, navParams = {}) => {
+    if (navigate) return navigate(name, navParams);
+
+    switch (name) {
+      case "home":
+        routerNavigate("/");
+        return;
+      case "health-centers": {
+        const query = (navParams?.query || "").toString().trim();
+        const search = query ? `?query=${encodeURIComponent(query)}` : "";
+        routerNavigate(`/health-centers${search}`);
+        return;
+      }
+      case "lab": {
+        const nextLabId = navParams?.labId;
+        if (nextLabId) routerNavigate(`/labs/${nextLabId}`);
+        return;
+      }
+      default:
+        return;
+    }
+  };
+
   const [lab, setLab] = useState(null);
   const [tests, setTests] = useState([]);
   const [instructionsByDiagnosticId, setInstructionsByDiagnosticId] = useState({});
@@ -18,10 +46,10 @@ function LabDetailsPage({ labId, navigate }) {
   useEffect(() => {
     const load = async () => {
       try {
-        if (!labId) return;
+        if (!effectiveLabId) return;
         const [labData, labTests] = await Promise.all([
-          fetchLabById(labId),
-          fetchLabTestsByLab(labId),
+          fetchLabById(effectiveLabId),
+          fetchLabTestsByLab(effectiveLabId),
         ]);
         setLab(labData);
         setTests(labTests);
@@ -55,7 +83,7 @@ function LabDetailsPage({ labId, navigate }) {
       }
     };
     load();
-  }, [labId]);
+  }, [effectiveLabId]);
 
   const handleBookTest = (labTest) => {
     const status = (labTest.availabilityStatus || "").toUpperCase();
@@ -71,13 +99,13 @@ function LabDetailsPage({ labId, navigate }) {
 
   if (!lab)
     return (
-      <PublicLayout onNavigate={navigate}>
+      <PublicLayout onNavigate={onNavigate}>
         <div>Loading...</div>
       </PublicLayout>
     );
 
   return (
-    <PublicLayout onNavigate={navigate}>
+    <PublicLayout onNavigate={onNavigate}>
       <div className="space-y-6">
         <div className="rounded-2xl bg-white shadow-md border border-slate-200 overflow-hidden">
       <div className="h-1 w-full bg-gradient-to-r from-teal-500 to-emerald-400" />

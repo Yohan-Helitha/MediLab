@@ -1,21 +1,31 @@
 // Lightweight API client using fetch
-// Configure VITE_API_BASE_URL in your root .env (e.g. http://localhost:5000)
+// Uses the auth token set by the login flows (localStorage key: "token")
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-export async function apiRequest(path, options = {}) {
-	const url = `${API_BASE_URL}${path}`;
-	
-	const token = localStorage.getItem("token");
+function buildHeaders(customHeaders = {}) {
 	const headers = {
-		...(token ? { Authorization: `Bearer ${token}` } : {}),
-		...(options.headers || {}),
+		"Content-Type": "application/json",
+		...customHeaders,
 	};
 
-	// Only add Content-Type: application/json if we are not sending FormData
-	if (!(options.body instanceof FormData)) {
-		headers["Content-Type"] = "application/json";
+	try {
+		if (typeof window !== "undefined" && window.localStorage && !headers.Authorization) {
+			const token = window.localStorage.getItem("token");
+			if (token) {
+				headers.Authorization = `Bearer ${token}`;
+			}
+		}
+	} catch {
+		// Ignore localStorage access errors
 	}
+
+	return headers;
+}
+
+export async function apiRequest(path, options = {}) {
+	const url = `${API_BASE_URL}${path}`;
+	const headers = buildHeaders(options.headers || {});
 
 	const response = await fetch(url, { ...options, headers });
 	if (!response.ok) {
@@ -34,4 +44,3 @@ export async function apiRequest(path, options = {}) {
 	}
 	return response.json();
 }
-

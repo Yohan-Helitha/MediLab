@@ -13,9 +13,18 @@ import {
 function Sidebar() {
 	const { user } = useAuth();
 	const location = useLocation();
-	
-	const isLabTech = user?.role === "Lab_Technician";
-	const isHealthOfficer = user?.role !== "Lab_Technician" && user?.role !== "patient" && user?.role !== "MEMBER";
+
+	const normalize = (value) =>
+		(value || "")
+			.toString()
+			.trim()
+			.toLowerCase()
+			.replace(/\s+/g, "_");
+
+	const role = normalize(user?.role || user?.profile?.role);
+	const isAdmin = role === "admin";
+	const isPatient = role === "patient" || role === "member";
+	const isStaffUser = !!role && !isPatient && !isAdmin;
 
 	return (
 		<aside className="flex min-h-screen w-64 flex-col bg-[#0F172A] px-5 py-6 text-white">
@@ -43,7 +52,7 @@ function Sidebar() {
 
 			{/* Navigation */}
 			<nav className="mt-2 flex-1 space-y-1">
-				{isHealthOfficer && (
+				{isStaffUser && (
 					<SidebarItem
 						label="Lab Management"
 						Icon={HiBuildingOffice2}
@@ -59,7 +68,7 @@ function Sidebar() {
 					to="/household-registration"
 				/>
 
-				{isLabTech && (
+				{isStaffUser && (
 					<>
 						<SidebarItem
 							label="Test Management"

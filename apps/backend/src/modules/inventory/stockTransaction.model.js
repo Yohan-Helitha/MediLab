@@ -5,7 +5,8 @@ const stockTransactionSchema = new mongoose.Schema(
     healthCenterId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lab",
-      required: true,
+      // Optional: when tracking per-lab transactions. Global inventory uses null.
+      required: false,
       index: true,
     },
     equipmentId: {

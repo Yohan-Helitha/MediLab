@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import MemberProfileForm from "../components/patient/MemberProfileForm";
@@ -124,6 +125,32 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
     setIsLangOpen(false);
     if (onLanguageChange) onLanguageChange(code);
   };
+
+  const navigate = useMemo(() => {
+    if (onNavigate) return onNavigate;
+
+    return (name, params = {}) => {
+      switch (name) {
+        case "home":
+          routerNavigate("/");
+          return;
+        case "health-centers": {
+          const query = (params?.query || "").toString().trim();
+          const search = query ? `?query=${encodeURIComponent(query)}` : "";
+          routerNavigate(`/health-centers${search}`);
+          return;
+        }
+        case "lab": {
+          const labId = params?.labId;
+          if (labId) routerNavigate(`/labs/${labId}`);
+          return;
+        }
+        default:
+          return;
+      }
+    };
+  }, [onNavigate, routerNavigate]);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
@@ -132,6 +159,10 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
           <Link
             to="/"
             className="flex items-center gap-3 text-teal-700 font-bold text-lg whitespace-nowrap group"
+          <button
+            type="button"
+            onClick={() => navigate("home")}
+            className="text-teal-700 font-bold text-lg whitespace-nowrap"
           >
             <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center group-hover:bg-teal-100 transition-colors overflow-hidden">
                <img src="/images/logo.png" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />

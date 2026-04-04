@@ -1,5 +1,9 @@
 import { apiRequest } from "./client";
 
+export function fetchTestTypes() {
+	return apiRequest("/api/test-types");
+}
+
 export function fetchTests() {
 	return apiRequest("/api/test-types");
 }
