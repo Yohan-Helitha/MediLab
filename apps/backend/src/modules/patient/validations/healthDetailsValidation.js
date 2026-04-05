@@ -74,7 +74,17 @@ export const validateHealthDetailsCreate = [
   body("voice_recording")
     .optional()
     .isLength({ max: 255 })
-    .withMessage("Voice recording path must be less than 255 characters")
+    .withMessage("Voice recording path must be less than 255 characters"),
+
+  body("family_no_history")
+    .optional()
+    .isBoolean()
+    .withMessage("Family no history must be a boolean value"),
+
+  body("family_genetic_disorders")
+    .optional()
+    .isArray()
+    .withMessage("Family genetic disorders must be an array of strings")
 ];
 
 export const validateHealthDetailsUpdate = [
@@ -148,6 +158,16 @@ export const validateHealthDetailsUpdate = [
   
   body("free_text")
     .optional(),
+  
+  body("family_no_history")
+    .optional()
+    .isBoolean()
+    .withMessage("Family no history must be a boolean value"),
+
+  body("family_genetic_disorders")
+    .optional()
+    .isArray()
+    .withMessage("Family genetic disorders must be an array of strings"),
   
   body("voice_recording")
     .optional()
