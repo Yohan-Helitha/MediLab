@@ -15,12 +15,16 @@ import {
   X, 
   ChevronRight, 
   AlertCircle,
-  FileBadge
+  FileBadge,
+  Filter,
+  XCircle,
+  Download
 } from 'lucide-react';
 import PublicLayout from '../../layout/PublicLayout';
 import { AuthContext } from '../../context/AuthContext';
 import { apiRequest } from '../../api/client';
 import { fetchVisitsByPatient, createVisit, updateVisit, deleteVisit, fetchReferralsByPatient, createReferral, updateReferral, deleteReferral } from '../../api/visitApi';
+import { generateVisitPDF, generateReferralPDF } from '../../utils/pdfGenerator';
 
 const VisitReferralPage = () => {
   const { user } = useContext(AuthContext);
@@ -32,6 +36,20 @@ const VisitReferralPage = () => {
   const [visits, setVisits] = useState([]);
   const [referrals, setReferrals] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Filter states
+  const [showFilters, setShowFilters] = useState(false);
+  const [visitFilters, setVisitFilters] = useState({
+    visitType: '',
+    hasFollowUp: '',
+    dateFrom: '',
+    dateTo: ''
+  });
+  const [referralFilters, setReferralFilters] = useState({
+    urgency: '',
+    status: '',
+    institution: ''
+  });
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -162,7 +180,8 @@ const VisitReferralPage = () => {
         
       if (res.success) {
         resetForms();
-        loadData();
+        const memberId = user?.member_id || user?.systemId || 'MEM-ANU-PADGNDIV-2026-00003';
+        loadData(memberId);
       } else if (res.errors) {
         // Log validation errors for debugging
         console.error("Validation errors:", res.errors);
@@ -185,7 +204,8 @@ const VisitReferralPage = () => {
 
       if (res.success) {
         resetForms();
-        loadData();
+        const memberId = user?.member_id || user?.systemId || 'MEM-ANU-PADGNDIV-2026-00003';
+        loadData(memberId);
       }
     } catch (err) {
       console.error("Error saving referral:", err);
@@ -222,21 +242,79 @@ const VisitReferralPage = () => {
     if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
     try {
       const res = type === 'visit' ? await deleteVisit(id) : await deleteReferral(id);
-      if (res.success) loadData();
+      if (res.success) {
+        const memberId = user?.member_id || user?.systemId || 'MEM-ANU-PADGNDIV-2026-00003';
+        loadData(memberId);
+      }
     } catch (err) {
       console.error("Error deleting:", err);
     }
   };
 
-  const filteredVisits = visits.filter(v => 
-    v.reason_for_visit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.diagnosis?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredVisits = visits.filter(v => {
+    // Search filter
+    const matchesSearch = !searchTerm || 
+      v.reason_for_visit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.diagnosis?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.doctor_notes?.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const filteredReferrals = referrals.filter(r => 
-    r.referral_reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.referred_to?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    // Visit type filter
+    const matchesType = !visitFilters.visitType || v.visit_type === visitFilters.visitType;
+
+    // Follow-up filter
+    const matchesFollowUp = !visitFilters.hasFollowUp || 
+      (visitFilters.hasFollowUp === 'yes' ? v.follow_up_required : !v.follow_up_required);
+
+    // Date range filter
+    const visitDate = new Date(v.visit_date);
+    const matchesDateFrom = !visitFilters.dateFrom || visitDate >= new Date(visitFilters.dateFrom);
+    const matchesDateTo = !visitFilters.dateTo || visitDate <= new Date(visitFilters.dateTo);
+
+    return matchesSearch && matchesType && matchesFollowUp && matchesDateFrom && matchesDateTo;
+  });
+
+  const filteredReferrals = referrals.filter(r => {
+    // Search filter
+    const matchesSearch = !searchTerm ||
+      r.referral_reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.referred_to?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.referral_status?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Urgency filter
+    const matchesUrgency = !referralFilters.urgency || r.urgency_level === referralFilters.urgency;
+
+    // Status filter
+    const matchesStatus = !referralFilters.status || r.referral_status === referralFilters.status;
+
+    // Institution filter
+    const matchesInstitution = !referralFilters.institution || r.referred_to === referralFilters.institution;
+
+    return matchesSearch && matchesUrgency && matchesStatus && matchesInstitution;
+  });
+
+  const getActiveFilterCount = () => {
+    if (activeTab === 'visits') {
+      return Object.values(visitFilters).filter(v => v).length;
+    }
+    return Object.values(referralFilters).filter(v => v).length;
+  };
+
+  const clearAllFilters = () => {
+    if (activeTab === 'visits') {
+      setVisitFilters({ visitType: '', hasFollowUp: '', dateFrom: '', dateTo: '' });
+    } else {
+      setReferralFilters({ urgency: '', status: '', institution: '' });
+    }
+    setSearchTerm('');
+  };
+
+  const handleDownloadVisitPDF = async (visit) => {
+    await generateVisitPDF(visit, user);
+  };
+
+  const handleDownloadReferralPDF = async (referral) => {
+    await generateReferralPDF(referral, user);
+  };
 
   return (
     <PublicLayout>
@@ -287,16 +365,219 @@ const VisitReferralPage = () => {
           <div className="p-8">
             {viewMode === 'list' ? (
               <div className="space-y-6">
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <input 
-                    type="text" 
-                    placeholder={`Search ${activeTab}...`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm" 
-                  />
+                {/* Search and Filter Bar */}
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                      <input 
+                        type="text" 
+                        placeholder={`Search ${activeTab === 'visits' ? 'by reason, diagnosis, or notes' : 'by institution, reason, or status'}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm" 
+                      />
+                    </div>
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                        showFilters 
+                          ? 'bg-teal-700 text-white' 
+                          : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Filter className="w-4 h-4" />
+                      Filters
+                      {getActiveFilterCount() > 0 && (
+                        <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-white/20 font-bold">
+                          {getActiveFilterCount()}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Filter Panel */}
+                  {showFilters && (
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {activeTab === 'visits' ? (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Visit Type Filter */}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Visit Type</label>
+                              <select
+                                value={visitFilters.visitType}
+                                onChange={(e) => setVisitFilters({...visitFilters, visitType: e.target.value})}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                              >
+                                <option value="">All Types</option>
+                                <option value="OPD">OPD Visit</option>
+                                <option value="Mobile clinic">Mobile Clinic</option>
+                                <option value="Home visit">Home Visit</option>
+                              </select>
+                            </div>
+
+                            {/* Follow-up Filter */}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Follow-up Required</label>
+                              <select
+                                value={visitFilters.hasFollowUp}
+                                onChange={(e) => setVisitFilters({...visitFilters, hasFollowUp: e.target.value})}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                              >
+                                <option value="">All</option>
+                                <option value="yes">Required</option>
+                                <option value="no">Not Required</option>
+                              </select>
+                            </div>
+
+                            {/* Date From */}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">From Date</label>
+                              <input
+                                type="date"
+                                value={visitFilters.dateFrom}
+                                onChange={(e) => setVisitFilters({...visitFilters, dateFrom: e.target.value})}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                              />
+                            </div>
+
+                            {/* Date To */}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">To Date</label>
+                              <input
+                                type="date"
+                                value={visitFilters.dateTo}
+                                onChange={(e) => setVisitFilters({...visitFilters, dateTo: e.target.value})}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Urgency Filter */}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Urgency Level</label>
+                              <select
+                                value={referralFilters.urgency}
+                                onChange={(e) => setReferralFilters({...referralFilters, urgency: e.target.value})}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                              >
+                                <option value="">All Levels</option>
+                                <option value="Routine">Routine</option>
+                                <option value="Urgent">Urgent</option>
+                                <option value="Emergency">Emergency</option>
+                              </select>
+                            </div>
+
+                            {/* Status Filter */}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Status</label>
+                              <select
+                                value={referralFilters.status}
+                                onChange={(e) => setReferralFilters({...referralFilters, status: e.target.value})}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                              >
+                                <option value="">All Statuses</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                              </select>
+                            </div>
+
+                            {/* Institution Filter */}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Institution</label>
+                              <select
+                                value={referralFilters.institution}
+                                onChange={(e) => setReferralFilters({...referralFilters, institution: e.target.value})}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                              >
+                                <option value="">All Institutions</option>
+                                <option value="Base Hospital">Base Hospital</option>
+                                <option value="District Hospital">District Hospital</option>
+                                <option value="Specialist Clinic">Specialist Clinic</option>
+                              </select>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Clear Filters Button */}
+                      <div className="flex justify-between pt-4 border-t border-slate-300">
+                        <button
+                          onClick={clearAllFilters}
+                          className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-rose-600 transition-colors"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Reset
+                        </button>
+                        <button
+                          onClick={() => setShowFilters(false)}
+                          className="px-4 py-1.5 bg-teal-700 text-white rounded-lg text-sm font-bold hover:bg-teal-800 transition-colors"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Active Filters Display */}
+                  {getActiveFilterCount() > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {activeTab === 'visits' ? (
+                        <>
+                          {visitFilters.visitType && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold">
+                              Type: {visitFilters.visitType}
+                              <button onClick={() => setVisitFilters({...visitFilters, visitType: ''})} className="ml-1 hover:opacity-70">×</button>
+                            </span>
+                          )}
+                          {visitFilters.hasFollowUp && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold">
+                              Follow-up: {visitFilters.hasFollowUp === 'yes' ? 'Required' : 'Not Required'}
+                              <button onClick={() => setVisitFilters({...visitFilters, hasFollowUp: ''})} className="ml-1 hover:opacity-70">×</button>
+                            </span>
+                          )}
+                          {visitFilters.dateFrom && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold">
+                              From: {new Date(visitFilters.dateFrom).toLocaleDateString()}
+                              <button onClick={() => setVisitFilters({...visitFilters, dateFrom: ''})} className="ml-1 hover:opacity-70">×</button>
+                            </span>
+                          )}
+                          {visitFilters.dateTo && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold">
+                              To: {new Date(visitFilters.dateTo).toLocaleDateString()}
+                              <button onClick={() => setVisitFilters({...visitFilters, dateTo: ''})} className="ml-1 hover:opacity-70">×</button>
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {referralFilters.urgency && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold">
+                              Urgency: {referralFilters.urgency}
+                              <button onClick={() => setReferralFilters({...referralFilters, urgency: ''})} className="ml-1 hover:opacity-70">×</button>
+                            </span>
+                          )}
+                          {referralFilters.status && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold">
+                              Status: {referralFilters.status}
+                              <button onClick={() => setReferralFilters({...referralFilters, status: ''})} className="ml-1 hover:opacity-70">×</button>
+                            </span>
+                          )}
+                          {referralFilters.institution && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-bold">
+                              {referralFilters.institution}
+                              <button onClick={() => setReferralFilters({...referralFilters, institution: ''})} className="ml-1 hover:opacity-70">×</button>
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="divide-y divide-slate-100">
@@ -532,7 +813,7 @@ const VisitReferralPage = () => {
                       <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Provider Notes</p><p className="text-xs font-medium text-slate-500 leading-relaxed bg-teal-50/50 p-3 rounded-lg">{currentViewItem.doctor_notes || 'No specific technical notes available'}</p></div>
                       <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                         <span className="text-xs font-bold text-slate-400">Follow Up</span>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${currentViewItem.follow_up_required ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-400'}`}>
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${currentViewItem.follow_up_required ? 'bg-teal-100 text-teal-700' : 'bg-slate-200 text-slate-400'}`}>
                           {currentViewItem.follow_up_required ? 'Required' : 'None'}
                         </span>
                       </div>
@@ -554,7 +835,20 @@ const VisitReferralPage = () => {
                   </>
                 )}
               </div>
-              <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+              <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between">
+                <button 
+                  onClick={() => {
+                    if (modalType === 'visit') {
+                      handleDownloadVisitPDF(currentViewItem);
+                    } else {
+                      handleDownloadReferralPDF(currentViewItem);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-6 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download PDF
+                </button>
                 <button 
                   onClick={() => setIsModalOpen(false)}
                   className="px-6 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors"
