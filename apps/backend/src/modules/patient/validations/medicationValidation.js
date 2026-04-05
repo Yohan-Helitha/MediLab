@@ -51,10 +51,10 @@ export const validateMedicationCreate = [
     .custom((value) => {
       const inputDate = new Date(value);
       const today = new Date();
-      today.setHours(23, 59, 59, 999); // Allow today full day
+      today.setHours(0, 0, 0, 0); // Allow today
       
-      if (inputDate > today) {
-        throw new Error('Start date cannot be a future date');
+      if (inputDate < today) {
+        throw new Error('Start date cannot be a past date');
       }
       
       // Check if it's a valid date
@@ -111,12 +111,6 @@ export const validateMedicationUpdate = [
     .custom((value) => {
       if (value) {
         const inputDate = new Date(value);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time to compare only dates
-        
-        if (inputDate > today) {
-          throw new Error('Start date cannot be a future date');
-        }
         
         // Check if it's a valid date
         if (isNaN(inputDate.getTime())) {
