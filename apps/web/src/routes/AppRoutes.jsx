@@ -60,7 +60,7 @@ const AppRoutes = () => {
 	const getPostAuthRedirect = () => {
 		if (!user) return "/";
 		if (isAdminUser()) return "/admin/overview";
-		if (isPatientUser()) return "/dashboard";
+		if (isPatientUser()) return "/";
 		return "/staff/dashboard";
 	};
 

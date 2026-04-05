@@ -262,6 +262,12 @@ export const validateMemberUpdate = [
       
       return true;
     }),
+
+  body("isProfileComplete")
+    .optional(),
+
+  body("diseases")
+    .optional(),
   
   body("gender")
     .optional()

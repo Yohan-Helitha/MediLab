@@ -97,6 +97,24 @@ export const validateHouseholdCreate = [
     .notEmpty()
     .withMessage("Submitted by is required"),
 
+  body("members_list")
+    .optional()
+    .isArray()
+    .withMessage("Members list must be an array"),
+
+  body("members_list.*.date_of_birth")
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .withMessage("Invalid date format for member's date of birth")
+    .custom((value) => {
+      const dob = new Date(value);
+      const today = new Date();
+      if (dob > today) {
+        throw new Error("Date of birth cannot be in the future");
+      }
+      return true;
+    }),
+
   ...commonValidation
 ];
 
@@ -168,6 +186,24 @@ export const validateHouseholdUpdate = [
   body("submitted_by")
     .notEmpty()
     .withMessage("Submitted by is required"),
+
+  body("members_list")
+    .optional()
+    .isArray()
+    .withMessage("Members list must be an array"),
+
+  body("members_list.*.date_of_birth")
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .withMessage("Invalid date format for member's date of birth")
+    .custom((value) => {
+      const dob = new Date(value);
+      const today = new Date();
+      if (dob > today) {
+        throw new Error("Date of birth cannot be in the future");
+      }
+      return true;
+    }),
 
   ...commonValidation
 ];

@@ -90,6 +90,7 @@ class MemberService {
     }
 
     const memberId = member.member_id;
+    const memberEmail = member.email;
 
     // List of models that contain data related to a member
     // Some use 'member_id', others might use 'submitted_by'
@@ -126,6 +127,30 @@ class MemberService {
         { household_id: member.household_id },
         { $pull: { members: memberId } }
       );
+    }
+
+    // Delete corresponding Auth record by email, profileId, and systemId
+    try {
+      if (mongoose.models.Auth) {
+        // Delete by profileId (MongoDB ObjectId), systemId (member_id), AND email
+        const deleteConditions = [
+          { profileId: id, onModel: 'Member' },
+          { systemId: member.member_id }
+        ];
+        
+        // Add email condition if member has an email address
+        if (memberEmail) {
+          deleteConditions.push({ email: memberEmail });
+        }
+        
+        await mongoose.model("Auth").deleteMany({ 
+          $or: deleteConditions
+        });
+        
+        console.log(`Deleted Auth records for member ${memberId} (email: ${memberEmail})`);
+      }
+    } catch (authError) {
+      console.error(`Error deleting Auth record for member ${id}:`, authError);
     }
 
     // Finally delete the member itself

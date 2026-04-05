@@ -51,12 +51,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Core middleware
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 app.use(morgan(config.isDev ? "dev" : "combined"));
-
-// Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Feature routes
