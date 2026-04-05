@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
+import { toast } from "react-hot-toast";
+import { getSafeErrorMessage } from "../../utils/errorHandler";
 import { 
     updateMemberProfile, 
     createHealthDetails, 
@@ -18,6 +20,7 @@ import {
     fetchHealthDetails,
     fetchPastMedicalHistories
 } from "../../api/patientApi";
+import { generateHealthProfilePDF } from "../../utils/pdfGenerator";
 
 const HealthProfilePage = () => {
     const { user, login, loading: authLoading } = useAuth();
@@ -173,6 +176,12 @@ const HealthProfilePage = () => {
         start_date: ""
     });
     const [medicationErrors, setMedicationErrors] = useState({});
+    
+    // Session-level arrays to store added medications, allergies, and chronic diseases
+    // Combined with profile data in downloadHealthProfilePDF
+    const [sessionMedications, setSessionMedications] = useState([]);
+    const [sessionAllergies, setSessionAllergies] = useState([]);
+    const [sessionChronicDiseases, setSessionChronicDiseases] = useState([]);
 
     const [pastHistory, setPastHistory] = useState({
         surgeries: false,
@@ -515,7 +524,8 @@ const HealthProfilePage = () => {
             
             setMessage({ type: "success", text: "Medical profile saved successfully across all modules!" });
         } catch (err) {
-            setMessage({ type: "error", text: err.message || "An error occurred during multi-module save." });
+            console.error("Error saving medical profile:", err);
+            setMessage({ type: "error", text: getSafeErrorMessage(err, "general") });
         } finally {
             setLoading(false);
         }
@@ -762,7 +772,91 @@ const HealthProfilePage = () => {
                 setMessage({ type: "error", text: errorMsg });
             }
         } catch (err) {
-            setMessage({ type: "error", text: err.message || "An error occurred." });
+            console.error("Error updating profile:", err);
+            setMessage({ type: "error", text: getSafeErrorMessage(err, "general") });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadHealthProfilePDF = async () => {
+        try {
+            setLoading(true);
+            // Create a complete profile object with all data including photo and health metrics
+            const completeProfile = {
+                ...profile,
+                ...healthData, // Merge health metrics (height, weight, blood_group, etc.)
+                photo: photoPreview || profile?.photo // Use photoPreview if available (data URL), otherwise use profile photo
+            };
+            
+            // Combine profile medications with session medications
+            const profileMeds = (profile?.medications && Array.isArray(profile.medications) && profile.medications.length > 0)
+                ? profile.medications 
+                : [];
+            const allMedications = [...profileMeds, ...sessionMedications];
+            
+            // Combine profile allergies with session allergies
+            const profileAllergies = (profile?.allergies && Array.isArray(profile.allergies) && profile.allergies.length > 0)
+                ? profile.allergies 
+                : [];
+            const allAllergies = [...profileAllergies, ...sessionAllergies];
+            
+            // Combine profile chronic diseases with session chronic diseases
+            const profileChronicDiseases = (profile?.chronic_diseases && Array.isArray(profile.chronic_diseases) && profile.chronic_diseases.length > 0)
+                ? profile.chronic_diseases 
+                : [];
+            const allChronicDiseases = [...profileChronicDiseases, ...sessionChronicDiseases];
+            
+            // Use state variables for patient history data - these come from form inputs
+            const completeFamilyHistory = familyHistory && Object.keys(familyHistory).some(key => familyHistory[key]) ? familyHistory : null;
+            const completePastHistory = pastHistory && Object.keys(pastHistory).some(key => pastHistory[key]) ? pastHistory : null;
+            
+            // Use lifestyle history array (all saved entries) instead of single form state
+            const allLifestyleHistory = lifestyleHistory && lifestyleHistory.length > 0 ? lifestyleHistory : [];
+            
+            // Debug: Log what we're sending to the PDF
+            console.log("PDF Data Summary:", {
+                medications: {
+                    fromProfile: profileMeds.length,
+                    fromSession: sessionMedications.length,
+                    total: allMedications.length,
+                    data: allMedications
+                },
+                allergies: {
+                    fromProfile: profileAllergies.length,
+                    fromSession: sessionAllergies.length,
+                    total: allAllergies.length,
+                    data: allAllergies
+                },
+                chronicDiseases: {
+                    fromProfile: profileChronicDiseases.length,
+                    fromSession: sessionChronicDiseases.length,
+                    total: allChronicDiseases.length,
+                    data: allChronicDiseases
+                },
+                lifestyleHistory: allLifestyleHistory.length,
+                lifestyleData: allLifestyleHistory,
+                hasFamilyHistory: !!completeFamilyHistory,
+                familyHistoryData: completeFamilyHistory,
+                hasPastHistory: !!completePastHistory,
+                pastHistoryData: completePastHistory
+            });
+            
+            await generateHealthProfilePDF(
+                completeProfile,
+                allAllergies,
+                allChronicDiseases,
+                allMedications,
+                completePastHistory,
+                completeFamilyHistory,
+                allLifestyleHistory,
+                freeTextNotes, // Additional text notes
+                voiceNotes // Additional voice notes
+            );
+            toast.success("Health profile downloaded successfully!");
+        } catch (err) {
+            console.error("Error downloading health profile:", err);
+            setMessage({ type: "error", text: "Failed to download health profile" });
         } finally {
             setLoading(false);
         }
@@ -773,9 +867,22 @@ const HealthProfilePage = () => {
             <div className="max-w-4xl mx-auto py-8">
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     {/* Header */}
-                    <div className="bg-teal-700 px-8 py-6 text-white">
-                        <h1 className="text-2xl font-bold">Health Profile</h1>
-                        <p className="text-teal-100 mt-1">Manage your personal and medical information</p>
+                    <div className="bg-teal-700 px-8 py-6 text-white flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold">Health Profile</h1>
+                            <p className="text-teal-100 mt-1">Manage your personal and medical information</p>
+                        </div>
+                        <button
+                            onClick={downloadHealthProfilePDF}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-6 py-3 bg-white text-teal-700 font-semibold rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
+                            title="Download your complete health profile as PDF"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            Download PDF
+                        </button>
                     </div>
 
                     {/* Tabs */}
