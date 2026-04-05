@@ -76,7 +76,6 @@ const HealthProfilePage = () => {
     const [allergyStates, setAllergyStates] = useState({
         "Food": false,
         "Drug": false,
-        "Insect/Sting": false,
         "Dust/Pollen": false,
         "Latex/Plaster": false,
         "Other": false
@@ -173,6 +172,7 @@ const HealthProfilePage = () => {
         prescribed_by: "",
         start_date: ""
     });
+    const [medicationErrors, setMedicationErrors] = useState({});
 
     const [pastHistory, setPastHistory] = useState({
         surgeries: false,
@@ -188,7 +188,7 @@ const HealthProfilePage = () => {
     const [familyHistory, setFamilyHistory] = useState({
         diabetes: false,
         heart_disease: false,
-        genetic_disorders: "",
+        genetic_disorders: [""],
         no_known_history: true
     });
 
@@ -416,7 +416,9 @@ const HealthProfilePage = () => {
             setFamilyHistory({
                 diabetes: profile?.health_info?.family_diabetes ?? profile?.family_history?.diabetes ?? profile?.diabetes ?? false,
                 heart_disease: profile?.health_info?.family_heart_disease ?? profile?.family_history?.heart_disease ?? profile?.heart_disease ?? false,
-                genetic_disorders: profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders ?? "",
+                genetic_disorders: Array.isArray(profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders)
+                    ? (profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders)
+                    : (profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders ? [profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders] : [""]),
                 no_known_history: profile?.health_info?.family_no_history ?? profile?.family_history?.no_known_history ?? profile?.no_known_history ?? true
             });
 
@@ -462,8 +464,8 @@ const HealthProfilePage = () => {
             chemical_exposure: lifestyle.chemical_exposure ? "yes" : "no",
             family_diabetes: familyHistory.diabetes,
             family_heart_disease: familyHistory.heart_disease,
-            family_genetic_disorders: familyHistory.genetic_disorders,
-            family_no_history: familyHistory.family_no_history,
+            family_genetic_disorders: familyHistory.genetic_disorders.filter(d => d.trim() !== ""),
+            family_no_history: familyHistory.no_known_history,
             additional_notes: freeTextNotes,
             voice_notes: voiceNotes.map(n => ({ id: n.id, speaker: n.speaker, date: n.date, url: n.url })),
             lifestyle_history: lifestyleHistory
@@ -476,7 +478,7 @@ const HealthProfilePage = () => {
             surgery_location: pastHistory.surgery_location,
             hospital_admissions: pastHistory.has_admissions ? pastHistory.hospital_admissions : "",
             serious_injuries: pastHistory.has_serious_injuries ? pastHistory.serious_injuries : "",
-            genetic_disorders: familyHistory.genetic_disorders,
+            genetic_disorders: familyHistory.genetic_disorders.filter(d => d.trim() !== ""),
             blood_transfusion_history: pastHistory.blood_transfusion,
             tuberculosis_history: pastHistory.tuberculosis
         };
@@ -643,6 +645,7 @@ const HealthProfilePage = () => {
     const handleMedicationSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setMedicationErrors({});
         try {
             const payload = {
                 member_id: profile.member_id || profile.systemId,
@@ -661,10 +664,19 @@ const HealthProfilePage = () => {
                 login({ ...refreshed.data, userType: profile.userType || "patient" }, localStorage.getItem("token"));
                 setMedicationData({ medicine_name: "", dosage: "", reason: "", prescribed_by: "", start_date: "" });
                 setEditingMedicationId(null);
+                setMedicationErrors({});
                 setMessage({ type: "success", text: editingMedicationId ? "Medication updated successfully." : "Medication added successfully." });
             }
         } catch (err) {
-            setMessage({ type: "error", text: editingMedicationId ? "Failed to update medication." : "Failed to add medication." });
+            if (err.errors) {
+                const fieldErrors = {};
+                err.errors.forEach(e => {
+                    fieldErrors[e.path || e.param] = e.msg;
+                });
+                setMedicationErrors(fieldErrors);
+            } else {
+                setMessage({ type: "error", text: editingMedicationId ? "Failed to update medication." : "Failed to add medication." });
+            }
         } finally {
             setLoading(false);
         }
@@ -1168,7 +1180,6 @@ const HealthProfilePage = () => {
                                                     {[
                                                         { id: "Food", label: "Food Allergy" },
                                                         { id: "Drug", label: "Drug Allergy" },
-                                                        { id: "Insect/Sting", label: "Insect/Sting" },
                                                         { id: "Dust/Pollen", label: "Dust/Pollen" },
                                                         { id: "Latex/Plaster", label: "Latex/Plaster" },
                                                         { id: "Other", label: "Other" }
@@ -1743,9 +1754,21 @@ const HealthProfilePage = () => {
                                                     <input 
                                                         type="date"
                                                         value={medicationData.start_date ? new Date(medicationData.start_date).toISOString().split('T')[0] : ""}
-                                                        onChange={(e) => setMedicationData({...medicationData, start_date: e.target.value})}
-                                                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none"
+                                                        onChange={(e) => {
+                                                            setMedicationData({...medicationData, start_date: e.target.value});
+                                                            if (medicationErrors.start_date) {
+                                                                setMedicationErrors(prev => ({ ...prev, start_date: null }));
+                                                            }
+                                                        }}
+                                                        className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-1 outline-none ${
+                                                            medicationErrors.start_date ? "border-red-500 focus:ring-red-500" : "border-slate-300 focus:ring-teal-500"
+                                                        }`}
                                                     />
+                                                    {medicationErrors.start_date && (
+                                                        <p className="mt-1 text-[10px] font-bold text-red-600 uppercase tracking-tight">
+                                                            {medicationErrors.start_date}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex space-x-2">
@@ -1870,7 +1893,7 @@ const HealthProfilePage = () => {
                                                                                 newLocs[idx] = e.target.value;
                                                                                 setPastHistory({...pastHistory, surgery_location: newLocs});
                                                                             }}
-                                                                            placeholder={idx === 0 ? "e.g. General Hospital Colombo" : "Enter additional hospital..."}
+                                                                            placeholder={idx === 0 ? "e.g. Hand" : "Enter another surgery..."}
                                                                             className="w-full rounded-lg border border-teal-500/30 bg-teal-50/10 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none pr-8"
                                                                         />
                                                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-teal-600/40 font-bold group-focus-within:hidden">
@@ -1991,11 +2014,14 @@ const HealthProfilePage = () => {
                                                     <input 
                                                         type="checkbox" 
                                                         checked={familyHistory.diabetes}
-                                                        onChange={(e) => setFamilyHistory({
-                                                            ...familyHistory, 
-                                                            diabetes: e.target.checked,
-                                                            no_known_history: e.target.checked ? false : familyHistory.no_known_history
-                                                        })}
+                                                        onChange={(e) => {
+                                                            const isChecked = e.target.checked;
+                                                            setFamilyHistory({
+                                                                ...familyHistory, 
+                                                                diabetes: isChecked,
+                                                                no_known_history: isChecked ? false : familyHistory.no_known_history
+                                                            });
+                                                        }}
                                                         className="w-5 h-5 text-teal-600 rounded"
                                                     />
                                                 </div>
@@ -2004,29 +2030,74 @@ const HealthProfilePage = () => {
                                                     <input 
                                                         type="checkbox" 
                                                         checked={familyHistory.heart_disease}
-                                                        onChange={(e) => setFamilyHistory({
-                                                            ...familyHistory, 
-                                                            heart_disease: e.target.checked,
-                                                            no_known_history: e.target.checked ? false : familyHistory.no_known_history
-                                                        })}
+                                                        onChange={(e) => {
+                                                            const isChecked = e.target.checked;
+                                                            setFamilyHistory({
+                                                                ...familyHistory, 
+                                                                heart_disease: isChecked,
+                                                                no_known_history: isChecked ? false : familyHistory.no_known_history
+                                                            });
+                                                        }}
                                                         className="w-5 h-5 text-teal-600 rounded"
                                                     />
                                                 </div>
-                                                <div className="col-span-1 md:col-span-2 space-y-1">
+                                                <div className="col-span-1 md:col-span-2 space-y-3">
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Genetic Disorders</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={familyHistory.genetic_disorders}
-                                                        onChange={(e) => {
-                                                            const hasContent = e.target.value.trim() !== "";
-                                                            setFamilyHistory({
-                                                                ...familyHistory, 
-                                                                genetic_disorders: e.target.value,
-                                                                no_known_history: hasContent ? false : familyHistory.no_known_history
-                                                            });
-                                                        }}
-                                                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none"
-                                                    />
+                                                    {familyHistory.genetic_disorders.map((disorder, index) => (
+                                                        <div key={index} className="flex gap-2">
+                                                            <input 
+                                                                type="text" 
+                                                                value={disorder}
+                                                                placeholder={index === 0 ? "e.g. Dyslipidemia, Thalassemia..." : "Add another disorder..."}
+                                                                onChange={(e) => {
+                                                                    const newList = [...familyHistory.genetic_disorders];
+                                                                    newList[index] = e.target.value;
+                                                                    const hasContent = newList.some(item => item.trim() !== "");
+                                                                    setFamilyHistory({
+                                                                        ...familyHistory, 
+                                                                        genetic_disorders: newList,
+                                                                        no_known_history: hasContent ? false : familyHistory.no_known_history
+                                                                    });
+                                                                }}
+                                                                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none"
+                                                            />
+                                                            <div className="flex gap-1">
+                                                                {familyHistory.genetic_disorders.length > 1 && (
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const newList = familyHistory.genetic_disorders.filter((_, i) => i !== index);
+                                                                            setFamilyHistory({
+                                                                                ...familyHistory,
+                                                                                genetic_disorders: newList
+                                                                            });
+                                                                        }}
+                                                                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border border-rose-100"
+                                                                        title="Remove"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+                                                                {index === familyHistory.genetic_disorders.length - 1 && (
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => setFamilyHistory({
+                                                                            ...familyHistory,
+                                                                            genetic_disorders: [...familyHistory.genetic_disorders, ""]
+                                                                        })}
+                                                                        className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors border border-teal-100"
+                                                                        title="Add More"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                                 <div className="col-span-1 md:col-span-2 flex items-center gap-3">
                                                     <input 
@@ -2038,7 +2109,7 @@ const HealthProfilePage = () => {
                                                                 setFamilyHistory({
                                                                     diabetes: false,
                                                                     heart_disease: false,
-                                                                    genetic_disorders: "",
+                                                                    genetic_disorders: [""],
                                                                     no_known_history: true
                                                                 });
                                                             } else {
