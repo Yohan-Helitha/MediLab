@@ -20,9 +20,7 @@ const pastMedicalHistorySchema = new mongoose.Schema({
   serious_injuries: {
     type: String
   },
-  genetic_disorders: {
-    type: String
-  },
+  genetic_disorders: [String],
   blood_transfusion_history: {
     type: Boolean,
     default: false
