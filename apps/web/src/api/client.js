@@ -3,11 +3,17 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-function buildHeaders(customHeaders = {}) {
-	const headers = {
-		"Content-Type": "application/json",
-		...customHeaders,
-	};
+export async function apiRequest(path, options = {}) {
+	const url = `${API_BASE_URL}${path}`;
+	let headers = options.headers || {};
+	
+	// If body is NOT FormData, set JSON Content-Type
+	if (!(options.body instanceof FormData)) {
+		headers = {
+			"Content-Type": "application/json",
+			...headers,
+		};
+	}
 
 	try {
 		if (typeof window !== "undefined" && window.localStorage && !headers.Authorization) {
@@ -19,13 +25,6 @@ function buildHeaders(customHeaders = {}) {
 	} catch {
 		// Ignore localStorage access errors
 	}
-
-	return headers;
-}
-
-export async function apiRequest(path, options = {}) {
-	const url = `${API_BASE_URL}${path}`;
-	const headers = buildHeaders(options.headers || {});
 
 	const response = await fetch(url, { ...options, headers });
 	if (!response.ok) {
