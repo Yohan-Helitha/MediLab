@@ -3,21 +3,8 @@ import PublicLayout from "../../layout/PublicLayout";
 import { consultationApi } from "../../api/consultationApi";
 import { useAuth } from "../../context/AuthContext";
 import ReactMarkdown from 'react-markdown';
-
-// Safety net: strips raw JSON error payloads before showing to user
-const sanitizeErrorMessage = (msg) => {
-  if (!msg) return 'Something went wrong. Please try again.';
-  const lowerMsg = msg.toLowerCase();
-  
-  if (lowerMsg.includes('500') || lowerMsg.includes('failed') || lowerMsg.includes('undefined')) {
-    return "I'm sorry, I'm having a little trouble connecting to my medical database right now. Please try again in a few seconds!";
-  }
-
-  if (msg.trim().startsWith('{') || msg.includes('"error":') || msg.includes('"status":')) {
-    return 'Dr. MediLab is currently attending to many patients. Please try again in a moment.';
-  }
-  return msg;
-};
+import { toast } from "react-hot-toast";
+import { getSafeErrorMessage } from "../../utils/errorHandler";
 
 function SymptomCheckerPage() {
   const { user } = useAuth();
@@ -47,7 +34,7 @@ function SymptomCheckerPage() {
       });
     } catch (error) {
       console.error("AI Analysis Error:", error);
-      alert(sanitizeErrorMessage(error.message) || "Failed to analyze symptoms. Please try again later.");
+      toast.error(getSafeErrorMessage(error, "symptom-analysis"));
     } finally {
       setLoading(false);
     }
