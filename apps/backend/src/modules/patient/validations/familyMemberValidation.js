@@ -47,8 +47,15 @@ export const validateFamilyMemberCreate = [
 
 export const validateFamilyMemberUpdate = [
   param("id")
-    .isMongoId()
-    .withMessage("Invalid family member ID"),
+    .custom((value) => {
+      // Accept both MongoDB ObjectId and custom family_member_id format
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(value);
+      const isCustomId = /^FAM-ANU-PADGNDIV-\d{5}$/.test(value);
+      if (!isMongoId && !isCustomId) {
+        throw new Error('Invalid family member ID format');
+      }
+      return true;
+    }),
   
   body("household_id")
     .optional()
