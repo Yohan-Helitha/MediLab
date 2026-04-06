@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
+import { getSafeErrorMessage } from "../../utils/errorHandler";
+import { generateHouseholdPDF } from "../../utils/pdfGenerator";
 import { 
     createHousehold,
     updateHousehold,
@@ -292,7 +294,9 @@ const HouseholdRegistrationPage = () => {
                 if (res.errors && Array.isArray(res.errors)) {
                     displayMsg = res.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
                 } else if (res.message) {
-                    displayMsg = res.message;
+                    displayMsg = getSafeErrorMessage(new Error(res.message), "household");
+                } else {
+                    displayMsg = getSafeErrorMessage(new Error("Operation failed"), "household");
                 }
                 
                 setMessage({ type: "error", text: displayMsg });
@@ -302,7 +306,7 @@ const HouseholdRegistrationPage = () => {
             console.error("Registration catch error:", err);
             
             // Extract message from standard error object or custom response
-            let displayMsg = err.message || "Server error occurred";
+            let displayMsg = "An error occurred during registration";
             
             // If the error object has a structured 'errors' array inside its context/response
             if (err.errors && Array.isArray(err.errors)) {
@@ -310,7 +314,9 @@ const HouseholdRegistrationPage = () => {
             } else if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
                 displayMsg = err.response.data.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
             } else if (err.response?.data?.message) {
-                displayMsg = err.response.data.message;
+                displayMsg = getSafeErrorMessage(new Error(err.response.data.message), "household");
+            } else {
+                displayMsg = getSafeErrorMessage(err, "household");
             }
             
             setMessage({ type: "error", text: displayMsg });
@@ -355,11 +361,46 @@ const HouseholdRegistrationPage = () => {
                 setMessage({ type: "success", text: "Health information updated successfully!" });
                 // Stay on the same page - don't navigate
             } else {
-                setMessage({ type: "error", text: res.message || "Update failed" });
+                console.error("Health update failed:", res);
+                setMessage({ type: "error", text: getSafeErrorMessage(new Error(res.message || "Update failed"), "household") });
             }
         } catch (err) {
             console.error("Health Update catch error:", err);
-            setMessage({ type: "error", text: err.response?.data?.message || err.message || "Server error occurred" });
+            setMessage({ type: "error", text: getSafeErrorMessage(err, "household") });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadHouseholdPDF = async () => {
+        try {
+            setLoading(true);
+            
+            // Prepare health info from healthData
+            const householdHealthInfo = {
+                water_source: healthData.water_source,
+                well_water_tested: healthData.well_water_tested,
+                ckdu_exposure_area: healthData.ckdu_exposure_area,
+                dengue_risk: healthData.dengue_risk,
+                sanitation_type: healthData.sanitation_type,
+                waste_disposal: healthData.waste_disposal,
+                pesticide_exposure: healthData.pesticide_exposure,
+                chronic_diseases: healthData.chronic_diseases
+            };
+            
+            console.log("Household PDF Data:", {
+                registrationData: regData,
+                members: members,
+                health: householdHealthInfo
+            });
+            
+            await generateHouseholdPDF(
+                regData,
+                members,
+                householdHealthInfo
+            );
+        } catch (err) {
+            console.error("Error downloading household record:", err);
         } finally {
             setLoading(false);
         }
@@ -401,11 +442,22 @@ const HouseholdRegistrationPage = () => {
 
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     {/* Header */}
-                    <div className="bg-teal-700 px-8 py-6 text-white relative overflow-hidden">
+                    <div className="bg-teal-700 px-8 py-6 text-white flex items-center justify-between relative overflow-hidden">
                         <div className="relative z-10">
                             <h1 className="text-2xl font-bold text-white">Household Management</h1>
                             <p className="text-teal-100 mt-1">Register households and track environmental health factors</p>
                         </div>
+                        <button
+                            onClick={downloadHouseholdPDF}
+                            disabled={loading || !currentHousehold?._id}
+                            className="flex items-center gap-2 px-6 py-3 bg-white text-teal-700 font-semibold rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
+                            title="Download your complete household record as PDF"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            Download PDF
+                        </button>
                         <div className="absolute top-0 right-0 p-8 opacity-10">
                             <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" /></svg>
                         </div>

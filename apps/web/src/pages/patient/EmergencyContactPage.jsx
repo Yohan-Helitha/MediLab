@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   ChevronRight,
   Eye,
-  X
+  X,
+  Download
 } from "lucide-react";
 import { 
   fetchEmergencyContacts, 
@@ -24,6 +25,8 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
 import { toast } from "react-hot-toast";
+import { getSafeErrorMessage } from "../../utils/errorHandler";
+import { generateEmergencyContactPDF } from "../../utils/pdfGenerator";
 
 const FORM_SECTIONS = ["basic", "location", "availability", "permissions"];
 
@@ -76,7 +79,7 @@ const EmergencyContactPage = () => {
       setContacts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading contacts:", error);
-      toast.error("Failed to load emergency contacts");
+      toast.error(getSafeErrorMessage(error, "contact"));
       setContacts([]);
     } finally {
       setLoading(false);
@@ -91,6 +94,22 @@ const EmergencyContactPage = () => {
   };
 
   const isLastSection = formSection === FORM_SECTIONS[FORM_SECTIONS.length - 1];
+
+  const downloadEmergencyContactPDF = async () => {
+    try {
+      await generateEmergencyContactPDF(user, contacts);
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+    }
+  };
+
+  const downloadSingleEmergencyContactPDF = async () => {
+    try {
+      await generateEmergencyContactPDF(user, [viewingContact]);
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -143,7 +162,7 @@ const EmergencyContactPage = () => {
         const messages = error.errors.map(e => `${e.path}: ${e.msg}`).join("\n");
         toast.error(`Validation errors:\n${messages}`, { duration: 6000 });
       } else {
-        toast.error(error.message || "Failed to save emergency contact");
+        toast.error(getSafeErrorMessage(error, "contact"));
       }
     }
   };
@@ -177,7 +196,8 @@ const EmergencyContactPage = () => {
         toast.success("Contact deleted successfully");
         loadContacts();
       } catch (error) {
-        toast.error("Failed to delete contact");
+        console.error("Error deleting contact:", error);
+        toast.error(getSafeErrorMessage(error, "contact"));
       }
     }
   };
@@ -205,108 +225,128 @@ const EmergencyContactPage = () => {
         {/* Detail Modal */}
         {isModalOpen && viewingContact && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl relative animate-in zoom-in-95 duration-200 overflow-hidden">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition-colors z-10 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl relative animate-in zoom-in-95 duration-200 overflow-hidden">
+              <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
+                <button 
+                  onClick={downloadSingleEmergencyContactPDF}
+                  className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-              <div className="p-10">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                  {/* Left Column: Basic Info */}
-                  <div className="space-y-8">
-                    <section>
-                      <div className="flex items-center gap-2 mb-4 text-teal-700">
-                        <User className="w-4 h-4" />
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Basic Information</h3>
+              <div className="p-8">
+                {/* Contact Header */}
+                <div className="border-b border-slate-200 pb-6 mb-8">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-3xl font-bold text-slate-800 mb-2">{viewingContact.full_name}</h2>
+                      <p className="text-sm font-semibold text-teal-700 mb-3">{viewingContact.relationship}</p>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          viewingContact.contact_priority === 'PRIMARY' 
+                            ? 'bg-teal-100 text-teal-700' 
+                            : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {viewingContact.contact_priority} CONTACT
+                        </span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          viewingContact.available_24_7
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {viewingContact.available_24_7 ? '24/7 AVAILABLE' : 'LIMITED HOURS'}
+                        </span>
                       </div>
-                      <div className="space-y-4">
+                    </div>
+                  </div>
+                </div>
+
+                {/* Three Column Layout */}
+                <div className="grid grid-cols-3 gap-6">
+                  {/* Contact Information Card */}
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-6">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-5 flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-teal-600" />
+                      Contact Info
+                    </h3>
+                    <div className="space-y-5">
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Primary Phone</p>
+                        <p className="text-base font-bold text-slate-800">{viewingContact.primary_phone}</p>
+                      </div>
+                      {viewingContact.secondary_phone && (
                         <div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Full Name</p>
-                          <p className="text-base font-bold text-slate-800">{viewingContact.full_name}</p>
+                          <p className="text-xs font-bold text-slate-500 uppercase mb-2">Secondary Phone</p>
+                          <p className="text-base font-bold text-slate-800">{viewingContact.secondary_phone}</p>
                         </div>
+                      )}
+                      {viewingContact.best_time_to_contact && (
                         <div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Relationship</p>
-                          <p className="text-sm font-semibold text-teal-700">{viewingContact.relationship}</p>
+                          <p className="text-xs font-bold text-slate-500 uppercase mb-2">Best Time</p>
+                          <p className="text-sm font-semibold text-slate-700 italic">{viewingContact.best_time_to_contact}</p>
                         </div>
-                        <div className="flex gap-6">
-                          <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Primary Phone</p>
-                            <p className="text-sm font-bold text-slate-700">{viewingContact.primary_phone}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Secondary</p>
-                            <p className="text-sm font-medium text-slate-600">{viewingContact.secondary_phone || "—"}</p>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Priority</p>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-black ${
-                            viewingContact.contact_priority === 'PRIMARY' 
-                            ? 'bg-teal-600 text-white' 
-                            : 'bg-slate-100 text-slate-500'
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Location Card */}
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-6">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600 mb-5 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-teal-600" />
+                      Location
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Address</p>
+                        <p className="text-sm font-medium text-slate-700 leading-relaxed bg-white rounded-lg p-2.5 border border-slate-200">
+                          {viewingContact.address || "Not provided"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">GN Division</p>
+                        <p className="text-sm font-bold text-slate-800">{viewingContact.gn_division || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Landmarks</p>
+                        <p className="text-sm text-slate-600">{viewingContact.landmarks || "None"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Permissions Card */}
+                  <div className="bg-gradient-to-br from-teal-50 to-teal-100/50 rounded-2xl p-6 border border-teal-200">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-teal-700 mb-5 flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Permissions
+                    </h3>
+                    <div className="space-y-3">
+                      {[
+                        { val: viewingContact.receive_medical_results, label: "View Medical Results" },
+                        { val: viewingContact.decision_permission, label: "Legal Decision Maker" },
+                        { val: viewingContact.collect_reports_permission, label: "Collect Reports" }
+                      ].map((perm, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-2.5 rounded-lg bg-white border-2" style={{borderColor: perm.val ? 'rgb(20, 184, 166)' : 'rgb(226, 232, 240)'}}>
+                          <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center font-bold text-sm ${
+                            perm.val 
+                              ? 'bg-teal-600 text-white' 
+                              : 'bg-slate-200 text-slate-400'
                           }`}>
-                            {viewingContact.contact_priority}
-                          </span>
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-
-                  {/* Middle Column: Location */}
-                  <div className="space-y-8">
-                    <section>
-                      <div className="flex items-center gap-2 mb-4 text-teal-700">
-                        <MapPin className="w-4 h-4" />
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Location Details</h3>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Address</p>
-                          <p className="text-sm font-medium text-slate-700 leading-relaxed italic">"{viewingContact.address}"</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">GN Division</p>
-                          <p className="text-sm font-bold text-slate-800">{viewingContact.gn_division}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Landmarks</p>
-                          <p className="text-sm font-medium text-slate-500">{viewingContact.landmarks || "None"}</p>
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-
-                  {/* Right Column: Status & Permissions */}
-                  <div className="space-y-8">
-                    <section>
-                      <div className="flex items-center gap-2 mb-4 text-teal-700">
-                        <Shield className="w-4 h-4" />
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status & Authorizations</h3>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          <span className={`px-2 py-1 rounded text-[9px] font-black ${viewingContact.available_24_7 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400'}`}>
-                            {viewingContact.available_24_7 ? "24/7 AVAILABLE" : "LIMITED HOURS"}
-                          </span>
-                          <p className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-100 italic">{viewingContact.best_time_to_contact}</p>
-                        </div>
-                        {[
-                          { val: viewingContact.receive_medical_results, label: "View Medical Results" },
-                          { val: viewingContact.decision_permission, label: "Legal Decision Maker" },
-                          { val: viewingContact.collect_reports_permission, label: "Collect Reports" }
-                        ].map((p, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${p.val ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-300'}`}>
-                              {p.val ? <CheckCircle2 className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
-                            </div>
-                            <span className={`text-[11px] font-bold ${p.val ? 'text-slate-700' : 'text-slate-300 line-through'}`}>{p.label}</span>
+                            {perm.val ? '✓' : '✗'}
                           </div>
-                        ))}
-                      </div>
-                    </section>
+                          <span className={`text-xs font-semibold ${perm.val ? 'text-slate-800' : 'text-slate-400 line-through'}`}>
+                            {perm.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -315,9 +355,21 @@ const EmergencyContactPage = () => {
         )}
 
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-teal-700 px-10 py-8 text-white">
-            <h1 className="text-2xl font-bold">Emergency Contacts</h1>
-            <p className="text-teal-100 mt-1">Manage your trusted contacts for medical emergencies and authorization</p>
+        <div className="bg-teal-700 px-10 py-8 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Emergency Contacts</h1>
+                <p className="text-teal-100 mt-1">Manage your trusted contacts for medical emergencies and authorization</p>
+              </div>
+              <button
+                onClick={downloadEmergencyContactPDF}
+                disabled={loading || contacts.length === 0}
+                className="flex items-center gap-2 px-6 py-3 bg-white text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-4 h-4" />
+                Download PDF
+              </button>
+            </div>
           </div>
 
           <div className="flex border-b border-slate-200 bg-slate-50">

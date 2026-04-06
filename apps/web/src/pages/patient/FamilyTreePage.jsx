@@ -13,6 +13,7 @@ import PublicLayout from '../../layout/PublicLayout';
 import { useAuth } from '../../context/AuthContext';
 import { fetchFamilyMembers, fetchFamilyTree, fetchHouseholdBySubmittedBy, updateFamilyMember } from '../../api/patientApi';
 import { toast } from 'react-hot-toast';
+import { getSafeErrorMessage } from '../../utils/errorHandler';
 
 const FamilyMemberNode = ({ data, selected }) => {
   const isMale = data.gender?.toLowerCase() === 'male';
@@ -519,7 +520,8 @@ function FamilyTreePage() {
             loadRealFamilyTree();
         }
     } catch (err) {
-        toast.error('Update failed');
+        console.error("Error updating family member:", err);
+        toast.error(getSafeErrorMessage(err, "contact"));
     } finally {
         setLoading(false);
     }
@@ -552,7 +554,7 @@ function FamilyTreePage() {
       const targetNode = nodes.find(n => n.data?.label === targetMemberName);
       if (!targetNode) {
         console.error('Target node not found');
-        toast.error('Member not found');
+        toast.error(getSafeErrorMessage(new Error('Member not found'), "contact"));
         return;
       }
       
@@ -566,11 +568,11 @@ function FamilyTreePage() {
         loadRealFamilyTree();
       } else {
         console.error('API response not successful:', res);
-        toast.error(res?.message || 'Failed to update profile');
+        toast.error(getSafeErrorMessage(new Error(res?.message), "contact"));
       }
     } catch (err) {
       console.error('Error saving diseases:', err);
-      toast.error(err?.message || 'Update failed');
+      toast.error(getSafeErrorMessage(err, "contact"));
     } finally {
       setLoading(false);
     }
