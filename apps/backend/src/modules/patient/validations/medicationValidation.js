@@ -49,19 +49,21 @@ export const validateMedicationCreate = [
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("Start date must be in YYYY-MM-DD format")
     .custom((value) => {
-      const inputDate = new Date(value);
+      const [year, month, day] = value.split('-').map(Number);
+      const inputDate = new Date(year, month - 1, day); // Create date in local timezone at midnight
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Allow today
-      
-      if (inputDate < today) {
-        throw new Error('Start date cannot be a past date');
-      }
-      
-      // Check if it's a valid date
+      today.setHours(0, 0, 0, 0);
+
+      // Check if it's a valid date first
       if (isNaN(inputDate.getTime())) {
         throw new Error('Invalid date');
       }
-      
+
+      // Allow past dates and today. Disallow future dates.
+      if (inputDate > today) {
+        throw new Error('Start date cannot be a future date');
+      }
+
       return true;
     }),
   
@@ -111,13 +113,19 @@ export const validateMedicationUpdate = [
     .custom((value) => {
       if (value) {
         const inputDate = new Date(value);
-        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         // Check if it's a valid date
         if (isNaN(inputDate.getTime())) {
           throw new Error('Invalid date');
         }
+
+        if (inputDate > today) {
+          throw new Error('Start date cannot be a future date');
+        }
       }
-      
+
       return true;
     }),
   
