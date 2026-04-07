@@ -1,0 +1,107 @@
+**Author:** Lakni (IT23772922)  
+
+# Artillery Performance Test Configuration
+# Run with: artillery run api.performance.config.yaml
+
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Phase 1: Warm-up (low volume)
+    - duration: 30
+      arrivalRate: 2
+      name: "Warm up"
+
+    # Phase 2: Sustained load (moderate volume)
+    - duration: 60
+      arrivalRate: 5
+      name: "Sustained load"
+
+    # Phase 3: Spike (high volume)
+    - duration: 30
+      arrivalRate: 10
+      name: "Load spike"
+
+    # Phase 4: Sustained at spike level
+    - duration: 30
+      arrivalRate: 10
+      name: "Spike sustained"
+
+    # Phase 5: Cool down
+    - duration: 30
+      arrivalRate: 5
+      name: "Cool down"
+
+  defaults:
+    headers:
+      User-Agent: "Artillery Performance Test"
+      Accept: "application/json"
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Auth API Tests"
+    flow:
+      # Patient Registration
+      - post:
+          url: "/api/auth/patient/register"
+          json:
+            full_name: "Test Patient"
+            email: "{{ randomString(10) }}@example.com"
+            contact_number: "0712345678"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.data.token"
+              as: "patientToken"
+
+      # Patient Login
+      - post:
+          url: "/api/auth/patient/login"
+          json:
+            identifier: "{{ randomString(10) }}@example.com"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.data.token"
+              as: "loginToken"
+
+      # Verify Token
+      - post:
+          url: "/api/auth/verify"
+          json:
+            token: "{{ loginToken }}"
+
+  - name: "Patient API Tests"
+    flow:
+      # Get all members
+      - get:
+          url: "/api/patient/members?page=1&limit=10"
+
+      # Create member
+      - post:
+          url: "/api/patient/members"
+          json:
+            full_name: "Performance Test Member"
+            email: "{{ randomString(15) }}@example.com"
+            contact_number: "0712345678"
+            nic: "{{ randomString(9) }}V"
+          capture:
+            - json: "$.data._id"
+              as: "memberId"
+
+      # Get single member
+      - get:
+          url: "/api/patient/members/{{ memberId }}"
+
+  - name: "Mixed Workload"
+    flow:
+      # Auth operations
+      - post:
+          url: "/api/auth/patient/login"
+          json:
+            identifier: "test@example.com"
+            password: "password123"
+
+      # Patient operations
+      - get:
+          url: "/api/patient/members?page=1"
+
+      # Wait before next iteration
+      - think: 5
