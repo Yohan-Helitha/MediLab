@@ -20,7 +20,7 @@ export const validateFamilyMemberCreate = [
     .withMessage("Gender is required")
     .isIn(['male', 'female', 'Male', 'Female'])
     .withMessage("Gender must be either 'male' or 'female'")
-    .customSanitizer(value => value.toLowerCase()),
+    .customSanitizer(value => value ? value.toLowerCase() : value),
   
   body("date_of_birth")
     .notEmpty()
@@ -28,7 +28,8 @@ export const validateFamilyMemberCreate = [
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("Date of birth must be in YYYY-MM-DD format")
     .custom((value) => {
-      const inputDate = new Date(value);
+      const [year, month, day] = value.split('-').map(Number);
+      const inputDate = new Date(year, month - 1, day); // Create date in local timezone
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Reset time to compare only dates
       
