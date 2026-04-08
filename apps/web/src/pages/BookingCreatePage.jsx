@@ -27,7 +27,7 @@ function BookingCreatePage() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const { user } = useAuth();
-	const { i18n } = useTranslation();
+	const { t, i18n } = useTranslation();
 
 	const state = location.state || {};
 	const lab = state.lab || null;
@@ -118,15 +118,15 @@ function BookingCreatePage() {
 		setError("");
 
 		if (!patientProfileId) {
-			setError("Patient profile not found. Please log in again.");
+			setError(t("booking.create.error.noProfile"));
 			return;
 		}
 		if (!healthCenterId || !diagnosticTestId) {
-			setError("Missing test selection. Please select a lab test again.");
+			setError(t("booking.create.error.missingSelection"));
 			return;
 		}
 		if (!formData.bookingDate) {
-			setError("Please select a booking date.");
+			setError(t("booking.create.error.noDate"));
 			return;
 		}
 
@@ -146,14 +146,14 @@ function BookingCreatePage() {
 			const created = await createBooking(bookingPayload);
 			const bookingId = created?.booking?._id;
 			if (!bookingId) {
-				throw new Error("Booking was created but bookingId is missing in response");
+				throw new Error(t("booking.create.error.missingBookingId"));
 			}
 
 			// Always proceed to PayHere for ONLINE payments.
 			if (formData.paymentMethod === "ONLINE") {
 				const checkout = await createPayHereCheckout({ bookingId });
 				if (!checkout?.checkoutUrl || !checkout?.fields) {
-					throw new Error("Failed to create PayHere checkout payload");
+					throw new Error(t("booking.create.error.payherePayload"));
 				}
 				postToPayHere(checkout.checkoutUrl, checkout.fields);
 				return;
@@ -161,7 +161,7 @@ function BookingCreatePage() {
 
 			navigate("/dashboard");
 		} catch (err) {
-			setError(err?.message || "Failed to create booking");
+			setError(err?.message || t("booking.create.error.generic"));
 		} finally {
 			setLoading(false);
 		}
@@ -177,9 +177,9 @@ function BookingCreatePage() {
 				<div className="rounded-2xl bg-white shadow-md border border-slate-200 overflow-hidden">
 					<div className="h-1 w-full bg-gradient-to-r from-teal-500 to-emerald-400" />
 					<div className="p-6 md:p-7">
-						<h1 className="text-2xl font-semibold text-slate-900">Book Test</h1>
+						<h1 className="text-2xl font-semibold text-slate-900">{t("booking.create.title")}</h1>
 						<p className="mt-1 text-sm text-slate-600">
-							Patient details are auto-filled. Test/booking details are entered below.
+							{t("booking.create.subtitle")}
 						</p>
 					</div>
 				</div>
@@ -187,18 +187,18 @@ function BookingCreatePage() {
 				<form onSubmit={handleSubmit} className="rounded-2xl bg-white shadow-md border border-slate-200 p-6 md:p-7 space-y-6">
 					{/* Auto-filled patient info */}
 					<section className="space-y-3">
-						<h2 className="text-sm font-semibold text-slate-800">Client Details</h2>
+						<h2 className="text-sm font-semibold text-slate-800">{t("booking.create.section.clientDetails")}</h2>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Full Name</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("healthProfile.form.fullName")}</label>
 								<input value={patientName} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
 							</div>
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("register.phoneLabel")}</label>
 								<input value={patientPhone} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
 							</div>
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("login.emailLabel")}</label>
 								<input value={patientEmail} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
 							</div>
 						</div>
@@ -206,10 +206,10 @@ function BookingCreatePage() {
 
 					{/* Selected test */}
 					<section className="space-y-3">
-						<h2 className="text-sm font-semibold text-slate-800">Selected Test</h2>
+						<h2 className="text-sm font-semibold text-slate-800">{t("booking.create.section.selectedTest")}</h2>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Health Center</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.healthCenter")}</label>
 								<input
 									value={translatedNames[centerName] || centerName}
 									readOnly
@@ -217,7 +217,7 @@ function BookingCreatePage() {
 								/>
 							</div>
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Test</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.test")}</label>
 								<input
 									value={translatedNames[testName] || testName}
 									readOnly
@@ -225,7 +225,7 @@ function BookingCreatePage() {
 								/>
 							</div>
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Price</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.price")}</label>
 								<input
 									value={price == null ? "-" : `Rs ${price.toFixed(2)}`}
 									readOnly
@@ -237,22 +237,22 @@ function BookingCreatePage() {
 
 					{/* Manual booking details */}
 					<section className="space-y-3">
-						<h2 className="text-sm font-semibold text-slate-800">Booking Details</h2>
+						<h2 className="text-sm font-semibold text-slate-800">{t("booking.create.section.bookingDetails")}</h2>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Booking Type</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.bookingType")}</label>
 								<select
 									value={formData.bookingType}
 									onChange={(e) => setField("bookingType", e.target.value)}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 								>
-									<option value="PRE_BOOKED">Pre-booked</option>
-									<option value="WALK_IN">Walk-in</option>
+									<option value="PRE_BOOKED">{t("booking.create.option.bookingType.preBooked")}</option>
+									<option value="WALK_IN">{t("booking.create.option.bookingType.walkIn")}</option>
 								</select>
 							</div>
 
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Booking Date</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.bookingDate")}</label>
 								<input
 									type="date"
 									value={formData.bookingDate}
@@ -263,39 +263,39 @@ function BookingCreatePage() {
 							</div>
 
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Time Slot (optional)</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.timeSlotOptional")}</label>
 								<input
 									type="text"
 									value={formData.timeSlot}
 									onChange={(e) => setField("timeSlot", e.target.value)}
-									placeholder="e.g. 09:00 - 10:00"
+									placeholder={t("booking.create.placeholder.timeSlot")}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 								/>
 							</div>
 
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.priority")}</label>
 								<select
 									value={formData.priorityLevel}
 									onChange={(e) => setField("priorityLevel", e.target.value)}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 								>
-									<option value="NORMAL">Normal</option>
-									<option value="ELDERLY">Elderly</option>
-									<option value="PREGNANT">Pregnant</option>
-									<option value="URGENT">Urgent</option>
+									<option value="NORMAL">{t("booking.create.option.priority.normal")}</option>
+									<option value="ELDERLY">{t("booking.create.option.priority.elderly")}</option>
+									<option value="PREGNANT">{t("booking.create.option.priority.pregnant")}</option>
+									<option value="URGENT">{t("booking.create.option.priority.urgent")}</option>
 								</select>
 							</div>
 
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Payment Method</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.paymentMethod")}</label>
 								<select
 									value={formData.paymentMethod}
 									onChange={(e) => setField("paymentMethod", e.target.value)}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 								>
-									<option value="ONLINE">Online (PayHere)</option>
-									<option value="CASH">Cash (pay at center)</option>
+									<option value="ONLINE">{t("booking.create.option.payment.online")}</option>
+									<option value="CASH">{t("booking.create.option.payment.cash")}</option>
 								</select>
 							</div>
 						</div>
@@ -309,7 +309,9 @@ function BookingCreatePage() {
 							disabled={loading}
 							className="rounded-full bg-teal-600 px-6 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
 						>
-							{loading ? "Processing..." : "Continue to Payment"}
+							{loading
+								? t("booking.create.button.processing")
+								: t("booking.create.button.continue")}
 						</button>
 
 						<button
@@ -317,7 +319,7 @@ function BookingCreatePage() {
 							onClick={() => (lab?._id ? navigate(`/labs/${lab._id}`) : navigate("/health-centers"))}
 							className="rounded-full bg-slate-100 px-6 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200"
 						>
-							Back
+							{t("booking.create.button.back")}
 						</button>
 					</div>
 				</form>
