@@ -335,7 +335,7 @@ function HomePage({ navigate }) {
             </div>
             <div className="h-px flex-1 bg-slate-100 mx-8 mb-3 opacity-50"></div>
             <button 
-              onClick={() => navigate('/labs')}
+              onClick={() => onNavigate("health-centers")}
               className="mb-1 text-teal-600 font-bold text-sm hover:text-teal-700 transition-colors"
             >
               {t("home.featured.viewAll")}
@@ -351,7 +351,7 @@ function HomePage({ navigate }) {
                     name: labTranslations[lab.name] || lab.name,
                     district: labTranslations[lab.district] || lab.district,
                   }}
-                  onView={(l) => navigate(`/lab/${l._id}`)}
+                  onView={(l) => onNavigate("lab", { labId: l._id })}
                 />
               ))
             ) : (
@@ -369,12 +369,6 @@ function HomePage({ navigate }) {
               <p className="text-slate-500 mt-1 font-medium">{t("home.popular.subtitle")}</p>
             </div>
             <div className="h-px flex-1 bg-slate-100 mx-8 mb-3 opacity-50"></div>
-            <button 
-              onClick={() => navigate('/tests')}
-              className="mb-1 text-teal-600 font-bold text-sm hover:text-teal-700 transition-colors"
-            >
-              {t("home.popular.browseAll")}
-            </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {popularTests.map((t) => (
