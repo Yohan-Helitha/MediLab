@@ -248,16 +248,18 @@ export function fetchMedicationById(id) {
 }
 
 export function createMedication(data) {
+	const isFormData = data instanceof FormData;
 	return apiRequest(`/api/medications`, {
 		method: "POST",
-		body: JSON.stringify(data)
+		body: isFormData ? data : JSON.stringify(data)
 	});
 }
 
 export function updateMedication(id, data) {
+	const isFormData = data instanceof FormData;
 	return apiRequest(`/api/medications/${id}`, {
 		method: "PUT",
-		body: JSON.stringify(data)
+		body: isFormData ? data : JSON.stringify(data)
 	});
 }
 

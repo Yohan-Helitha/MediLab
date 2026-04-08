@@ -173,8 +173,10 @@ const HealthProfilePage = () => {
         dosage: "",
         reason: "",
         prescribed_by: "",
-        start_date: ""
+        start_date: "",
+        prescription_photo: null
     });
+    const [prescriptionPhotoPreview, setPrescriptionPhotoPreview] = useState(null);
     const [medicationErrors, setMedicationErrors] = useState({});
     
     // Session-level arrays to store added medications, allergies, and chronic diseases
@@ -657,10 +659,27 @@ const HealthProfilePage = () => {
         setLoading(true);
         setMedicationErrors({});
         try {
-            const payload = {
-                member_id: profile.member_id || profile.systemId,
-                ...medicationData
-            };
+            // Use FormData if there's a prescription photo file, otherwise use plain object
+            let payload;
+            if (medicationData.prescription_photo instanceof File) {
+                payload = new FormData();
+                payload.append('member_id', profile.member_id || profile.systemId);
+                payload.append('medicine_name', medicationData.medicine_name);
+                payload.append('dosage', medicationData.dosage);
+                payload.append('reason', medicationData.reason);
+                payload.append('prescribed_by', medicationData.prescribed_by);
+                payload.append('start_date', medicationData.start_date);
+                payload.append('prescription_photo', medicationData.prescription_photo);
+            } else {
+                payload = {
+                    member_id: profile.member_id || profile.systemId,
+                    medicine_name: medicationData.medicine_name,
+                    dosage: medicationData.dosage,
+                    reason: medicationData.reason,
+                    prescribed_by: medicationData.prescribed_by,
+                    start_date: medicationData.start_date
+                };
+            }
             
             let res;
             if (editingMedicationId) {
@@ -672,7 +691,8 @@ const HealthProfilePage = () => {
             if (res.success) {
                 const refreshed = await updateMemberProfile(profile._id, {});
                 login({ ...refreshed.data, userType: profile.userType || "patient" }, localStorage.getItem("token"));
-                setMedicationData({ medicine_name: "", dosage: "", reason: "", prescribed_by: "", start_date: "" });
+                setMedicationData({ medicine_name: "", dosage: "", reason: "", prescribed_by: "", start_date: "", prescription_photo: null });
+                setPrescriptionPhotoPreview(null);
                 setEditingMedicationId(null);
                 setMedicationErrors({});
                 setMessage({ type: "success", text: editingMedicationId ? "Medication updated successfully." : "Medication added successfully." });
@@ -695,14 +715,34 @@ const HealthProfilePage = () => {
     const handleEditMedication = (med) => {
         setEditingMedicationId(med._id);
         // Format date to YYYY-MM-DD for input[type="date"]
-        const dateStr = med.start_date ? new Date(med.start_date).toISOString().split('T')[0] : "";
+        let dateStr = "";
+        if (med.start_date) {
+            if (typeof med.start_date === 'string' && med.start_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                dateStr = med.start_date;
+            } else {
+                try {
+                    dateStr = new Date(med.start_date).toISOString().split('T')[0];
+                } catch (e) {
+                    dateStr = "";
+                }
+            }
+        }
         setMedicationData({
             medicine_name: med.medicine_name,
             dosage: med.dosage,
             reason: med.reason,
             prescribed_by: med.prescribed_by,
-            start_date: dateStr
+            start_date: dateStr,
+            prescription_photo: null  // Reset file, user can upload a new one if needed
         });
+        // Show prescription preview if it exists
+        if (med.prescription_photo) {
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+            const photoPath = med.prescription_photo.startsWith('/') ? med.prescription_photo : `/${med.prescription_photo}`;
+            setPrescriptionPhotoPreview(med.prescription_photo.startsWith('http') ? med.prescription_photo : `${baseUrl}${photoPath}`);
+        } else {
+            setPrescriptionPhotoPreview(null);
+        }
         // Scroll to the form
         const element = document.getElementById("medication-form-section");
         if (element) {
@@ -1860,7 +1900,11 @@ const HealthProfilePage = () => {
                                                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Start date</label>
                                                     <input 
                                                         type="date"
-                                                        value={medicationData.start_date ? new Date(medicationData.start_date).toISOString().split('T')[0] : ""}
+                                                        value={medicationData.start_date ? (
+                                                            typeof medicationData.start_date === 'string' && medicationData.start_date.match(/^\d{4}-\d{2}-\d{2}$/) 
+                                                                ? medicationData.start_date 
+                                                                : new Date(medicationData.start_date).toISOString().split('T')[0]
+                                                        ) : ""}
                                                         onChange={(e) => {
                                                             setMedicationData({...medicationData, start_date: e.target.value});
                                                             if (medicationErrors.start_date) {
@@ -1876,6 +1920,57 @@ const HealthProfilePage = () => {
                                                             {medicationErrors.start_date}
                                                         </p>
                                                     )}
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Prescription Photo/PDF (Optional)</label>
+                                                    <div className="flex items-center gap-3">
+                                                        {prescriptionPhotoPreview && (
+                                                            <div className="h-16 w-16 rounded-lg bg-slate-100 border border-teal-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                                {prescriptionPhotoPreview.toLowerCase().endsWith('.pdf') ? (
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                                                                    </svg>
+                                                                ) : (
+                                                                    <img src={prescriptionPhotoPreview} alt="Prescription" className="h-full w-full object-cover"/>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <label className="cursor-pointer text-sm font-bold text-teal-700 bg-teal-50 px-4 py-2 rounded-lg hover:bg-teal-100 transition-all border border-teal-200 inline-block">
+                                                            Choose File
+                                                            <input 
+                                                                type="file" 
+                                                                hidden
+                                                                accept="image/*,.pdf"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (file) {
+                                                                        setMedicationData({...medicationData, prescription_photo: file});
+                                                                        if (file.type.startsWith('image/')) {
+                                                                            const reader = new FileReader();
+                                                                            reader.onloadend = () => {
+                                                                                setPrescriptionPhotoPreview(reader.result);
+                                                                            };
+                                                                            reader.readAsDataURL(file);
+                                                                        } else {
+                                                                            setPrescriptionPhotoPreview(file.name);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                        {prescriptionPhotoPreview && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setMedicationData({...medicationData, prescription_photo: null});
+                                                                    setPrescriptionPhotoPreview(null);
+                                                                }}
+                                                                className="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="flex space-x-2">
@@ -1931,9 +2026,29 @@ const HealthProfilePage = () => {
                                                         <h4 className="text-lg font-bold text-teal-700 mb-3 pr-20">{med.medicine_name}</h4>
                                                         <div className="grid grid-cols-2 gap-y-3 text-sm">
                                                             <div><span className="text-slate-400 text-[10px] font-bold uppercase block">Dosage</span> <span className="font-semibold text-slate-700">{med.dosage}</span></div>
-                                                            <div><span className="text-slate-400 text-[10px] font-bold uppercase block">Start Date</span> <span className="font-semibold text-slate-700">{med.start_date ? new Date(med.start_date).toISOString().split('T')[0] : "N/A"}</span></div>
+                                                            <div><span className="text-slate-400 text-[10px] font-bold uppercase block">Start Date</span> <span className="font-semibold text-slate-700">{med.start_date ? (
+                                                                typeof med.start_date === 'string' && med.start_date.match(/^\d{4}-\d{2}-\d{2}$/)
+                                                                    ? med.start_date
+                                                                    : new Date(med.start_date).toISOString().split('T')[0]
+                                                            ) : "N/A"}</span></div>
                                                             <div className="col-span-2"><span className="text-slate-400 text-[10px] font-bold uppercase block">Reason</span> <span className="text-slate-700">{med.reason}</span></div>
                                                             <div className="col-span-2"><span className="text-slate-400 text-[10px] font-bold uppercase block">Prescribed By</span> <span className="text-slate-600 italic">Dr. {med.prescribed_by}</span></div>
+                                                            {med.prescription_photo && (
+                                                                <div className="col-span-2 border-t border-slate-100 pt-3 mt-2">
+                                                                    <span className="text-slate-400 text-[10px] font-bold uppercase block mb-2">Prescription</span>
+                                                                    <a 
+                                                                        href={med.prescription_photo.startsWith('http') ? med.prescription_photo : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/${med.prescription_photo}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-semibold text-sm"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"/>
+                                                                        </svg>
+                                                                        View Prescription
+                                                                    </a>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}

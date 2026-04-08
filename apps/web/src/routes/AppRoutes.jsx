@@ -52,6 +52,10 @@ const AppRoutes = () => {
 		return userRole === "admin";
 	};
 
+	const isLabTechnicianUser = () => {
+		return userRole === "lab_technician";
+	};
+
 	const isPatientUser = () => {
 		// Backend returns role="patient" for patients; userType is not reliably present on the user object.
 		return userRole === "patient";
@@ -60,6 +64,7 @@ const AppRoutes = () => {
 	const getPostAuthRedirect = () => {
 		if (!user) return "/";
 		if (isAdminUser()) return "/admin/overview";
+		if (isLabTechnicianUser()) return "/staff/lab-dashboard";
 		if (isPatientUser()) return "/";
 		return "/staff/dashboard";
 	};
@@ -146,6 +151,10 @@ const AppRoutes = () => {
 				<Route
 					path="/staff/dashboard"
 					element={<DashboardLayout activePage="labs"><LabManagementPage /></DashboardLayout>}
+				/>
+				<Route
+					path="/staff/lab-dashboard"
+					element={<DashboardLayout activePage="labs"><div className="p-8">Lab Technician dashboard coming soon</div></DashboardLayout>}
 				/>
 				<Route path="/staff/tests" element={<DashboardLayout activePage="tests"><TestManagementPage /></DashboardLayout>} />
 				<Route path="/staff/availability" element={<DashboardLayout activePage="availability"><TestAvailabilityPage /></DashboardLayout>} />

@@ -33,7 +33,12 @@ class MedicationController {
 
   async createMedication(req, res) {
     try {
-      const medication = await medicationService.createMedication(req.body);
+      const medicationData = req.body;
+      // If a file was uploaded, add it to the medication data
+      if (req.file) {
+        medicationData.prescription_photo = req.file.path;
+      }
+      const medication = await medicationService.createMedication(medicationData);
       res.status(201).json({
         success: true,
         data: medication
@@ -48,7 +53,12 @@ class MedicationController {
 
   async updateMedication(req, res) {
     try {
-      const medication = await medicationService.updateMedication(req.params.id, req.body);
+      const updateData = req.body;
+      // If a file was uploaded, add it to the update data
+      if (req.file) {
+        updateData.prescription_photo = req.file.path;
+      }
+      const medication = await medicationService.updateMedication(req.params.id, updateData);
       res.status(200).json({
         success: true,
         data: medication

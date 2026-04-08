@@ -23,9 +23,8 @@ export const validateVisitCreate = [
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("Visit date must be in YYYY-MM-DD format")
     .custom((value) => {
-      const inputDate = new Date(value);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const [year, month, day] = value.split('-').map(Number);
+      const inputDate = new Date(year, month - 1, day); // Create date in local timezone
       if (isNaN(inputDate.getTime())) {
         throw new Error('Invalid date');
       }

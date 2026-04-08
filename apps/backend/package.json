@@ -7,7 +7,15 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=unit.test.js",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration.test.js",
+    "test:performance": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=performance.test.js",
+    "test:auth": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/modules/auth",
+    "test:patient": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/modules/patient",
+    "test:all": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --detectOpenHandles"
   },
   "dependencies": {
     "@google/genai": "^1.48.0",
@@ -31,6 +39,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.3.0",
+    "artillery": "^2.0.30",
     "jest": "^29.7.0",
     "nodemon": "^3.1.14",
     "supertest": "^6.3.4"
