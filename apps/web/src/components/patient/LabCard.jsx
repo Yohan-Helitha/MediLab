@@ -28,49 +28,51 @@ function LabCard({ lab, onView }) {
         </div>
       </div>
 
-      {/* Middle: contact + status + hours */}
-      <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-slate-500">
-        <div className="flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 text-slate-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0121 19.72V23a2 2 0 01-2 2h-1C9.82 25 3 18.18 3 10V5z"
-            />
-          </svg>
-          <span>{lab.phoneNumber || "-"}</span>
+      {/* Middle: contact + hours stacked, status on right */}
+      <div className="mt-4 flex items-start justify-between text-sm text-slate-500">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0121 19.72V23a2 2 0 01-2 2h-1C9.82 25 3 18.18 3 10V5z"
+              />
+            </svg>
+            <span className="whitespace-nowrap">{lab.phoneNumber || "-"}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="whitespace-nowrap">
+              {lab.operatingHours && lab.operatingHours.length
+                ? formatHours(lab.operatingHours)
+                : t("labs.card.label.hoursNotSet")}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 text-slate-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>
-            {lab.operatingHours && lab.operatingHours.length
-              ? formatHours(lab.operatingHours)
-              : t("labs.card.label.hoursNotSet")}
-          </span>
-        </div>
-
-        <div className="ml-auto text-xs font-semibold text-emerald-600">
+        <div className="text-xs font-semibold text-emerald-600 mt-1">
           {statusLabel}
         </div>
       </div>
