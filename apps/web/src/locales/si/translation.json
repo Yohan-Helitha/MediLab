@@ -84,6 +84,35 @@
   "healthCenters.search.placeholder": "ලැබ් නාමය හෝ පරීක්ෂණ නාමය පුරස්ථානයෙන් සොයන්න...",
   "search.button": "සොයන්න",
 
+  "labs.status.active": "සක්‍රීය",
+  "labs.status.inactive": "අක්‍රීය",
+  "labs.status.open": "විවෘත",
+  "labs.status.closed": "වැසී ඇත",
+
+  "labs.card.label.location": "ස්ථානය",
+  "labs.card.label.contact": "සම්බන්ධතා",
+  "labs.card.label.hours": "වේලාවන්",
+  "labs.card.label.hoursNotSet": "වේලාවන් සටහන් කර නැත",
+
+  "labs.details.availableTests": "ලබා ගත හැකි පරීක්ෂණ",
+  "labs.details.testNotAvailable.title": "පරීක්ෂණය ලබා ගත නොහැක",
+  "labs.details.testNotAvailable.body.withName": "{{name}} වත්මන් අවස්ථාවේදී ලබා ගත නොහැක. කරුණාකර මෙම පරීක්ෂණය සඳහා වෙනත් ලැබ් එකක් සොයන්න.",
+  "labs.details.testNotAvailable.body.generic": "මෙම පරීක්ෂණය වත්මන් අවස්ථාවේදී ලබා ගත නොහැක. කරුණාකර මෙම පරීක්ෂණය සඳහා වෙනත් ලැබ් එකක් සොයන්න.",
+
+  "labs.details.labUnavailable.title": "ලැබ් ලබා ගත නොහැක",
+  "labs.details.labUnavailable.body.withName": "{{name}} වත්මන් අවස්ථාවේදී වසා ඇත. කරුණාකර ඔබගේ පරීක්ෂණය බුක් කිරීමට වෙනත් ලැබ් එකක් සොයන්න.",
+  "labs.details.labUnavailable.body.generic": "මෙම ලැබ් වත්මන් අවස්ථාවේදී වසා ඇත. කරුණාකර ඔබගේ පරීක්ෂණය බුක් කිරීමට වෙනත් ලැබ් එකක් සොයන්න.",
+
+  "labs.test.status.available": "Available",
+  "labs.test.status.unavailable": "ලැබෙන නෑ",
+
+  "labs.test.estimatedTime": "ඉදිරි ප්‍රතිඵල ලැබෙන කාලය: පැය {{hours}} කින්",
+  "labs.test.instructions.before": "පරීක්ෂණය කිරීමට පෙර",
+  "labs.test.instructions.after": "පරීක්ෂණයෙන් පසු",
+
+  "labs.actions.bookTest": "පරීක්ෂණයක් බුක් කරන්න",
+  "labs.actions.viewDetails": "විස්තර බලන්න",
+
   "healthProfile.title": "සෞඛ්ය පැතිකඩ",
   "healthProfile.subtitle": "ඔබගේ පෞද්ගලික හා වෛද්‍ය තොරතුරු කළමනාකරණය කරන්න",
   "healthProfile.tab.personal": "පෞද්ගලික විස්තර",
@@ -124,6 +153,35 @@
   "bookings.title": "මගේ වෙන්කිරීම්",
   "bookings.subtitle": "ඔබ වෙන්කර ඇති පරීක්ෂණ සහ ඒවායේ තත්වය බලන්න.",
   "bookings.bookTest": "පරීක්ෂණයක් බුක් කරන්න",
+
+  "bookings.empty.title": "වෙන්කිරීම් නොමැත",
+  "bookings.empty.body": "ඔබ තවමත් කිසිදු පරීක්ෂණයක් වෙන් කර නොමැත. පළමුව සෞඛ්ය මධ්‍යස්ථානයක් තෝරන්න.",
+  "bookings.empty.button": "ඔබගේ පළවෙනි පරීක්ෂණය බුක් කරන්න",
+  "bookings.loading": "ඔබගේ වෙන්කිරීම් පූරණය කරමින්...",
+  "bookings.error.generic": "වෙන්කිරීම් පූරණය කිරීම අසාර්ථක විය",
+  "bookings.error.noProfile": "රෝගියාගේ පැතිකඩ හමු නොවිනි. කරුණාකර නැවත පිවිසෙන්න.",
+  "bookings.button.retry": "නැවත උත්සාහ කරන්න",
+
+  "bookings.status.pending": "අපේක්ෂිත",
+  "bookings.status.completed": "සම්පූර්ණ",
+  "bookings.status.cancelled": "අවලංගු",
+  "bookings.payment.pending": "අපේක්ෂිත",
+  "bookings.payment.paid": "ගෙවී ඇත",
+  "bookings.payment.unpaid": "ගෙවී නොමැත",
+  "bookings.type.preBooked": "පෙර වෙන්කරගත්",
+  "bookings.type.walkIn": "Walk-in",
+  "bookings.priority.normal": "සාමාන්‍ය",
+  "bookings.priority.elderly": "වයසක",
+  "bookings.priority.pregnant": "ගැබිනිය",
+  "bookings.priority.urgent": "අත්‍යවශ්‍ය",
+
+  "bookings.card.label.date": "දිනය",
+  "bookings.card.label.timeSlot": "වේලාව",
+  "bookings.card.label.status": "තත්ත්වය",
+  "bookings.card.label.payment": "ගෙවීම",
+  "bookings.card.label.type": "වර්ගය",
+  "bookings.card.label.priority": "ප්‍රමුඛතාවය",
+  "bookings.card.label.queue": "පේළිය",
 
   "booking.create.title": "පරීක්ෂණයක් බුක් කරන්න",
   "booking.create.subtitle": "රෝගියාගේ විස්තර ස්වයංක්‍රීයව පුරවයි. පරීක්ෂණ/වෙන්කිරීම් විස්තර පහතින් ඇතුළු කරන්න.",

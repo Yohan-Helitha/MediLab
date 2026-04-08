@@ -84,6 +84,35 @@
   "healthCenters.search.placeholder": "Search by lab or test name...",
   "search.button": "Search",
 
+  "labs.status.active": "Active",
+  "labs.status.inactive": "Inactive",
+  "labs.status.open": "Open",
+  "labs.status.closed": "Closed",
+
+  "labs.card.label.location": "Location",
+  "labs.card.label.contact": "Contact",
+  "labs.card.label.hours": "Hours",
+  "labs.card.label.hoursNotSet": "Hours not set",
+
+  "labs.details.availableTests": "Available Tests",
+  "labs.details.testNotAvailable.title": "Test not available",
+  "labs.details.testNotAvailable.body.withName": "{{name}} is not currently available. Please check another lab for this test.",
+  "labs.details.testNotAvailable.body.generic": "This test is not currently available. Please check another lab for this test.",
+
+  "labs.details.labUnavailable.title": "Lab unavailable",
+  "labs.details.labUnavailable.body.withName": "{{name}} is currently closed. Please look for another lab to book your test.",
+  "labs.details.labUnavailable.body.generic": "This lab is currently closed. Please look for another lab to book your test.",
+
+  "labs.test.status.available": "Available",
+  "labs.test.status.unavailable": "Unavailable",
+
+  "labs.test.estimatedTime": "Estimated result time: {{hours}} hours",
+  "labs.test.instructions.before": "Before the test",
+  "labs.test.instructions.after": "After the test",
+
+  "labs.actions.bookTest": "Book Test",
+  "labs.actions.viewDetails": "View Details",
+
   "healthProfile.title": "Health Profile",
   "healthProfile.subtitle": "Manage your personal and medical information",
   "healthProfile.tab.personal": "Personal Details",
@@ -124,6 +153,35 @@
   "bookings.title": "My Bookings",
   "bookings.subtitle": "View your booked tests and their status.",
   "bookings.bookTest": "Book a test",
+
+  "bookings.empty.title": "No bookings yet",
+  "bookings.empty.body": "You haven’t booked any tests. Start by selecting a health center.",
+  "bookings.empty.button": "Book your first test",
+  "bookings.loading": "Loading your bookings...",
+  "bookings.error.generic": "Failed to load bookings",
+  "bookings.error.noProfile": "Patient profile not found. Please log in again.",
+  "bookings.button.retry": "Retry",
+
+  "bookings.status.pending": "PENDING",
+  "bookings.status.completed": "COMPLETED",
+  "bookings.status.cancelled": "CANCELLED",
+  "bookings.payment.pending": "PENDING",
+  "bookings.payment.paid": "PAID",
+  "bookings.payment.unpaid": "UNPAID",
+  "bookings.type.preBooked": "PRE BOOKED",
+  "bookings.type.walkIn": "WALK IN",
+  "bookings.priority.normal": "NORMAL",
+  "bookings.priority.elderly": "ELDERLY",
+  "bookings.priority.pregnant": "PREGNANT",
+  "bookings.priority.urgent": "URGENT",
+
+  "bookings.card.label.date": "Date",
+  "bookings.card.label.timeSlot": "Time Slot",
+  "bookings.card.label.status": "Status",
+  "bookings.card.label.payment": "Payment",
+  "bookings.card.label.type": "Type",
+  "bookings.card.label.priority": "Priority",
+  "bookings.card.label.queue": "Queue",
 
   "booking.create.title": "Book Test",
   "booking.create.subtitle": "Patient details are auto-filled. Test/booking details are entered below.",

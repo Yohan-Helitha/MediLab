@@ -84,6 +84,35 @@
   "healthCenters.search.placeholder": "ஆய்வகம் அல்லது பரிசோதனை பெயரால் தேடுங்கள்...",
   "search.button": "தேடுங்கள்",
 
+  "labs.status.active": "செயலில்",
+  "labs.status.inactive": "செயல்பாட்டில் இல்லை",
+  "labs.status.open": "திறந்திருக்கும்",
+  "labs.status.closed": "மூடப்பட்டுள்ளது",
+
+  "labs.card.label.location": "இடம்",
+  "labs.card.label.contact": "தொடர்பு",
+  "labs.card.label.hours": "நேரம்",
+  "labs.card.label.hoursNotSet": "நேரம் அமைக்கப்படவில்லை",
+
+  "labs.details.availableTests": "கிடைக்கும் பரிசோதனைகள்",
+  "labs.details.testNotAvailable.title": "பரிசோதனை கிடைக்கவில்லை",
+  "labs.details.testNotAvailable.body.withName": "{{name}} தற்போது கிடைக்கவில்லை. தயவுசெய்து இந்த பரிசோதனைக்காக மற்றொரு ஆய்வகத்தைத் தேடுங்கள்.",
+  "labs.details.testNotAvailable.body.generic": "இந்த பரிசோதனை தற்போது கிடைக்கவில்லை. தயவுசெய்து இந்த பரிசோதனைக்காக மற்றொரு ஆய்வகத்தைத் தேடுங்கள்.",
+
+  "labs.details.labUnavailable.title": "ஆய்வகம் கிடைக்கவில்லை",
+  "labs.details.labUnavailable.body.withName": "{{name}} தற்போது மூடப்பட்டுள்ளது. தயவுசெய்து உங்கள் பரிசோதனைக்காக மற்றொரு ஆய்வகத்தைத் தேடுங்கள்.",
+  "labs.details.labUnavailable.body.generic": "இந்த ஆய்வகம் தற்போது மூடப்பட்டுள்ளது. தயவுசெய்து உங்கள் பரிசோதனைக்காக மற்றொரு ஆய்வகத்தைத் தேடுங்கள்.",
+
+  "labs.test.status.available": "கிடைக்கும்",
+  "labs.test.status.unavailable": "கிடைக்காது",
+
+  "labs.test.estimatedTime": "மதிப்பிடப்பட்ட முடிவு நேரம்: {{hours}} மணி நேரம்",
+  "labs.test.instructions.before": "பரிசோதனைக்கு முன்",
+  "labs.test.instructions.after": "பரிசோதனைக்கு பின்",
+
+  "labs.actions.bookTest": "பரிசோதனையை முன்பதிவு செய்யுங்கள்",
+  "labs.actions.viewDetails": "விவரங்களைப் பார்க்க",
+
   "healthProfile.title": "சுகாதார சுயவிவரம்",
   "healthProfile.subtitle": "உங்கள் தனிப்பட்ட மற்றும் மருத்துவத் தகவல்களை நிர்வகிக்கவும்",
   "healthProfile.tab.personal": "தனிப்பட்ட விவரங்கள்",
@@ -124,6 +153,35 @@
   "bookings.title": "என் முன்பதிவுகள்",
   "bookings.subtitle": "நீங்கள் முன்பதிவு செய்த பரிசோதனைகள் மற்றும் அவற்றின் நிலையைப் பார்வையிடுங்கள்.",
   "bookings.bookTest": "ஒரு பரிசோதனையை முன்பதிவு செய்யுங்கள்",
+
+  "bookings.empty.title": "முன்பதிவுகள் எதுவும் இல்லை",
+  "bookings.empty.body": "நீங்கள் இன்னும் எந்தப் பரிசோதனையையும் முன்பதிவு செய்யவில்லை. முதலில் ஒரு சுகாதார மையத்தைத் தேர்வு செய்யுங்கள்.",
+  "bookings.empty.button": "உங்கள் முதல் பரிசோதனையை முன்பதிவு செய்யுங்கள்",
+  "bookings.loading": "உங்கள் முன்பதிவுகளை ஏற்றுகிறது...",
+  "bookings.error.generic": "முன்பதிவுகளை ஏற்ற முடியவில்லை",
+  "bookings.error.noProfile": "நோயாளர் சுயவிவரம் கிடைக்கவில்லை. தயவுசெய்து மீண்டும் உள்நுழைக.",
+  "bookings.button.retry": "மீண்டும் முயற்சிக்கவும்",
+
+  "bookings.status.pending": "நிலுவையில்",
+  "bookings.status.completed": "நிறைவு பெற்றது",
+  "bookings.status.cancelled": "ரத்து செய்யப்பட்டது",
+  "bookings.payment.pending": "நிலுவையில்",
+  "bookings.payment.paid": "செலுத்தப்பட்டது",
+  "bookings.payment.unpaid": "செலுத்தப்படவில்லை",
+  "bookings.type.preBooked": "முன்கூட்டியே முன்பதிவு",
+  "bookings.type.walkIn": "Walk-in",
+  "bookings.priority.normal": "இயல்பு",
+  "bookings.priority.elderly": "மூத்த குடிமகன்",
+  "bookings.priority.pregnant": "கர்ப்பிணி",
+  "bookings.priority.urgent": "அவசரம்",
+
+  "bookings.card.label.date": "தேதி",
+  "bookings.card.label.timeSlot": "நேர இடைவெளி",
+  "bookings.card.label.status": "நிலை",
+  "bookings.card.label.payment": "கட்டணம்",
+  "bookings.card.label.type": "வகை",
+  "bookings.card.label.priority": "முன்னுரிமை",
+  "bookings.card.label.queue": "வரிசை",
 
   "booking.create.title": "ஒரு பரிசோதனையை முன்பதிவு செய்யுங்கள்",
   "booking.create.subtitle": "நோயாளர் விவரங்கள் தானாக நிரப்பப்படும். கீழே பரிசோதனை/முன்பதிவு விவரங்களை உள்ளிடவும்.",

@@ -9,6 +9,7 @@ import TestCard from "../components/patient/TestCard";
 import HeroCarousel from "../components/patient/HeroCarousel";
 import { fetchLabs, fetchTestTypes } from "../api/patientApi";
 import { useTranslation } from "react-i18next";
+import { translateTexts } from "../api/translationApi";
 
 function CountUp({ end, duration = 2000 }) {
   const [count, setCount] = useState(0);
@@ -59,6 +60,8 @@ function HomePage({ navigate }) {
   const [labs, setLabs] = useState([]);
   const [tests, setTests] = useState([]);
   const [search, setSearch] = useState("");
+  const [labTranslations, setLabTranslations] = useState({});
+  const [testTranslations, setTestTranslations] = useState({});
 
   const onNavigate = (name, params = {}) => {
     if (navigate) return navigate(name, params);
@@ -117,7 +120,53 @@ function HomePage({ navigate }) {
     [tests],
   );
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Dynamic translation for featured labs (name + district)
+  useEffect(() => {
+    const loadLabTranslations = async () => {
+      const lang = (i18n.language || "en").toLowerCase();
+      if (!labs.length || lang === "en") {
+        setLabTranslations({});
+        return;
+      }
+
+      try {
+        const texts = labs
+          .flatMap((lab) => [lab.name, lab.district])
+          .filter(Boolean);
+        const map = await translateTexts(texts, lang, "en");
+        setLabTranslations(map);
+      } catch {
+        setLabTranslations({});
+      }
+    };
+
+    loadLabTranslations();
+  }, [labs, i18n.language]);
+
+  // Dynamic translation for popular tests (name, category, description)
+  useEffect(() => {
+    const loadTestTranslations = async () => {
+      const lang = (i18n.language || "en").toLowerCase();
+      if (!tests.length || lang === "en") {
+        setTestTranslations({});
+        return;
+      }
+
+      try {
+        const texts = tests
+          .flatMap((test) => [test.name, test.category, test.description])
+          .filter(Boolean);
+        const map = await translateTexts(texts, lang, "en");
+        setTestTranslations(map);
+      } catch {
+        setTestTranslations({});
+      }
+    };
+
+    loadTestTranslations();
+  }, [tests, i18n.language]);
 
   return (
     <PublicLayout onNavigate={onNavigate}>
@@ -295,7 +344,15 @@ function HomePage({ navigate }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {labs.slice(0, 6).length > 0 ? (
               labs.slice(0, 6).map((lab) => (
-                <LabCard key={lab._id} lab={lab} onView={(l) => navigate(`/lab/${l._id}`)} />
+                <LabCard
+                  key={lab._id}
+                  lab={{
+                    ...lab,
+                    name: labTranslations[lab.name] || lab.name,
+                    district: labTranslations[lab.district] || lab.district,
+                  }}
+                  onView={(l) => navigate(`/lab/${l._id}`)}
+                />
               ))
             ) : (
               [1, 2, 3, 4, 5, 6].map((i) => (
@@ -321,7 +378,15 @@ function HomePage({ navigate }) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {popularTests.map((t) => (
-              <TestCard key={t._id} test={t} />
+              <TestCard
+                key={t._id}
+                test={{
+                  ...t,
+                  name: testTranslations[t.name] || t.name,
+                  category: testTranslations[t.category] || t.category,
+                  description: testTranslations[t.description] || t.description,
+                }}
+              />
             ))}
           </div>
         </section>

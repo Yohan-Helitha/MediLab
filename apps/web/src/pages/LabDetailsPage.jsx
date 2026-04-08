@@ -16,7 +16,7 @@ function LabDetailsPage({ labId, navigate }) {
   const routerNavigate = useNavigate();
   const params = useParams();
   const effectiveLabId = useMemo(() => labId || params.labId, [labId, params.labId]);
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const onNavigate = (name, navParams = {}) => {
     if (navigate) return navigate(name, navParams);
@@ -165,10 +165,15 @@ function LabDetailsPage({ labId, navigate }) {
             </h1>
             <div className="mt-1 inline-flex items-center gap-2 text-xs text-slate-600">
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 font-medium">
-                {lab.isActive ? "Active" : "Inactive"}
+                {lab.isActive ? t("labs.status.active") : t("labs.status.inactive")}
               </span>
               <span className="text-[11px] uppercase tracking-wide">
-                {lab.operationalStatus || ""}
+                {(() => {
+                  const raw = (lab.operationalStatus || "").toUpperCase();
+                  if (raw === "OPEN") return t("labs.status.open");
+                  if (raw === "CLOSED") return t("labs.status.closed");
+                  return raw;
+                })()}
               </span>
             </div>
           </div>
@@ -198,7 +203,7 @@ function LabDetailsPage({ labId, navigate }) {
             </svg>
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Location
+                {t("labs.card.label.location")}
               </div>
               <div>
                 {lab.addressLine1} {lab.addressLine2}
@@ -223,7 +228,7 @@ function LabDetailsPage({ labId, navigate }) {
             </svg>
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Contact
+                {t("labs.card.label.contact")}
               </div>
               <div>{lab.phoneNumber || "Not provided"}</div>
             </div>
@@ -246,12 +251,12 @@ function LabDetailsPage({ labId, navigate }) {
             </svg>
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Hours
+                {t("labs.card.label.hours")}
               </div>
               <div>
                 {lab.operatingHours && lab.operatingHours.length
                     ? formatHours(lab.operatingHours)
-                  : "Hours not set"}
+                  : t("labs.card.label.hoursNotSet")}
               </div>
             </div>
           </div>
@@ -260,7 +265,7 @@ function LabDetailsPage({ labId, navigate }) {
     </div>
 
         <section>
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Available Tests</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">{t("labs.details.availableTests")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {tests.map((t) => {
               const diagnostic = t.diagnosticTestId || {};
@@ -304,13 +309,15 @@ function LabDetailsPage({ labId, navigate }) {
 
       <Modal
         isOpen={!!unavailableTest}
-        title="Test not available"
+        title={t("labs.details.testNotAvailable.title")}
         onClose={() => setUnavailableTest(null)}
       >
         <p className="text-sm text-slate-700">
           {unavailableTest?.diagnosticTestId?.name
-            ? `${unavailableTest.diagnosticTestId.name} is not currently available. Please check another lab for this test.`
-            : "This test is not currently available. Please check another lab for this test."}
+            ? t("labs.details.testNotAvailable.body.withName", {
+                name: unavailableTest.diagnosticTestId.name,
+              })
+            : t("labs.details.testNotAvailable.body.generic")}
         </p>
       </Modal>
     </PublicLayout>

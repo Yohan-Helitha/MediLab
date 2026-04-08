@@ -85,7 +85,9 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
       }
 
       try {
-        const texts = labs.map((lab) => lab.name).filter(Boolean);
+        const texts = labs
+          .flatMap((lab) => [lab.name, lab.district])
+          .filter(Boolean);
         const map = await translateTexts(texts, lang, "en");
         setLabNameTranslations(map);
       } catch {
@@ -153,6 +155,8 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
                 ...lab,
                 // Override name with translated version if available
                 name: labNameTranslations[lab.name] || lab.name,
+                district:
+                  labNameTranslations[lab.district] || lab.district,
               }}
               onView={handleViewDetails}
             />
@@ -162,13 +166,15 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
 
       <Modal
         isOpen={!!statusModalLab}
-        title="Lab unavailable"
+          title={t("labs.details.labUnavailable.title")}
         onClose={() => setStatusModalLab(null)}
       >
         <p className="text-sm text-slate-700">
-          {statusModalLab?.name
-            ? `${statusModalLab.name} is currently closed. Please look for another lab to book your test.`
-            : "This lab is currently closed. Please look for another lab to book your test."}
+            {statusModalLab?.name
+              ? t("labs.details.labUnavailable.body.withName", {
+                  name: statusModalLab.name,
+                })
+              : t("labs.details.labUnavailable.body.generic")}
         </p>
       </Modal>
     </PublicLayout>

@@ -1,8 +1,19 @@
 import React from "react";
 import { HiBuildingOffice2 } from "react-icons/hi2";
 import { formatHours } from "../../utils/format";
+import { useTranslation } from "react-i18next";
 
 function LabCard({ lab, onView }) {
+  const { t } = useTranslation();
+
+  const rawStatus = (lab.operationalStatus || "").toUpperCase();
+  let statusLabel = rawStatus;
+  if (rawStatus === "OPEN") {
+    statusLabel = t("labs.status.open");
+  } else if (rawStatus === "CLOSED") {
+    statusLabel = t("labs.status.closed");
+  }
+
   return (
     <div className="rounded-2xl bg-white p-3 shadow-md border border-slate-200 hover:scale-[1.02] hover:shadow-lg hover:border-teal-500/50 hover:bg-slate-50/50 transition-all duration-300">
       {/* Top: icon + name + location */}
@@ -55,26 +66,26 @@ function LabCard({ lab, onView }) {
           <span>
             {lab.operatingHours && lab.operatingHours.length
               ? formatHours(lab.operatingHours)
-              : "Hours not set"}
+              : t("labs.card.label.hoursNotSet")}
           </span>
         </div>
 
         <div className="ml-auto text-xs font-semibold text-emerald-600">
-          {lab.operationalStatus || ""}
+          {statusLabel}
         </div>
       </div>
 
       {/* Bottom: status + action */}
       <div className="mt-4 flex items-center justify-between">
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 text-xs">
-          {lab.isActive ? "Active" : "Inactive"}
+          {lab.isActive ? t("labs.status.active") : t("labs.status.inactive")}
         </span>
         <button
           type="button"
           onClick={() => onView(lab)}
           className="text-sm font-medium text-teal-600 hover:text-teal-700"
         >
-          View Details 
+          {t("labs.actions.viewDetails")} 
           <span aria-hidden="true">→</span>
         </button>
       </div>
