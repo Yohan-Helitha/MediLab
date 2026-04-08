@@ -13,6 +13,7 @@ import '@xyflow/react/dist/style.css';
 import PublicLayout from '../../layout/PublicLayout';
 import { useAuth } from '../../context/AuthContext';
 import { fetchFamilyMembers, fetchFamilyTree, fetchHouseholdBySubmittedBy, fetchChronicDiseasesByMember, updateFamilyMember, updateMemberProfile } from '../../api/patientApi';
+import { useTranslation } from 'react-i18next';
 
 const FamilyMemberNode = ({ data, selected }) => {
   const isMale = data.gender?.toLowerCase() === 'male';
@@ -113,6 +114,7 @@ const nodeTypes = {
 
 function FamilyTreePage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [targetMemberName, setTargetMemberName] = useState(null); 
@@ -423,9 +425,11 @@ function FamilyTreePage() {
         <div className="flex justify-between items-center mb-6 px-4">
           <div className="flex items-center justify-between w-full">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Clinical Family Tree</h1>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('familyTree.title')}</h1>
               <p className="text-slate-400 text-[15px] font-bold mt-0.5 ">
-                {loading ? 'Synchronizing Data...' : `Resident: ${user?.full_name || 'Anonymous'}`}
+                {loading
+                  ? t('familyTree.loading')
+                  : `${t('familyTree.residentLabel')}: ${user?.full_name || t('familyTree.anonymous')}`}
               </p>
             </div>
 
@@ -433,17 +437,17 @@ function FamilyTreePage() {
             <div className="hidden md:flex items-center gap-5 bg-teal-600 backdrop-blur-md px-5 py-2 rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
-                    <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">Scroll to Zoom</span>
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.scroll')}</span>
                 </div>
                 <div className="w-px h-3 bg-slate-200" />
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-white/60  shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
-                    <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">Drag to Navigate</span>
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.drag')}</span>
                 </div>
                 <div className="w-px h-3 bg-slate-200" />
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-white/60  shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
-                    <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">Click (+) to add Disease when Unlocked</span>
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.addDisease')}</span>
                 </div>
             </div>
           </div>
@@ -461,8 +465,8 @@ function FamilyTreePage() {
             <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center p-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                     <div className="text-5xl mb-4">🌳</div>
-                    <h3 className="text-xl font-bold text-slate-800">No Family Records Found</h3>
-                    <p className="text-slate-500 max-w-xs mx-auto mt-2">Please ensure your household registration and family relationships are completed.</p>
+                <h3 className="text-xl font-bold text-slate-800">{t('familyTree.empty.title')}</h3>
+                <p className="text-slate-500 max-w-xs mx-auto mt-2">{t('familyTree.empty.body')}</p>
                 </div>
             </div>
           ) : null}

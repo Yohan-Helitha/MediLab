@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
 import { 
@@ -11,6 +12,7 @@ import {
 } from "../../api/patientApi";
 
 const HouseholdRegistrationPage = () => {
+    const { t } = useTranslation();
     const { user, token } = useAuth();
     const navigate = useNavigate();
     
@@ -381,8 +383,8 @@ const HouseholdRegistrationPage = () => {
                     {/* Header */}
                     <div className="bg-teal-700 px-8 py-6 text-white relative overflow-hidden">
                         <div className="relative z-10">
-                            <h1 className="text-2xl font-bold text-white">Household Management</h1>
-                            <p className="text-teal-100 mt-1">Register households and track environmental health factors</p>
+                            <h1 className="text-2xl font-bold text-white">{t("household.title")}</h1>
+                            <p className="text-teal-100 mt-1">{t("household.subtitle")}</p>
                         </div>
                         <div className="absolute top-0 right-0 p-8 opacity-10">
                             <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" /></svg>
@@ -399,7 +401,7 @@ const HouseholdRegistrationPage = () => {
                                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
                             }`}
                         >
-                            Household Registration
+                            {t("household.tab.registration")}
                         </button>
                         <button
                             onClick={() => {
@@ -417,7 +419,7 @@ const HouseholdRegistrationPage = () => {
                                     : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
                             }`}
                         >
-                            Health Information
+                            {t("household.tab.health")}
                         </button>
                     </div>
 
@@ -425,7 +427,7 @@ const HouseholdRegistrationPage = () => {
                         {activeTab === "registration" ? (
                             <form onSubmit={handleRegSubmit} className="space-y-6">
                                 <div className="flex items-center justify-between pb-4 border-b border-slate-50">
-                                    <h2 className="text-lg font-bold text-slate-800">Basic Registration</h2>
+                                    <h2 className="text-lg font-bold text-slate-800">{t("household.section.basic")}</h2>
                                     {currentHousehold?.household_id && (
                                         <div className="flex items-center gap-3">
                                             <div className="bg-teal-50 px-4 py-1.5 rounded-lg border border-teal-100">
@@ -455,13 +457,13 @@ const HouseholdRegistrationPage = () => {
                                     <div className="space-y-8">
                                         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-3">
                                             <span className="w-8 h-0.5 bg-teal-500"></span>
-                                            Location & Admin
+                                            {t("household.section.location")}
                                         </h3>
                                         
                                         <div className="space-y-6">
                                             <div className="grid grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">District</label>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">{t("healthProfile.form.district")}</label>
                                                     <input
                                                         type="text"
                                                         name="district"
@@ -472,7 +474,7 @@ const HouseholdRegistrationPage = () => {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Province</label>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">{t("household.form.province")}</label>
                                                     <input
                                                         type="text"
                                                         name="province"
@@ -480,14 +482,14 @@ const HouseholdRegistrationPage = () => {
                                                         onChange={handleRegChange}
                                                         required
                                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all outline-none bg-slate-50/30 font-medium"
-                                                        placeholder="Province"
+                                                        placeholder={t("household.form.province")}
                                                     />
                                                 </div>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">GN Division</label>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">{t("healthProfile.form.gnDivision")}</label>
                                                     <input
                                                         type="text"
                                                         name="gn_division"
@@ -498,7 +500,7 @@ const HouseholdRegistrationPage = () => {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Village</label>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">{t("household.form.village")}</label>
                                                     <input
                                                         type="text"
                                                         name="village_name"
@@ -511,18 +513,18 @@ const HouseholdRegistrationPage = () => {
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-semibold text-slate-700 mb-2">Household Number (Optional)</label>
+                                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t("household.form.householdNumber")}</label>
                                                 <div className="relative group">
                                                     <input
                                                         type="text"
                                                         name="household_id"
                                                         value={regData.household_id}
                                                         onChange={handleRegChange}
-                                                        placeholder="e.g. ANU-PADGNDIV-XXXXX"
+                                                        placeholder={t("healthProfile.form.householdPlaceholder")}
                                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all outline-none bg-slate-50/30 font-mono text-sm group-hover:bg-white"
                                                     />
                                                     {!regData.household_id && (
-                                                        <div className="absolute right-3 top-3.5 px-2 py-0.5 bg-teal-50 text-teal-600 text-[10px] font-bold uppercase rounded-md tracking-tighter">Auto-Gen</div>
+                                                        <div className="absolute right-3 top-3.5 px-2 py-0.5 bg-teal-50 text-teal-600 text-[10px] font-bold uppercase rounded-md tracking-tighter">{t("household.form.autoGen")}</div>
                                                     )}
                                                 </div>
                                             </div>
@@ -533,26 +535,26 @@ const HouseholdRegistrationPage = () => {
                                     <div className="space-y-8">
                                         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-3">
                                             <span className="w-8 h-0.5 bg-teal-500"></span>
-                                            Primary Resident Information
+                                            {t("household.section.primaryResident")}
                                         </h3>
 
                                         <div className="space-y-6">
                                             <div>
-                                                <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name</label>
+                                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t("healthProfile.form.fullName")}</label>
                                                 <input
                                                     type="text"
                                                     name="head_member_name"
                                                     value={regData.head_member_name}
                                                     onChange={handleRegChange}
-                                                    placeholder="Enter head of household name"
+                                                    placeholder={t("household.form.headNamePlaceholder")}
                                                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all outline-none bg-slate-50/30 font-medium"
                                                     required
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-6">
+                                                <div className="grid grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Primary Contact</label>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">{t("household.form.primaryContact")}</label>
                                                     <div className="relative">
                                                         <input
                                                             type="tel"
@@ -566,26 +568,26 @@ const HouseholdRegistrationPage = () => {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Secondary Contact</label>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">{t("household.form.secondaryContact")}</label>
                                                     <input
                                                         type="tel"
                                                         name="secondary_contact_number"
                                                         value={regData.secondary_contact_number}
                                                         onChange={handleRegChange}
-                                                        placeholder="Optional"
+                                                        placeholder={t("common.optional")}
                                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all outline-none bg-slate-50/30 font-medium"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-semibold text-slate-700 mb-2">Street Address</label>
+                                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t("healthProfile.form.address")}</label>
                                                 <input
                                                     type="text"
                                                     name="address"
                                                     value={regData.address}
                                                     onChange={handleRegChange}
-                                                    placeholder="Stree Address / Postal Address"
+                                                    placeholder={t("household.form.addressPlaceholder")}
                                                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all outline-none bg-slate-50/30 font-medium"
                                                     required
                                                 />
@@ -599,7 +601,7 @@ const HouseholdRegistrationPage = () => {
                                     <div className="flex items-center justify-between mb-8">
                                         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-3">
                                             <span className="w-8 h-0.5 bg-teal-500"></span>
-                                            Family Members
+                                            {t("household.section.familyMembers")}
                                         </h3>
                                         <button 
                                             type="button" 
@@ -607,7 +609,7 @@ const HouseholdRegistrationPage = () => {
                                             className="flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-700 font-bold rounded-lg hover:bg-teal-100 transition-all text-xs"
                                         >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                            Add New Member
+                                            {t("household.button.addMember")}
                                         </button>
                                     </div>
 
@@ -688,7 +690,7 @@ const HouseholdRegistrationPage = () => {
                                         {loading ? (
                                             <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
                                         ) : null}
-                                        {loading ? "Processing..." : "Register"}
+                                        {loading ? t("household.button.processing") : t("household.button.register")}
                                     </button>
                                 </div>
                             </form>
