@@ -5,6 +5,10 @@ class TranslationService {
 	constructor() {
 		this.apiKey = config.googleTranslate.apiKey;
 		this.baseUrl = "https://translation.googleapis.com/language/translate/v2";
+		// Simple in-memory cache to avoid paying for the same
+		// translation repeatedly during the lifetime of this server.
+		// Key format: `${source}|${target}|${text}`
+		this.cache = new Map();
 	}
 
 	/**
@@ -23,12 +27,39 @@ class TranslationService {
 		}
 
 		const texts = Array.isArray(text) ? text : [text];
+		const target = (targetLanguage || "").toLowerCase();
+		const source = (sourceLanguage || "").toLowerCase();
+
+		// 1) Try to resolve as many as possible from cache first
+		const results = new Array(texts.length);
+		const toTranslate = [];
+		const toTranslateIndices = [];
+
+		texts.forEach((original, index) => {
+			const key = this._cacheKey(original, target, source);
+			if (this.cache.has(key)) {
+				const cached = this.cache.get(key);
+				results[index] = {
+					original,
+					translatedText: cached.text,
+					detectedSourceLanguage: cached.detectedSourceLanguage || source || "",
+				};
+			} else {
+				toTranslate.push(original);
+				toTranslateIndices.push(index);
+			}
+		});
+
+		// If everything was in cache, we are done – no external API call
+		if (!toTranslate.length) {
+			return results;
+		}
 
 		try {
 			const response = await axios.post(
 				`${this.baseUrl}?key=${this.apiKey}`,
 				{
-					q: texts,
+					q: toTranslate,
 					target: targetLanguage,
 					format: "text",
 					...(sourceLanguage ? { source: sourceLanguage } : {}),
@@ -36,12 +67,29 @@ class TranslationService {
 			);
 
 			const translations = response.data?.data?.translations || [];
-			return texts.map((original, index) => ({
-				original,
-				translatedText: translations[index]?.translatedText || "",
-				detectedSourceLanguage:
-					translations[index]?.detectedSourceLanguage || sourceLanguage || "",
-			}));
+
+			toTranslate.forEach((original, localIndex) => {
+				const globalIndex = toTranslateIndices[localIndex];
+				const translation = translations[localIndex] || {};
+				const translatedText = translation.translatedText || "";
+				const detectedSourceLanguage =
+					translation.detectedSourceLanguage || sourceLanguage || "";
+
+				// Save into cache for future calls
+				const key = this._cacheKey(original, target, source);
+				this.cache.set(key, {
+					text: translatedText,
+					detectedSourceLanguage,
+				});
+
+				results[globalIndex] = {
+					original,
+					translatedText,
+					detectedSourceLanguage,
+				};
+			});
+
+			return results;
 		} catch (error) {
 			console.error("Google Translation API error:", error.response?.data || error.message);
 
@@ -54,6 +102,10 @@ class TranslationService {
 					"Failed to translate text using Google Cloud Translation API."
 			);
 		}
+	}
+
+	_cacheKey(text, targetLanguage, sourceLanguage) {
+		return `${sourceLanguage || "auto"}|${targetLanguage || ""}|${text}`;
 	}
 }
 
