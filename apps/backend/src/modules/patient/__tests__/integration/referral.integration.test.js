@@ -22,7 +22,7 @@ import VisitModel from '../../models/Visit.js';
 // Import app AFTER models
 import request from 'supertest';
 import app from '../../../../app.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 describe('Referral Module Integration Tests', () => {
   let memberId, referralId, jwtToken, memberObjectId, householdId, householdObjectId, visitId;
@@ -82,14 +82,12 @@ describe('Referral Module Integration Tests', () => {
         { memberId, memberObjectId, householdId, householdObjectId }
       );
       
-      // Close database connection gracefully
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.close();
-      }
+      // Close database connection gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }
-  }, 30000);
+  }, 45000);
 
   describe('Referral CRUD Operations', () => {
     it('should create referral', async () => {

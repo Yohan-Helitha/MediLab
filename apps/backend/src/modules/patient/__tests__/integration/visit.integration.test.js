@@ -22,7 +22,7 @@ import ReferralModel from '../../models/Referral.js';
 // Import app AFTER models
 import request from 'supertest';
 import app from '../../../../app.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 describe('Visit Module Integration Tests', () => {
   let memberId, memberId_internal, visitId, jwtToken, householdId, householdObjectId, memberObjectId;
@@ -76,18 +76,16 @@ describe('Visit Module Integration Tests', () => {
     try {
       // Use comprehensive cleanup utility
       await cleanupTestData(
-        { Visit: VisitModel, Member: MembersModel, Household: HouseholdsModel, Allergy: AllergiesModel, ChronicDisease: ChronicDiseaseModel, HealthDetails: HealthDetailsModel, Medication: MedicationModel, PastMedicalHistory: PastMedicalHistoryModel, EmergencyContact: EmergencyContactModel, FamilyMember: FamilyMemberModel, FamilyRelationship: FamilyRelationshipModel, Referral: ReferralModel },
+        { Visit: VisitModel, Member: MembersModel, Household: HouseholdsModel, Allergy: AllergiesModel, ChronicDisease: ChronicDiseaseModel, HealthDetails: HealthDetailsModel, Medication: MedicationModel, EmergencyContact: EmergencyContactModel, PastMedicalHistory: PastMedicalHistoryModel, FamilyMember: FamilyMemberModel, FamilyRelationship: FamilyRelationshipModel, Referral: ReferralModel },
         { memberId, memberObjectId, householdId, householdObjectId }
       );
       
-      // Close database connection gracefully
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.close();
-      }
+      // Close database connection gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }
-  }, 30000);
+  }, 45000);
 
   describe('Visit CRUD Operations', () => {
     it('should create visit record', async () => {

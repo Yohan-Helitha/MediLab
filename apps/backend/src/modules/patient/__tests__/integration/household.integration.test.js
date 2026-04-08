@@ -22,7 +22,7 @@ import ReferralModel from '../../models/Referral.js';
 // Import app AFTER models
 import request from 'supertest';
 import app from '../../../../app.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 describe('Household Module Integration Tests', () => {
   let householdId, householdObjectId;
@@ -67,20 +67,20 @@ describe('Household Module Integration Tests', () => {
 
   afterAll(async () => {
     try {
-      // Use comprehensive cleanup utility
-      await cleanupTestData(
-        { Household: HouseholdsModel, Member: MembersModel, Allergy: AllergiesModel, ChronicDisease: ChronicDiseaseModel, HealthDetails: HealthDetailsModel, Medication: MedicationModel, EmergencyContact: EmergencyContactModel, PastMedicalHistory: PastMedicalHistoryModel, FamilyMember: FamilyMemberModel, FamilyRelationship: FamilyRelationshipModel, Visit: VisitModel, Referral: ReferralModel },
-        { memberId, memberObjectId, householdId, householdObjectId }
-      );
-      
-      // Close database connection gracefully
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.close();
+      if (!skipTests) {
+        // Use comprehensive cleanup utility
+        await cleanupTestData(
+          { Household: HouseholdsModel, Member: MembersModel, Allergy: AllergiesModel, ChronicDisease: ChronicDiseaseModel, HealthDetails: HealthDetailsModel, Medication: MedicationModel, EmergencyContact: EmergencyContactModel, PastMedicalHistory: PastMedicalHistoryModel, FamilyMember: FamilyMemberModel, FamilyRelationship: FamilyRelationshipModel, Visit: VisitModel, Referral: ReferralModel },
+          { memberId, memberObjectId, householdId, householdObjectId }
+        );
       }
+      
+      // Close database connection gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }
-  }, 30000);
+  }, 45000);
 
   describe('Household CRUD Operations', () => {
     it('should create household', async () => {

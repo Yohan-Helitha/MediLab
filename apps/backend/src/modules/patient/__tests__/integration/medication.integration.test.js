@@ -22,7 +22,7 @@ import ReferralModel from '../../models/Referral.js';
 // Import app AFTER models
 import request from 'supertest';
 import app from '../../../../app.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 describe('Medication Module Integration Tests', () => {
   let memberId, medicationId, jwtToken, memberObjectId, householdId, householdObjectId;
@@ -114,14 +114,12 @@ describe('Medication Module Integration Tests', () => {
         );
       }
       
-      // Close database connection gracefully
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.close();
-      }
+      // Close database connection gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }
-  }, 30000);
+  }, 45000);
 
   describe('Medication CRUD Operations', () => {
     it('should create medication record', async () => {
@@ -139,7 +137,7 @@ describe('Medication Module Integration Tests', () => {
           dosage: '500mg',
           reason: 'Pain relief',
           prescribed_by: 'Dr. Smith',
-          start_date: '2026-04-08'
+          start_date: '2026-01-01'
         });
 
       expect(response.status).toBe(201);
@@ -189,7 +187,7 @@ describe('Medication Module Integration Tests', () => {
           dosage: '250mg',
           reason: 'Updated pain relief',
           prescribed_by: 'Dr. Johnson',
-          start_date: '2026-04-09'
+          start_date: '2026-01-01'
         });
 
       expect(response.status).toBe(200);
