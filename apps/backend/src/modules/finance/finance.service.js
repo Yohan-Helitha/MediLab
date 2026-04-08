@@ -17,6 +17,41 @@ const mapBookingPaymentStatus = (booking, transactionStatus) => {
   return booking.paymentStatus;
 };
 
+const getDayRange = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    throw new Error('Invalid bookingDate');
+  }
+
+  const start = new Date(d);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(d);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+};
+
+const getNextQueueNumber = async ({ session, healthCenterId, bookingDate }) => {
+  const { start, end } = getDayRange(bookingDate);
+
+  const last = await Booking.findOne({
+    isActive: true,
+    healthCenterId,
+    bookingDate: { $gte: start, $lte: end },
+    status: { $ne: 'CANCELLED' },
+    queueNumber: { $ne: null },
+  })
+    .session(session)
+    .sort({ queueNumber: -1 })
+    .select('queueNumber')
+    .lean()
+    .exec();
+
+  const current = Number(last?.queueNumber || 0);
+  return current + 1;
+};
+
 export const recordPayment = async ({
   bookingId,
   amount,
@@ -67,6 +102,25 @@ export const recordPayment = async ({
       }
       if (nextBookingStatus !== booking.paymentStatus) {
         bookingUpdate.paymentStatus = nextBookingStatus;
+      }
+
+      // For online payments, treat a confirmed PAID transaction as completion.
+      // This keeps booking lifecycle consistent for PRE_BOOKED bookings.
+      if (
+        paymentMethod === 'ONLINE' &&
+        status === 'PAID' &&
+        booking.status === 'PENDING'
+      ) {
+        bookingUpdate.status = 'COMPLETED';
+
+        // Assign queue number upon completion if missing.
+        if (booking.queueNumber == null) {
+          bookingUpdate.queueNumber = await getNextQueueNumber({
+            session,
+            healthCenterId: booking.healthCenterId,
+            bookingDate: booking.bookingDate,
+          });
+        }
       }
 
       if (Object.keys(bookingUpdate).length) {
@@ -278,25 +332,63 @@ export const listUnpaidBookings = async ({ paymentMethod = null, limit = 5000 } 
     filter.paymentMethod = paymentMethod;
   }
 
-  const bookings = await Booking.find(filter)
-    .sort({ createdAt: -1 })
-    .limit(cappedLimit)
-    .select(
-      'patientNameSnapshot testNameSnapshot centerNameSnapshot bookingDate paymentMethod paymentStatus createdAt',
-    )
-    .exec();
+  // We need to show the booking price in the UI. Price is lab-specific and is stored in LabTest
+  // as a mapping between (labId, diagnosticTestId). We join it here.
+  const rows = await Booking.aggregate([
+    { $match: filter },
+    { $sort: { createdAt: -1 } },
+    { $limit: cappedLimit },
+    {
+      $lookup: {
+        from: 'labtests',
+        let: { labId: '$healthCenterId', diagnosticTestId: '$diagnosticTestId' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$labId', '$$labId'] },
+                  { $eq: ['$diagnosticTestId', '$$diagnosticTestId'] },
+                  { $eq: ['$isActive', true] },
+                ],
+              },
+            },
+          },
+          { $project: { _id: 0, price: 1 } },
+          { $limit: 1 },
+        ],
+        as: 'labTest',
+      },
+    },
+    {
+      $addFields: {
+        price: { $ifNull: [{ $arrayElemAt: ['$labTest.price', 0] }, null] },
+      },
+    },
+    {
+      $project: {
+        bookingId: '$_id',
+        patientName: '$patientNameSnapshot',
+        testName: '$testNameSnapshot',
+        centerName: '$centerNameSnapshot',
+        bookingDate: 1,
+        paymentMethod: 1,
+        paymentStatus: 1,
+        createdAt: 1,
+        price: 1,
+      },
+    },
+  ]).exec();
 
-  return bookings.map((b) => {
-    const plain = b.toObject ? b.toObject() : b;
-    return {
-      bookingId: plain._id,
-      patientName: plain.patientNameSnapshot || null,
-      testName: plain.testNameSnapshot || null,
-      centerName: plain.centerNameSnapshot || null,
-      bookingDate: plain.bookingDate,
-      paymentMethod: plain.paymentMethod || null,
-      paymentStatus: plain.paymentStatus,
-      createdAt: plain.createdAt,
-    };
-  });
+  return rows.map((row) => ({
+    bookingId: row.bookingId,
+    patientName: row.patientName || null,
+    testName: row.testName || null,
+    centerName: row.centerName || null,
+    bookingDate: row.bookingDate,
+    paymentMethod: row.paymentMethod || null,
+    paymentStatus: row.paymentStatus,
+    createdAt: row.createdAt,
+    price: row.price ?? null,
+  }));
 };

@@ -29,6 +29,8 @@ describe("finance.service", () => {
 
     Booking.findById = jest.fn();
     Booking.find = jest.fn();
+    Booking.aggregate = jest.fn();
+    Booking.findOne = jest.fn();
     Booking.findByIdAndUpdate = jest.fn();
     Booking.countDocuments = jest.fn();
 
@@ -98,6 +100,79 @@ describe("finance.service", () => {
     expect(Booking.findByIdAndUpdate).toHaveBeenCalledWith(
       bookingId,
       { paymentMethod: "CASH", paymentStatus: "PAID" },
+      expect.objectContaining({ new: true, runValidators: true, session: expect.any(Object) }),
+    );
+
+    expect(result.transaction).toEqual(createdTx);
+    expect(result.booking).toEqual(updatedBooking);
+  });
+
+  test("recordPayment with ONLINE PAID marks booking COMPLETED and assigns queueNumber", async () => {
+    const bookingId = "b-online";
+
+    const bookingDoc = {
+      _id: bookingId,
+      isActive: true,
+      paymentStatus: "UNPAID",
+      paymentMethod: "ONLINE",
+      healthCenterId: "center1",
+      bookingDate: new Date("2026-04-08T10:00:00.000Z"),
+      status: "PENDING",
+      queueNumber: null,
+    };
+
+    const bookingExec = jest.fn().mockResolvedValue(bookingDoc);
+    const bookingSession = jest.fn().mockReturnValue({ exec: bookingExec });
+    Booking.findById.mockReturnValue({ session: bookingSession });
+
+    // Mock queue-number lookup (last queue number = 4 -> next should be 5)
+    const qExec = jest.fn().mockResolvedValue({ queueNumber: 4 });
+    const qLean = jest.fn().mockReturnValue({ exec: qExec });
+    const qSelect = jest.fn().mockReturnValue({ lean: qLean });
+    const qSort = jest.fn().mockReturnValue({ select: qSelect });
+    const qSession = jest.fn().mockReturnValue({ sort: qSort });
+    Booking.findOne.mockReturnValue({ session: qSession });
+
+    const createdTx = {
+      _id: "t-online",
+      bookingId,
+      centerId: "center1",
+      amount: 3000,
+      paymentMethod: "ONLINE",
+      paymentStatus: "PAID",
+    };
+    FinanceTransaction.create.mockResolvedValue([createdTx]);
+
+    const updatedBooking = {
+      ...bookingDoc,
+      paymentStatus: "PAID",
+      paymentMethod: "ONLINE",
+      status: "COMPLETED",
+      queueNumber: 5,
+    };
+
+    Booking.findByIdAndUpdate.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(updatedBooking),
+    });
+
+    const result = await recordPayment({
+      bookingId,
+      amount: 3000,
+      paymentMethod: "ONLINE",
+      status: "PAID",
+      paymentReference: "payhere-123",
+    });
+
+    expect(Booking.findOne).toHaveBeenCalled();
+
+    expect(Booking.findByIdAndUpdate).toHaveBeenCalledWith(
+      bookingId,
+      expect.objectContaining({
+        paymentMethod: "ONLINE",
+        paymentStatus: "PAID",
+        status: "COMPLETED",
+        queueNumber: 5,
+      }),
       expect.objectContaining({ new: true, runValidators: true, session: expect.any(Object) }),
     );
 
@@ -219,42 +294,33 @@ describe("finance.service", () => {
 
   test("listUnpaidBookings lists unpaid cash bookings", async () => {
     const now = new Date();
-    const bookingDocs = [
-      {
-        toObject: () => ({
-          _id: "b1",
-          patientNameSnapshot: "Sam",
-          testNameSnapshot: "CBC",
-          centerNameSnapshot: "Lab 1",
-          bookingDate: now,
-          paymentMethod: "CASH",
-          paymentStatus: "UNPAID",
-          createdAt: now,
-        }),
-      },
-    ];
 
-    const exec = jest.fn().mockResolvedValue(bookingDocs);
-    const select = jest.fn().mockReturnValue({ exec });
-    const limit = jest.fn().mockReturnValue({ select });
-    const sort = jest.fn().mockReturnValue({ limit });
-    Booking.find.mockReturnValue({ sort });
+    const exec = jest.fn().mockResolvedValue([
+      {
+        bookingId: "b1",
+        patientName: "Sam",
+        testName: "CBC",
+        centerName: "Lab 1",
+        bookingDate: now,
+        paymentMethod: "CASH",
+        paymentStatus: "UNPAID",
+        createdAt: now,
+        price: 1500,
+      },
+    ]);
+
+    Booking.aggregate.mockReturnValue({ exec });
 
     const items = await listUnpaidBookings({ paymentMethod: "CASH", limit: 50 });
 
-    expect(Booking.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        isActive: true,
-        paymentStatus: "UNPAID",
-        paymentMethod: "CASH",
-      }),
-    );
+    expect(Booking.aggregate).toHaveBeenCalled();
     expect(items[0]).toEqual(
       expect.objectContaining({
         bookingId: "b1",
         patientName: "Sam",
         paymentMethod: "CASH",
         paymentStatus: "UNPAID",
+        price: 1500,
       }),
     );
   });

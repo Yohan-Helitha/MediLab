@@ -21,6 +21,7 @@ import AdminInventoryDashboard from "../pages/AdminInventoryDashboard";
 import AdminEquipmentCatalog from "../pages/AdminEquipmentCatalog";
 import AdminTestEquipmentRequirements from "../pages/AdminTestEquipmentRequirements";
 import BookingCreatePage from "../pages/BookingCreatePage";
+import BookingUpdatePage from "../pages/BookingUpdatePage";
 import PayHereReturnPage from "../pages/PayHereReturnPage";
 import AccountPage from "../pages/patient/AccountPage";
 import AIDoctorChatPage from "../pages/patient/AIDoctorChatPage";
@@ -46,7 +47,8 @@ const AppRoutes = () => {
 			.toLowerCase()
 			.replace(/\s+/g, "_");
 
-	const userRole = normalize(user?.role || user?.profile?.role);
+	// Prefer profile.role when present (e.g., HealthOfficer profile role can be Admin)
+	const userRole = normalize(user?.profile?.role || user?.role);
 
 	const isAdminUser = () => {
 		return userRole === "admin";
@@ -217,6 +219,7 @@ const AppRoutes = () => {
 			{/* Protected Patient Routes */}
 			<Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
 				<Route path="/bookings/new" element={<BookingCreatePage />} />
+				<Route path="/bookings/:id/edit" element={<BookingUpdatePage />} />
 				<Route path="/account" element={<AccountPage />} />
 				<Route path="/health-profile" element={<HealthProfilePage />} />
 				<Route path="/health-reports" element={<HealthReportsPage />} />
