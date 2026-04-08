@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import { useAuth } from "../context/AuthContext";
 import { createBooking, createPayHereCheckout } from "../api/bookingApi";
+import { translateTexts } from "../api/translationApi";
+import { useTranslation } from "react-i18next";
 
 function postToPayHere(checkoutUrl, fields) {
 	const form = document.createElement("form");
@@ -25,6 +27,7 @@ function BookingCreatePage() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const { user } = useAuth();
+	const { i18n } = useTranslation();
 
 	const state = location.state || {};
 	const lab = state.lab || null;
@@ -56,6 +59,7 @@ function BookingCreatePage() {
 
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+	const [translatedNames, setTranslatedNames] = useState({});
 
 	useEffect(() => {
 		// If user opened this page directly, force them back to labs.
@@ -64,6 +68,28 @@ function BookingCreatePage() {
 			navigate("/health-centers", { replace: true });
 		}
 	}, [diagnosticTestId, healthCenterId, labTest, navigate]);
+
+	// Dynamic translation for selected lab/test names
+	useEffect(() => {
+		const loadTranslations = async () => {
+			const lang = (i18n.language || "en").toLowerCase();
+			if (!centerName && !testName) return;
+			if (lang === "en") {
+				setTranslatedNames({});
+				return;
+			}
+
+			try {
+				const texts = [centerName, testName].filter(Boolean);
+				const map = await translateTexts(texts, lang, "en");
+				setTranslatedNames(map);
+			} catch {
+				setTranslatedNames({});
+			}
+		};
+
+		loadTranslations();
+	}, [centerName, testName, i18n.language]);
 
 	const onNavigate = (name, params = {}) => {
 		switch (name) {
@@ -184,11 +210,19 @@ function BookingCreatePage() {
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div>
 								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Health Center</label>
-								<input value={centerName} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
+								<input
+									value={translatedNames[centerName] || centerName}
+									readOnly
+									className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+								/>
 							</div>
 							<div>
 								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Test</label>
-								<input value={testName} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
+								<input
+									value={translatedNames[testName] || testName}
+									readOnly
+									className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+								/>
 							</div>
 							<div>
 								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Price</label>

@@ -31,6 +31,11 @@ const config = {
     fromName: env.SENDGRID_FROM_NAME || "MediLab",
   },
 
+  // Google Cloud Translation API
+  googleTranslate: {
+    apiKey: env.GOOGLE_TRANSLATE_API_KEY || "",
+  },
+
   // Application URLs
   appUrl: env.APP_URL || "http://localhost:5000",
   frontendUrl: env.FRONTEND_URL || "http://localhost:3000",
@@ -47,6 +52,7 @@ export function validateEnv() {
     if (!config.twilio.accountSid) labOpsMissing.push("TWILIO_ACCOUNT_SID");
     if (!config.twilio.authToken) labOpsMissing.push("TWILIO_AUTH_TOKEN");
     if (!config.sendgrid.apiKey) labOpsMissing.push("SENDGRID_API_KEY");
+    if (!config.googleTranslate.apiKey) labOpsMissing.push("GOOGLE_TRANSLATE_API_KEY");
     if (labOpsMissing.length) {
       console.warn(
         `[Test Management] Missing third-party API credentials: ${labOpsMissing.join(", ")}. Notification features will not work.`,

@@ -5,6 +5,7 @@ import LabCard from "../components/patient/LabCard";
 import SearchBar from "../components/patient/SearchBar";
 import Modal from "../components/Modal";
 import { fetchLabs, fetchLabTestsByLab } from "../api/patientApi";
+import { translateTexts } from "../api/translationApi";
 import { useTranslation } from "react-i18next";
 
 function HealthCentersPage({ navigate, initialQuery = "" }) {
@@ -15,7 +16,8 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
   const [labTestsByLab, setLabTestsByLab] = useState({});
   const [search, setSearch] = useState(initialQuery || urlQuery || "");
   const [statusModalLab, setStatusModalLab] = useState(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [labNameTranslations, setLabNameTranslations] = useState({});
 
   const onNavigate = (name, params = {}) => {
     if (navigate) return navigate(name, params);
@@ -72,6 +74,29 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
     setSearch(initialQuery || urlQuery || "");
   }, [initialQuery, urlQuery]);
 
+  // Dynamic translation for lab names (patient-facing only)
+  useEffect(() => {
+    const loadTranslations = async () => {
+      // Only translate when language is not English
+      const lang = (i18n.language || "en").toLowerCase();
+      if (!labs.length || lang === "en") {
+        setLabNameTranslations({});
+        return;
+      }
+
+      try {
+        const texts = labs.map((lab) => lab.name).filter(Boolean);
+        const map = await translateTexts(texts, lang, "en");
+        setLabNameTranslations(map);
+      } catch {
+        // On any error, keep originals
+        setLabNameTranslations({});
+      }
+    };
+
+    loadTranslations();
+  }, [labs, i18n.language]);
+
   const filteredLabs = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return labs;
@@ -122,7 +147,15 @@ function HealthCentersPage({ navigate, initialQuery = "" }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredLabs.map((lab) => (
-            <LabCard key={lab._id} lab={lab} onView={handleViewDetails} />
+            <LabCard
+              key={lab._id}
+              lab={{
+                ...lab,
+                // Override name with translated version if available
+                name: labNameTranslations[lab.name] || lab.name,
+              }}
+              onView={handleViewDetails}
+            />
           ))}
         </div>
       </div>
