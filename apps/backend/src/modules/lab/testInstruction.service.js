@@ -1,5 +1,13 @@
 import TestInstruction from "./testInstruction.model.js";
 
+// Helper to create a consistent NotFound-style error that controllers can
+// recognize and convert into a 404 response.
+const createNotFoundError = (message) => {
+	const error = new Error(message);
+	error.name = "NotFoundError";
+	return error;
+};
+
 // Create instructions for a test.
 // Business rule: a diagnostic test can have only ONE instructions record.
 // If instructions already exist for the given diagnosticTestId, we throw a
@@ -25,7 +33,11 @@ export const createTestInstruction = async (data) => {
     );
 };
 export const findTestInstructionByTestTypeId = async (testTypeId) => {
-    return TestInstruction.findOne({ diagnosticTestId: testTypeId });
+    const instruction = await TestInstruction.findOne({ diagnosticTestId: testTypeId });
+    if (!instruction) {
+		throw createNotFoundError("No test instructions found for this test type");
+	}
+    return instruction;
 };
 
 export const getAllTestInstructions = async (filters = {}) => {
@@ -55,28 +67,50 @@ export const getAllTestInstructions = async (filters = {}) => {
         populateOptions = { path: 'diagnosticTestId' };
     }
 
-    return TestInstruction.find(query)
-        .populate(populateOptions)
-        .then(results => {
-            // Always drop instructions whose linked test type no longer exists
-            const withValidTest = results.filter(instr => instr.diagnosticTestId);
-            return withValidTest;
-        });
+    const results = await TestInstruction.find(query)
+        .populate(populateOptions);
+
+    // Always drop instructions whose linked test type no longer exists
+    const withValidTest = results.filter(instr => instr.diagnosticTestId);
+    if (!withValidTest || withValidTest.length === 0) {
+		throw createNotFoundError("No test instructions found");
+	}
+    return withValidTest;
 };
 export const getTestInstructionById = async (id) => {
-    return TestInstruction.findById(id);
+    const instruction = await TestInstruction.findById(id);
+    if (!instruction) {
+		throw createNotFoundError("Test instruction not found");
+	}
+    return instruction;
 };
 
 export const getTestInstructionsByLanguage = async (testTypeId, languageCode) => {
-    return TestInstruction.findOne({ diagnosticTestId: testTypeId, languageCode });
+    const instruction = await TestInstruction.findOne({ diagnosticTestId: testTypeId, languageCode });
+    if (!instruction) {
+		throw createNotFoundError("No test instructions found for this language");
+	}
+    return instruction;
 };
 
 export const getTestInstructionsByDiagnosticTestId = async (diagnosticTestId) => {
-    return TestInstruction.find({ diagnosticTestId });
+    const instructions = await TestInstruction.find({ diagnosticTestId });
+    if (!instructions || instructions.length === 0) {
+		throw createNotFoundError("No test instructions found for this diagnostic test");
+	}
+    return instructions;
 };
 export const updateTestInstruction =async(id, updateData) =>{
-    return TestInstruction.findByIdAndUpdate(id, updateData, {new: true});
+    const updated = await TestInstruction.findByIdAndUpdate(id, updateData, {new: true});
+    if (!updated) {
+		throw createNotFoundError("Test instructions are not found");
+	}
+    return updated;
 };
 export const deleteTestInstruction = async (id) => {
-    return TestInstruction.findByIdAndDelete(id);
+    const deleted = await TestInstruction.findByIdAndDelete(id);
+    if (!deleted) {
+		throw createNotFoundError("Test instructions are not found");
+	}
+    return deleted;
 }

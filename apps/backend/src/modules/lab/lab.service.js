@@ -4,6 +4,14 @@ import Lab from './lab.model.js';
 // Trims whitespace and lowercases, but otherwise keeps content the same.
 const normalize = (value) => (value || '').trim().toLowerCase();
 
+// Helper to create a consistent NotFound-style error that controllers can
+// recognize and convert into a 404 response.
+const createNotFoundError = (message) => {
+  const error = new Error(message);
+  error.name = 'NotFoundError';
+  return error;
+};
+
 export const createLab = async (labData) => {
   const nameNorm = normalize(labData.name);
   const address1Norm = normalize(labData.addressLine1);
@@ -52,23 +60,41 @@ export const getLabs = async (filter = {}) => {
 };
 
 export const getLabById = async (id) => {
-  return Lab.findById(id);
+  const lab = await Lab.findById(id);
+  if (!lab) {
+    throw createNotFoundError('Lab not found');
+  }
+  return lab;
 };
 
 export const updateLab = async (id, updateData) => {
-  return Lab.findByIdAndUpdate(id, updateData, { new: true });
+  const lab = await Lab.findByIdAndUpdate(id, updateData, { new: true });
+  if (!lab) {
+    throw createNotFoundError('Lab not found');
+  }
+  return lab;
 };
 
 export const deleteLab = async (id) => {
-  return Lab.findByIdAndDelete(id);
+  const lab = await Lab.findByIdAndDelete(id);
+  if (!lab) {
+    throw createNotFoundError('Lab not found');
+  }
+  return lab;
 };
 
 export const updateLabStatus = async (id, status) => {
-  return Lab.findByIdAndUpdate(
+  const lab = await Lab.findByIdAndUpdate(
     id,
     { operationalStatus: status },
     { new: true }
   );
+
+  if (!lab) {
+    throw createNotFoundError('Lab not found');
+  }
+
+  return lab;
 };
 
 
