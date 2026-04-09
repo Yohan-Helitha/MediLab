@@ -83,8 +83,8 @@ export const notificationHistoryQueryValidation = [
     .withMessage("Invalid notification type"),
   query("channel")
     .optional()
-    .isIn(["sms", "email"])
-    .withMessage("Invalid channel. Must be 'sms' or 'email'"),
+    .isIn(["sms", "email", "whatsapp"])
+    .withMessage("Invalid channel. Must be 'sms', 'email', or 'whatsapp'"),
   query("status")
     .optional()
     .isIn(["sent", "failed"])

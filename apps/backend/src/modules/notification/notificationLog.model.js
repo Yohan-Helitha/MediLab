@@ -27,7 +27,7 @@ const notificationLogSchema = new Schema(
     // Communication channel
     channel: {
       type: String,
-      enum: ["sms", "email"],
+      enum: ["sms", "email", "whatsapp"],
       required: true,
     },
 

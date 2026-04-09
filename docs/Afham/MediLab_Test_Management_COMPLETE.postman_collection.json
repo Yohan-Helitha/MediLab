@@ -629,7 +629,7 @@
     },
     {
       "name": "Notification Management",
-      "description": "SMS and Email notification system with reminder subscriptions.\n\n**All endpoints require JWT authentication.**",
+      "description": "WhatsApp and Email notification system with reminder subscriptions.\n\n**All endpoints require JWT authentication.**",
       "item": [
         {
           "name": "Send Result Ready Notification",
@@ -654,7 +654,7 @@
               "host": ["{{base_url}}"],
               "path": ["notifications", "send", "result-ready"]
             },
-            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: sendResultReadyValidation\n\nSend notification to patient that their test result is ready. Attempts both SMS and Email if provided.\n\n**Request Body** (Nested Objects):\n- `testResult` (object, required):\n  - `_id` (MongoId, required): Test result ID\n  \n- `patient` (object, required):\n  - `_id` (MongoId, required): Patient profile ID\n  - `contactNumber` (string, optional): For SMS (must provide at least one: contactNumber or email)\n  - `email` (email, optional): For email (must provide at least one: contactNumber or email)\n  \n- `testType` (object, required):\n  - `_id` (MongoId, required): Test type ID\n  - `name` (string, required): Test type name for notification content\n  \n- `healthCenter` (object, required):\n  - `name` (string, required): Health center name for notification content\n\n**Requirements**: Twilio (SMS) and/or SendGrid (Email) configured in .env\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Notifications sent successfully\",\n  \"notifications\": [\n    {\n      \"_id\": \"...\",\n      \"type\": \"result_ready\",\n      \"channel\": \"sms\",\n      \"recipient\": \"+94712345678\",\n      \"status\": \"sent\",\n      \"sentAt\": \"...\"\n    },\n    {\n      \"_id\": \"...\",\n      \"type\": \"result_ready\",\n      \"channel\": \"email\",\n      \"recipient\": \"patient@example.com\",\n      \"status\": \"sent\",\n      \"sentAt\": \"...\"\n    }\n  ]\n}\n```"
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: sendResultReadyValidation\n\nSend notification to patient that their test result is ready. Attempts both WhatsApp and Email if provided.\n\n**Request Body** (Nested Objects):\n- `testResult` (object, required):\n  - `_id` (MongoId, required): Test result ID\n  \n- `patient` (object, required):\n  - `_id` (MongoId, required): Patient profile ID\n  - `contactNumber` (string, optional): For WhatsApp (must provide at least one: contactNumber or email)\n  - `email` (email, optional): For email (must provide at least one: contactNumber or email)\n  \n- `testType` (object, required):\n  - `_id` (MongoId, required): Test type ID\n  - `name` (string, required): Test type name for notification content\n  \n- `healthCenter` (object, required):\n  - `name` (string, required): Health center name for notification content\n\n**Requirements**: Twilio (WhatsApp) and/or SendGrid (Email) configured in .env\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Result ready notification sent\",\n  \"data\": {\n    \"whatsapp\": { \"success\": true, \"sid\": \"SM...\" },\n    \"email\": { \"success\": true }\n  }\n}\n```"
           },
           "event": [
             {
@@ -799,8 +799,8 @@
                 },
                 {
                   "key": "channel",
-                  "value": "sms",
-                  "description": "Filter: sms | email"
+                  "value": "whatsapp",
+                  "description": "Filter: email | whatsapp"
                 },
                 {
                   "key": "status",
@@ -825,7 +825,7 @@
                 }
               ]
             },
-            "description": "**Auth**: Patient (own) OR Health Officer (any)\n**Middleware**: authenticate\n**Validation**: patientIdParamValidation + notificationHistoryQueryValidation\n\nGet notification history for a specific patient with optional filters.\n\n**Patient Access**:\n- URL `patientId` must match `req.user.id`\n\n**Health Officer Access**:\n- Can access any patient's notification history\n\n**Query Parameters**:\n- `type` (enum, optional): result_ready | unviewed_result_reminder | routine_checkup_reminder\n- `channel` (enum, optional): sms | email\n- `status` (enum, optional): sent | failed\n- `startDate` (ISO8601, optional)\n- `endDate` (ISO8601, optional)\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"notifications\": [...]\n}\n```"
+            "description": "**Auth**: Patient (own) OR Health Officer (any)\n**Middleware**: authenticate\n**Validation**: patientIdParamValidation + notificationHistoryQueryValidation\n\nGet notification history for a specific patient with optional filters.\n\n**Patient Access**:\n- URL `patientId` must match `req.user.id`\n\n**Health Officer Access**:\n- Can access any patient's notification history\n\n**Query Parameters**:\n- `type` (enum, optional): result_ready | unviewed_result_reminder | routine_checkup_reminder\n- `channel` (enum, optional): email | whatsapp\n- `status` (enum, optional): sent | failed\n- `startDate` (ISO8601, optional)\n- `endDate` (ISO8601, optional)\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"notifications\": [...]\n}\n```"
           },
           "response": []
         },

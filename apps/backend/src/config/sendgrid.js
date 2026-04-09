@@ -82,20 +82,39 @@ export const sendEmail = async (to, subject, html, text = null) => {
       provider: "sendgrid",
     };
   } catch (error) {
-    console.error("❌ SendGrid email error:", error.message);
+    // SendGrid errors are wrapped — actual detail is in error.response.body.errors
+    const statusCode = error.response?.status || error.code;
+    const sgErrors = error.response?.body?.errors;
+    const sgErrorMessage = sgErrors?.[0]?.message || null;
 
-    // Parse SendGrid error
-    const errorMessage =
-      error.code === 403
-        ? "SendGrid API key is invalid or suspended"
-        : error.code === 400
-          ? "Invalid email data"
-          : error.message;
+    console.error(
+      `❌ SendGrid email error [HTTP ${statusCode}]:`,
+      sgErrorMessage || error.message,
+    );
+    if (sgErrors) {
+      console.error("SendGrid error details:", JSON.stringify(sgErrors));
+    }
+
+    // Human-readable error messages based on HTTP status
+    let errorMessage;
+    if (statusCode === 401) {
+      errorMessage =
+        "SendGrid API key is invalid or missing — check SENDGRID_API_KEY in .env";
+    } else if (statusCode === 403) {
+      errorMessage =
+        "SendGrid sender not authorized — verify SENDGRID_FROM_EMAIL in Single Sender Verification on SendGrid dashboard";
+    } else if (statusCode === 400) {
+      errorMessage = sgErrorMessage || "Invalid email data — check to/subject/html fields";
+    } else if (statusCode === 429) {
+      errorMessage = "SendGrid rate limit exceeded — free tier is 100 emails/day";
+    } else {
+      errorMessage = sgErrorMessage || error.message;
+    }
 
     return {
       success: false,
       error: errorMessage,
-      errorCode: error.code,
+      errorCode: statusCode,
       provider: "sendgrid",
     };
   }

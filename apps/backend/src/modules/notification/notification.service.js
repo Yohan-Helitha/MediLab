@@ -2,7 +2,9 @@ import NotificationLog from "./notificationLog.model.js";
 import ReminderSubscription from "./reminderSubscription.model.js";
 import TestResult from "../result/testResult.model.js";
 import TestType from "../test/testType.model.js";
-import { sendSMSWithRetry } from "../../config/twilio.js";
+// To re-enable carrier SMS: swap the import below to include sendSMSWithRetry and uncomment the SMS blocks in each send function
+// import { sendSMSWithRetry, sendWhatsAppWithRetry } from "../../config/twilio.js";
+import { sendWhatsAppWithRetry } from "../../config/twilio.js";
 import {
   sendEmailWithRetry,
   sendResultReadyEmail,
@@ -102,40 +104,60 @@ export const updateNotificationStatus = async (
 };
 
 /**
- * Send result ready notification (SMS + Email)
+ * Send result ready notification (WhatsApp + Email)
  * @param {Object} data - Notification data { testResult, patient, testType, healthCenter }
- * @returns {Promise<Object>} { sms: result, email: result }
+ * @returns {Promise<Object>} { whatsapp: result, email: result }
  */
 export const sendResultReadyNotification = async (data) => {
   const { testResult, patient, testType, healthCenter } = data;
 
   const results = {
-    sms: null,
+    whatsapp: null,
     email: null,
   };
 
-  // Prepare SMS message
+  // Prepare message content
   const smsMessage = `Rural Health Alert: Your ${testType.name} results are now ready. Login to view your report: ${config.appUrl} - ${healthCenter.name}`;
 
-  // Send SMS if patient has phone number
+  // Send SMS/WhatsApp if patient has phone number
+  // NOTE: Twilio carrier SMS does not work in Sri Lanka. WhatsApp is used as primary channel.
   if (patient.contactNumber) {
-    const smsResult = await sendSMSWithRetry(patient.contactNumber, smsMessage);
+    // Attempt WhatsApp first (works in Sri Lanka via Twilio sandbox)
+    const whatsappResult = await sendWhatsAppWithRetry(
+      patient.contactNumber,
+      smsMessage,
+    );
 
-    // Log SMS notification
     await createNotificationLog({
       patientProfileId: patient._id,
       type: "result_ready",
-      channel: "sms",
+      channel: "whatsapp",
       recipient: patient.contactNumber,
-      status: smsResult.success ? "sent" : "failed",
-      errorMessage: smsResult.error || null,
+      status: whatsappResult.success ? "sent" : "failed",
+      errorMessage: whatsappResult.error || null,
       messageContent: smsMessage,
       testResultId: testResult._id,
       sentAt: new Date(),
-      apiResponse: smsResult,
+      apiResponse: whatsappResult,
     });
 
-    results.sms = smsResult;
+    results.whatsapp = whatsappResult;
+
+    // CARRIER SMS — disabled (Twilio does not deliver to Sri Lanka). Uncomment to re-enable:
+    // const smsResult = await sendSMSWithRetry(patient.contactNumber, smsMessage);
+    // await createNotificationLog({
+    //   patientProfileId: patient._id,
+    //   type: "result_ready",
+    //   channel: "sms",
+    //   recipient: patient.contactNumber,
+    //   status: smsResult.success ? "sent" : "failed",
+    //   errorMessage: smsResult.error || null,
+    //   messageContent: smsMessage,
+    //   testResultId: testResult._id,
+    //   sentAt: new Date(),
+    //   apiResponse: smsResult,
+    // });
+    // results.sms = smsResult;
   }
 
   // Send Email if patient has email
@@ -153,7 +175,6 @@ export const sendResultReadyNotification = async (data) => {
 
     const emailResult = await sendResultReadyEmail(emailData);
 
-    // Log email notification
     await createNotificationLog({
       patientProfileId: patient._id,
       type: "result_ready",
@@ -174,40 +195,58 @@ export const sendResultReadyNotification = async (data) => {
 };
 
 /**
- * Send unviewed result reminder notification (SMS + Email)
+ * Send unviewed result reminder notification (WhatsApp + Email)
  * @param {Object} data - Notification data { testResult, patient, testType, healthCenter, daysUnviewed }
- * @returns {Promise<Object>} { sms: result, email: result }
+ * @returns {Promise<Object>} { whatsapp: result, email: result }
  */
 export const sendUnviewedResultReminder = async (data) => {
   const { testResult, patient, testType, healthCenter, daysUnviewed } = data;
 
   const results = {
-    sms: null,
+    whatsapp: null,
     email: null,
   };
 
-  // Prepare SMS message
   const smsMessage = `MediLab Reminder: Your ${testType.name} results (released ${daysUnviewed} days ago) have not been viewed. Please login to check: ${config.appUrl} - ${healthCenter.name}`;
 
-  // Send SMS if patient has phone number
+  // Send WhatsApp + SMS if patient has phone number
   if (patient.contactNumber) {
-    const smsResult = await sendSMSWithRetry(patient.contactNumber, smsMessage);
+    // WhatsApp first (works in Sri Lanka)
+    const whatsappResult = await sendWhatsAppWithRetry(
+      patient.contactNumber,
+      smsMessage,
+    );
 
-    // Log SMS notification
     await createNotificationLog({
       patientProfileId: patient._id,
       type: "unviewed_result_reminder",
-      channel: "sms",
+      channel: "whatsapp",
       recipient: patient.contactNumber,
-      status: smsResult.success ? "sent" : "failed",
-      errorMessage: smsResult.error || null,
+      status: whatsappResult.success ? "sent" : "failed",
+      errorMessage: whatsappResult.error || null,
       messageContent: smsMessage,
       testResultId: testResult._id,
       sentAt: new Date(),
-      apiResponse: smsResult,
+      apiResponse: whatsappResult,
     });
 
-    results.sms = smsResult;
+    results.whatsapp = whatsappResult;
+
+    // CARRIER SMS — disabled (Twilio does not deliver to Sri Lanka). Uncomment to re-enable:
+    // const smsResult = await sendSMSWithRetry(patient.contactNumber, smsMessage);
+    // await createNotificationLog({
+    //   patientProfileId: patient._id,
+    //   type: "unviewed_result_reminder",
+    //   channel: "sms",
+    //   recipient: patient.contactNumber,
+    //   status: smsResult.success ? "sent" : "failed",
+    //   errorMessage: smsResult.error || null,
+    //   messageContent: smsMessage,
+    //   testResultId: testResult._id,
+    //   sentAt: new Date(),
+    //   apiResponse: smsResult,
+    // });
+    // results.sms = smsResult;
   }
 
   // Send Email if patient has email
@@ -225,7 +264,6 @@ export const sendUnviewedResultReminder = async (data) => {
 
     const emailResult = await sendUnviewedResultReminderEmail(emailData);
 
-    // Log email notification
     await createNotificationLog({
       patientProfileId: patient._id,
       type: "unviewed_result_reminder",
@@ -341,9 +379,13 @@ export const resendNotification = async (notificationId) => {
 
   let result;
 
-  // Resend based on channel
-  if (channel === "sms") {
-    result = await sendSMSWithRetry(recipient, messageContent);
+  // Resend based on channel. Carrier SMS disabled — WhatsApp only for mobile.
+  // To re-enable SMS: uncomment the block below and add sendSMSWithRetry to the import
+  // if (channel === "sms") {
+  //   result = await sendSMSWithRetry(recipient, messageContent);
+  // } else
+  if (channel === "whatsapp") {
+    result = await sendWhatsAppWithRetry(recipient, messageContent);
   } else if (channel === "email") {
     // Extract content and resend
     result = await sendEmailWithRetry(
@@ -379,32 +421,50 @@ export const sendRoutineCheckupReminder = async (data) => {
   const { subscription, patient, testType } = data;
 
   const results = {
-    sms: null,
+    whatsapp: null,
     email: null,
   };
 
-  // Prepare SMS message
   const smsMessage = `Health Reminder: It's time for your routine ${testType.name} checkup. Last test: ${subscription.lastTestDate.toLocaleDateString()}. Book your appointment: ${config.appUrl} - MediLab`;
 
-  // Send SMS if patient has phone number
+  // Send WhatsApp + SMS if patient has phone number
   if (patient.contactNumber) {
-    const smsResult = await sendSMSWithRetry(patient.contactNumber, smsMessage);
+    // WhatsApp first (works in Sri Lanka)
+    const whatsappResult = await sendWhatsAppWithRetry(
+      patient.contactNumber,
+      smsMessage,
+    );
 
-    // Log SMS notification
     await createNotificationLog({
       patientProfileId: patient._id,
       type: "routine_checkup_reminder",
-      channel: "sms",
+      channel: "whatsapp",
       recipient: patient.contactNumber,
-      status: smsResult.success ? "sent" : "failed",
-      errorMessage: smsResult.error || null,
+      status: whatsappResult.success ? "sent" : "failed",
+      errorMessage: whatsappResult.error || null,
       messageContent: smsMessage,
       reminderSubscriptionId: subscription._id,
       sentAt: new Date(),
-      apiResponse: smsResult,
+      apiResponse: whatsappResult,
     });
 
-    results.sms = smsResult;
+    results.whatsapp = whatsappResult;
+
+    // CARRIER SMS — disabled (Twilio does not deliver to Sri Lanka). Uncomment to re-enable:
+    // const smsResult = await sendSMSWithRetry(patient.contactNumber, smsMessage);
+    // await createNotificationLog({
+    //   patientProfileId: patient._id,
+    //   type: "routine_checkup_reminder",
+    //   channel: "sms",
+    //   recipient: patient.contactNumber,
+    //   status: smsResult.success ? "sent" : "failed",
+    //   errorMessage: smsResult.error || null,
+    //   messageContent: smsMessage,
+    //   reminderSubscriptionId: subscription._id,
+    //   sentAt: new Date(),
+    //   apiResponse: smsResult,
+    // });
+    // results.sms = smsResult;
   }
 
   // Send Email if patient has email

@@ -66,7 +66,7 @@ export const sendResultReadyNotification = async (req, res, next) => {
       success: true,
       message: "Result ready notification sent",
       data: {
-        sms: results.sms,
+        whatsapp: results.whatsapp,
         email: results.email,
       },
     });
@@ -100,7 +100,7 @@ export const sendUnviewedResultReminder = async (req, res, next) => {
         const results =
           await notificationService.sendUnviewedResultReminder(data);
 
-        if (results.sms?.success || results.email?.success) {
+        if (results.whatsapp?.success || results.email?.success) {
           successCount++;
         } else {
           failCount++;

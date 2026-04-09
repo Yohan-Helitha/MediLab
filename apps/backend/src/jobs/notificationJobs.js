@@ -30,14 +30,14 @@ export const sendDueReminders = async () => {
         });
 
         // Check if at least one notification was sent successfully
-        if (results.sms?.success || results.email?.success) {
+        if (results.whatsapp?.success || results.email?.success) {
           successCount++;
         } else {
           failureCount++;
         }
 
         console.log(
-          `✅ Reminder sent for subscription ${subscription._id}: SMS=${results.sms?.success}, Email=${results.email?.success}`,
+          `✅ Reminder sent for subscription ${subscription._id}: WhatsApp=${results.whatsapp?.success}, Email=${results.email?.success}`,
         );
       } catch (error) {
         failureCount++;
@@ -92,7 +92,7 @@ export const sendUnviewedResultReminders = async () => {
           await notificationService.sendUnviewedResultReminder(data);
 
         // Check if at least one notification sent successfully
-        if (results.sms?.success || results.email?.success) {
+        if (results.whatsapp?.success || results.email?.success) {
           successCount++;
           console.log(
             `✅ Reminder sent for result ${data.testResult._id} (${data.daysUnviewed} days unviewed)`,

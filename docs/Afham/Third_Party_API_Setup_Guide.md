@@ -6,10 +6,12 @@
 
 The Test Management component requires two third-party services:
 
-- **Twilio**: For SMS notifications (test results, appointment reminders)
-- **SendGrid**: For email notifications (test result PDFs, booking confirmations)
+- **Twilio**: For **WhatsApp notifications** (primary mobile channel) and carrier SMS (disabled — non-functional in Sri Lanka)
+- **SendGrid**: For email notifications (test result alerts, booking confirmations)
 
 Both services offer **FREE tiers** suitable for development and testing.
+
+> ⚠️ **Sri Lanka Note:** Twilio carrier SMS does **not** deliver to Sri Lankan numbers despite being listed as supported. WhatsApp via the Twilio sandbox is the confirmed working mobile channel and is **free** (no trial credit consumed).
 
 ---
 
@@ -70,13 +72,17 @@ Both services offer **FREE tiers** suitable for development and testing.
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_PHONE_NUMBER=+1234567890
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
 ```
+
+> `TWILIO_WHATSAPP_NUMBER` defaults to the Twilio sandbox number. For production, replace with your approved WhatsApp Business number in `whatsapp:+NUMBER` format.
 
 ### Trial Limitations
 
-- **$15.50 USD free credit** (sufficient for testing)
-- Can send SMS to **verified numbers only** during trial
-- To send to any number, upgrade to paid account (add credit card)
+- **$15.50 USD free credit** (sufficient for carrier SMS if needed, not required for WhatsApp)
+- WhatsApp sandbox is **completely free** — no credit consumed
+- Carrier SMS: Can send to **verified numbers only** during trial
+- To send carrier SMS to any number, upgrade to paid account (add credit card)
 - Verify additional numbers: Console > Phone Numbers > Verified Caller IDs
 
 ### Verify Additional Phone Numbers (For Testing)
@@ -89,20 +95,54 @@ TWILIO_PHONE_NUMBER=+1234567890
 
 **Sri Lankan Phone Numbers:**
 
-- ✅ **Supported**: All Sri Lankan mobile operators (Dialog, Mobitel, Hutch, Airtel)
+- ❌ **Carrier SMS**: Twilio does **not** deliver carrier SMS to Sri Lankan numbers (confirmed April 2026). Do not use for production mobile notifications.
+- ✅ **WhatsApp**: Works in Sri Lanka via Twilio sandbox. Free, no carriers involved.
 - ✅ **Format**: `+94` (country code) + mobile number without leading `0`
   - Example: `0771234567` → `+94771234567`
   - Example: `0112345678` → `+94112345678`
-- ⚠️ **Trial Limitation**: Can only send SMS to verified numbers
-- ✅ **Upgrade to Paid**: No restrictions - send to any Sri Lankan number without verification
+- ⚠️ **WhatsApp Sandbox Limitation**: Recipient must first send `JOIN <sandbox-keyword>` to `+14155238886` on WhatsApp before they can receive sandbox messages
 
 **Testing with Patient Profiles:**
 
 - Use your verified phone number(s) as patient phone numbers in test data
 - Example: Create patient profile with your number `+94771234567`
-- This way you'll receive actual SMS notifications during testing
+- For WhatsApp: Make sure that number has joined the sandbox first
 - You can verify 2-3 numbers (yours, teammate's) for testing multiple patient scenarios
-- **Note**: If you can only see one verified number, try adding more via "Verified Caller IDs" (trial accounts usually allow up to 10)
+
+---
+
+## 1.5 Twilio WhatsApp Sandbox Setup (5 minutes)
+
+The WhatsApp sandbox lets you send WhatsApp messages for free during development without applying for a WhatsApp Business account.
+
+### Step 1: Join the Sandbox
+
+1. Open WhatsApp on the phone you want to receive test messages
+2. Send a WhatsApp message to: **+1 415 523 8886** (Twilio sandbox number)
+3. Message content: `JOIN <your-sandbox-keyword>`
+   - Find your keyword in Twilio Console → **Messaging** → **Try it out** → **Send a WhatsApp message**
+   - Example: `JOIN silver-tiger`
+4. You will receive a confirmation: `You are now connected to the sandbox`
+5. Any phone that wants to receive test WhatsApp messages must complete this step
+
+### Step 2: Verify It Works
+
+After joining, test via Postman:
+```http
+POST /api/notifications/send/result-ready
+Authorization: Bearer {{health_officer_token}}
+```
+Expect a WhatsApp message on the joined phone within seconds.
+
+### Step 3: Production Upgrade
+
+For production, apply for a WhatsApp Business account via Twilio:
+1. Twilio Console → **Messaging** → **Senders** → **WhatsApp senders**
+2. Apply for a WhatsApp Business profile
+3. Once approved, update `.env`: `TWILIO_WHATSAPP_NUMBER=whatsapp:+YOUR_BUSINESS_NUMBER`
+4. No code changes required — only the env var changes
+
+**Cost**: WhatsApp sandbox = $0. Production WhatsApp Business = conversation-based pricing (see Twilio docs).
 
 ---
 
@@ -152,14 +192,28 @@ SENDGRID_FROM_NAME=MediLab
 
 ### Important Notes
 
-- **SENDGRID_FROM_EMAIL**: Must be the same email you used to sign up (it's pre-verified)
-  - Example: If you signed up with `mohamed_afham@outlook.com`, use that email
-  - No additional verification needed - your signup email is automatically verified
+- **SENDGRID_FROM_EMAIL**: Must be verified. **Two options:**
+  1. Use the same email you used to sign up (attempt auto-verification — may still require Single Sender step)
+  2. **Recommended**: Complete Single Sender Verification (see Step 5a below) — this is mandatory to avoid HTTP 403 errors
 - **SENDGRID_FROM_NAME**: Display name patients will see (e.g., "MediLab Notifications")
 - **Domain Verification**: NOT required for development/testing (can skip completely)
   - If SendGrid asks to "Authenticate Your Domain", you can skip this step
   - Domain verification is only for production apps with high email volume
-  - Your personal email works perfectly for testing and evaluation
+
+### Step 5a: Single Sender Verification (MANDATORY)
+
+> ⚠️ **Do this even if you used your signup email as the From address.** Without this step, all email sends will fail with HTTP 403: `The from address does not match a verified Sender Identity`.
+
+1. Go to: [app.sendgrid.com/settings/sender_auth/senders](https://app.sendgrid.com/settings/sender_auth/senders)
+2. Click **"Create New Sender"**
+3. Fill in:
+   - **From Name**: `MediLab`
+   - **From Email**: the email in your `SENDGRID_FROM_EMAIL` env var
+   - **Reply To**: same email
+   - Fill remaining fields (company, address — required by SendGrid)
+4. Click **Save**
+5. SendGrid sends a verification email to that address — click **"Verify Single Sender"** in that email
+6. Re-test: emails will now deliver successfully
 
 ### Free Tier Limitations
 
@@ -212,14 +266,24 @@ If you see warnings:
 
 → Double-check your `.env` file for typos or missing values.
 
-### Step 3: Test SMS Endpoint (via Postman)
+### Step 3: Test WhatsApp Notification (via Postman)
 
-**POST** `http://localhost:5000/api/notifications/send-sms`
+> Make sure the recipient phone has joined the Twilio WhatsApp sandbox (Section 1.5 Step 1).
+
+**POST** `http://localhost:5000/api/notifications/send/result-ready`
+
+Headers: `Authorization: Bearer {{health_officer_token}}`
 
 ```json
 {
-  "phoneNumber": "+1234567890",
-  "message": "Test SMS from MediLab"
+  "testResult": { "_id": "{{result_id}}" },
+  "patient": {
+    "_id": "{{patient_id}}",
+    "fullName": "Test Patient",
+    "contactNumber": "+94764118021"
+  },
+  "testType": { "_id": "{{blood_glucose_type_id}}", "name": "Blood Glucose Test" },
+  "healthCenter": { "name": "Central Medical Laboratory" }
 }
 ```
 
@@ -228,44 +292,21 @@ Expected Response:
 ```json
 {
   "success": true,
-  "message": "SMS sent successfully",
-  "notification": {
-    "type": "sms",
-    "recipient": "+1234567890",
-    "status": "sent",
-    "messageSid": "SM...",
-    "provider": "twilio"
+  "message": "Result ready notification sent",
+  "data": {
+    "whatsapp": { "success": true, "sid": "SM..." },
+    "email": { "success": true }
   }
 }
 ```
 
 ### Step 4: Test Email Endpoint (via Postman)
 
-**POST** `http://localhost:5000/api/notifications/send-email`
+**POST** `http://localhost:5000/api/notifications/send/result-ready`
 
-```json
-{
-  "email": "patient@example.com",
-  "subject": "Test Email from MediLab",
-  "html": "<h1>Test Email</h1><p>This is a test email from MediLab.</p>"
-}
-```
+Same body as Step 3 but with `"email": "patient@example.com"` added to the `patient` object.
 
-Expected Response:
-
-```json
-{
-  "success": true,
-  "message": "Email sent successfully",
-  "notification": {
-    "type": "email",
-    "recipient": "patient@example.com",
-    "status": "sent",
-    "messageId": "...",
-    "provider": "sendgrid"
-  }
-}
-```
+Expected: `data.email.success = true` and email delivered to inbox.
 
 ---
 
@@ -278,17 +319,23 @@ Expected Response:
 - ✅ Check `.env` file has `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`
 - ✅ Restart the server after updating `.env`
 
-**Error: "Unverified number" (trial account)**
+**Error: "Unverified number" (trial account carrier SMS)**
 
-- ✅ Trial accounts can only send to verified numbers
+- ✅ Trial accounts can only send carrier SMS to verified numbers
 - ✅ Verify recipient number in Twilio Console: Phone Numbers > Verified Caller IDs
 - ✅ OR upgrade to paid account to send to any number
+- ⚠️ **For Sri Lanka**: Use WhatsApp instead — carrier SMS does not deliver
 
 **Error: "Invalid phone number format"**
 
 - ✅ Use E.164 format: `+1234567890` (include `+` and country code)
-- ✅ US numbers: `+1` prefix, 10 digits
 - ✅ Remove spaces, dashes, or parentheses
+
+**WhatsApp: Message not received**
+
+- ✅ Ensure recipient has joined sandbox: send `JOIN <keyword>` to `+14155238886` on WhatsApp
+- ✅ Check `TWILIO_WHATSAPP_NUMBER` is set to `whatsapp:+14155238886` (note the `whatsapp:` prefix)
+- ✅ The `to` number must include country code in E.164 format (`+94XXXXXXXXX`)
 
 ### SendGrid Issues
 
@@ -298,10 +345,13 @@ Expected Response:
 - ✅ Ensure no extra spaces in `.env` file
 - ✅ Create a new API key if lost (old one cannot be retrieved)
 
-**Error: "The from email does not match a verified Sender Identity"**
+**Error: "The from address does not match a verified Sender Identity" (HTTP 403)**
 
-- ✅ Use the same email you signed up with
-- ✅ OR verify additional email: Settings > Sender Authentication > Verify a Single Sender
+- ✅ This means the sender email is not verified — complete Single Sender Verification (Section 2, Step 5a)
+- ✅ Go to: https://app.sendgrid.com/settings/sender_auth/senders
+- ✅ Create a sender with the email matching `SENDGRID_FROM_EMAIL` in your `.env`
+- ✅ Click the verification link in the email SendGrid sends to that address
+- ⚠️ Using the same email you signed up with does NOT automatically verify it as a Sender Identity
 
 **Emails going to spam**
 
@@ -351,6 +401,7 @@ When deploying to **Render** / **Railway** / **Heroku**:
    TWILIO_ACCOUNT_SID=ACxxx...
    TWILIO_AUTH_TOKEN=xxx...
    TWILIO_PHONE_NUMBER=+1234567890
+   TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
    SENDGRID_API_KEY=SG.xxx...
    SENDGRID_FROM_EMAIL=noreply@yourdomain.com
    SENDGRID_FROM_NAME=MediLab
@@ -361,9 +412,9 @@ When deploying to **Render** / **Railway** / **Heroku**:
    - Use domain-based email (e.g., `noreply@medilab.com`)
 
 3. For production Twilio:
-   - Upgrade account (add credit card)
-   - Remove trial restrictions
-   - Consider getting a dedicated phone number
+   - For WhatsApp Business: apply via Twilio Console > Messaging > Senders > WhatsApp senders
+   - Update `TWILIO_WHATSAPP_NUMBER` to your approved WhatsApp Business number
+   - For carrier SMS (if re-enabled): upgrade account (add credit card), note Sri Lanka carrier SMS may still not work
 
 ---
 
@@ -371,13 +422,15 @@ When deploying to **Render** / **Railway** / **Heroku**:
 
 ### Development/Testing (FREE)
 
-- **Twilio**: $15.50 trial credit (~500 SMS messages)
+- **Twilio WhatsApp sandbox**: $0 (no credit consumed)
+- **Twilio carrier SMS**: $15.50 trial credit (not used — non-functional in Sri Lanka)
 - **SendGrid**: 100 emails/day (3,000/month)
 - **Total**: $0/month
 
 ### Production (Paid - Optional)
 
-- **Twilio**: $0.0075/SMS (~$7.50 for 1,000 SMS)
+- **Twilio WhatsApp Business**: conversation-based pricing (see Twilio WhatsApp pricing page)
+- **Twilio carrier SMS**: $0.0075/SMS (~$7.50 for 1,000 SMS) — only if re-enabled for supported regions
 - **SendGrid**: $0 (100/day) or $19.95/month (40,000 emails)
 - **Total**: $0-30/month depending on usage
 
@@ -385,16 +438,19 @@ When deploying to **Render** / **Railway** / **Heroku**:
 
 ## 8. Quick Reference
 
-| Service  | Free Tier      | Upgrade Trigger   | Cost Example           |
-| -------- | -------------- | ----------------- | ---------------------- |
-| Twilio   | $15.50 credit  | Credit exhausted  | $20 credit = 2,600 SMS |
-| SendGrid | 100 emails/day | Need >3,000/month | $19.95/mo = 40K emails |
+| Service         | Free Tier                  | Upgrade Trigger   | Cost Example                          |
+| --------------- | -------------------------- | ----------------- | ------------------------------------- |
+| Twilio WhatsApp | Sandbox FREE               | Production use    | Conversation-based (see Twilio docs)  |
+| Twilio SMS      | $15.50 credit (unused)     | Credit exhausted  | $20 credit = 2,600 SMS                |
+| SendGrid        | 100 emails/day             | Need >3,000/month | $19.95/mo = 40K emails                |
 
 ### Useful Links
 
 - **Twilio Console**: https://console.twilio.com/
-- **Twilio Docs**: https://www.twilio.com/docs/sms
+- **Twilio WhatsApp Sandbox**: https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn
+- **Twilio WhatsApp Docs**: https://www.twilio.com/docs/whatsapp
 - **SendGrid Dashboard**: https://app.sendgrid.com/
+- **SendGrid Sender Verification**: https://app.sendgrid.com/settings/sender_auth/senders
 - **SendGrid Docs**: https://docs.sendgrid.com/
 
 ---
@@ -404,20 +460,24 @@ When deploying to **Render** / **Railway** / **Heroku**:
 - [ ] Created Twilio account
 - [ ] Obtained Twilio Account SID and Auth Token
 - [ ] Got Twilio phone number
+- [ ] Joined Twilio WhatsApp sandbox (sent JOIN keyword to +14155238886)
+- [ ] Added `TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886` to `.env`
 - [ ] Created SendGrid account
 - [ ] Obtained SendGrid API key
+- [ ] Completed Single Sender Verification for `SENDGRID_FROM_EMAIL` (MANDATORY)
 - [ ] Updated `.env` file with all credentials
 - [ ] Restarted backend server
 - [ ] Saw "✅ Twilio SMS service initialized" in console
 - [ ] Saw "✅ SendGrid email service initialized" in console
-- [ ] Tested SMS endpoint via Postman (optional)
-- [ ] Tested Email endpoint via Postman (optional)
+- [ ] Tested WhatsApp via `POST /api/notifications/send/result-ready` (optional)
+- [ ] Tested email via same endpoint with email in patient object (optional)
 
-**Estimated Setup Time**: 20-30 minutes total
+**Estimated Setup Time**: 25-35 minutes total
 
 ---
 
 **Created**: February 25, 2026  
+**Updated**: April 9, 2026 (WhatsApp as primary channel, carrier SMS disabled, SendGrid sender verification clarified)  
 **Component**: Test Management & Lab Operations  
 **Owner**: Afham  
-**Status**: Ready for Implementation
+**Status**: Updated — WhatsApp confirmed working, email pending sender verification
