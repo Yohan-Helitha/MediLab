@@ -1,9 +1,23 @@
 import TestInstruction from "./testInstruction.model.js";
 
-// Create or update instructions per (diagnosticTestId, languageCode)
-// This lets clients POST for an existing test/language and have it overwrite
-// the previous instructions instead of failing with a duplicate key error.
+// Create instructions for a test.
+// Business rule: a diagnostic test can have only ONE instructions record.
+// If instructions already exist for the given diagnosticTestId, we throw a
+// validation-style error so the client can prompt the user to edit instead.
 export const createTestInstruction = async (data) => {
+    const existing = await TestInstruction.findOne({
+        diagnosticTestId: data.diagnosticTestId,
+    });
+
+    if (existing) {
+        const error = new Error(
+            "Instructions already exist for this test. Please edit the existing record instead of creating a new one."
+        );
+        // Optional code field for easier checks in controllers/tests if needed
+        error.code = "INSTRUCTIONS_ALREADY_EXIST";
+        throw error;
+    }
+
     return TestInstruction.findOneAndUpdate(
         { diagnosticTestId: data.diagnosticTestId, languageCode: data.languageCode },
         data,

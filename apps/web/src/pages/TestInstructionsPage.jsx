@@ -44,8 +44,18 @@ function TestInstructionsPage() {
 		load();
 	}, []);
 
+	// Tests that don't yet have instructions (used when creating new ones)
+	const availableTestsForNew = useMemo(() => {
+		const usedIds = new Set(
+			instructions
+				.map((instr) => instr.diagnosticTestId && instr.diagnosticTestId._id)
+				.filter(Boolean)
+		);
+		return allTests.filter((t) => !usedIds.has(t._id));
+	}, [allTests, instructions]);
+
 	const openModalForCreate = () => {
-		const defaultTestId = allTests[0]?._id || "";
+		const defaultTestId = availableTestsForNew[0]?._id || "";
 		setEditingItem(null);
 		setForm({
 			diagnosticTestId: defaultTestId,
@@ -158,7 +168,7 @@ function TestInstructionsPage() {
 				<button
 					type="button"
 					onClick={openModalForCreate}
-					disabled={allTests.length === 0}
+					disabled={availableTestsForNew.length === 0}
 					className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300"
 				>
 					+ Add Instructions
@@ -216,9 +226,10 @@ function TestInstructionsPage() {
 							name="diagnosticTestId"
 							value={form.diagnosticTestId}
 							onChange={handleFormChange}
+							disabled={!!editingItem}
 							className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
 						>
-							{allTests.map((test) => (
+							{(editingItem ? allTests : availableTestsForNew).map((test) => (
 								<option key={test._id} value={test._id}>
 									{test.name}
 								</option>

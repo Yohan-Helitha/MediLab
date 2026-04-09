@@ -23,23 +23,39 @@ describe("testInstruction.service", () => {
 		TestInstruction.findByIdAndDelete = jest.fn();
 	});
 
-	it("createTestInstruction should upsert by diagnosticTestId and languageCode", async () => {
+	it("createTestInstruction should create when no existing instructions for test", async () => {
 		const data = {
 			diagnosticTestId: "test1",
 			languageCode: "en",
 			preTestInstructions: ["Do X"],
 		};
 		const upserted = { _id: "ti1", ...data };
+		TestInstruction.findOne.mockResolvedValue(null);
 		TestInstruction.findOneAndUpdate.mockResolvedValue(upserted);
 
 		const result = await createTestInstruction(data);
 
+		expect(TestInstruction.findOne).toHaveBeenCalledWith({ diagnosticTestId: "test1" });
 		expect(TestInstruction.findOneAndUpdate).toHaveBeenCalledWith(
 			{ diagnosticTestId: "test1", languageCode: "en" },
 			data,
 			{ new: true, upsert: true },
 		);
 		expect(result).toBe(upserted);
+	});
+
+	it("createTestInstruction should throw when instructions already exist for test", async () => {
+		const data = {
+			diagnosticTestId: "test1",
+			languageCode: "en",
+		};
+		TestInstruction.findOne.mockResolvedValue({ _id: "existing", diagnosticTestId: "test1" });
+
+		await expect(createTestInstruction(data)).rejects.toThrow(
+			"Instructions already exist for this test. Please edit the existing record instead of creating a new one.",
+		);
+		// When existing is found, we should NOT attempt an upsert
+		expect(TestInstruction.findOneAndUpdate).not.toHaveBeenCalled();
 	});
 
 	it("findTestInstructionByTestTypeId should query by diagnosticTestId", async () => {
