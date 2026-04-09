@@ -4,6 +4,34 @@ import Member from '../patient/models/Member.js';
 import Lab from '../lab/lab.model.js';
 import TestType from '../test/testType.model.js';
 
+const getDayRange = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        throw new Error('Invalid bookingDate');
+    }
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    return { start, end, date };
+};
+
+const getNextQueueNumber = async ({ healthCenterId, bookingDate }) => {
+    const { start, end } = getDayRange(bookingDate);
+    const last = await Booking.findOne({
+        healthCenterId,
+        isActive: true,
+        status: { $ne: 'CANCELLED' },
+        bookingDate: { $gte: start, $lte: end },
+        queueNumber: { $ne: null }
+    })
+        .sort({ queueNumber: -1 })
+        .select('queueNumber')
+        .lean();
+
+    return (last?.queueNumber || 0) + 1;
+};
+
 export const createBooking = async (data, userId) => {
 
     const{
@@ -39,14 +67,10 @@ export const createBooking = async (data, userId) => {
     let queueNumber = null;
     let estimatedWaitTimeMinutes = null;
 
-    if (bookingType === "WALK_IN") {
-        const count = await Booking.countDocuments({
-            healthCenterId,
-            bookingDate: new Date(bookingDate),
-            status: { $ne: "CANCELLED" }
-        });
+    const { date: bookingDateObj } = getDayRange(bookingDate);
 
-        queueNumber = count + 1;
+    if (bookingType === "WALK_IN") {
+        queueNumber = await getNextQueueNumber({ healthCenterId, bookingDate: bookingDateObj });
     }
 
     const booking = await Booking.create({
@@ -59,7 +83,7 @@ export const createBooking = async (data, userId) => {
         diagnosticTestId,
         testNameSnapshot: diagnosticTest.name,
         centerNameSnapshot: healthCenter.name,
-        bookingDate: new Date(bookingDate),
+        bookingDate: bookingDateObj,
         timeSlot,
         bookingType,
         priorityLevel,
@@ -158,6 +182,35 @@ export const updateBooking = async (bookingId, data) => {
 
     if (updateData.bookingDate) {
         updateData.bookingDate = new Date(updateData.bookingDate);
+    }
+
+    // Load current booking so we can assign queue numbers reliably.
+    const existing = await Booking.findOne({ _id: bookingId, isActive: true })
+        .select('queueNumber bookingDate healthCenterId status bookingType')
+        .lean();
+
+    if (!existing) {
+        return null;
+    }
+
+    const effectiveBookingDate = updateData.bookingDate || existing.bookingDate;
+    const effectiveBookingType = Object.prototype.hasOwnProperty.call(updateData, 'bookingType')
+        ? updateData.bookingType
+        : existing.bookingType;
+
+    const statusToSet = Object.prototype.hasOwnProperty.call(updateData, 'status')
+        ? updateData.status
+        : null;
+
+    const shouldAssignQueue =
+        existing.queueNumber == null &&
+        (effectiveBookingType === 'WALK_IN' || statusToSet === 'COMPLETED');
+
+    if (shouldAssignQueue) {
+        updateData.queueNumber = await getNextQueueNumber({
+            healthCenterId: existing.healthCenterId,
+            bookingDate: effectiveBookingDate,
+        });
     }
 
     const booking = await Booking.findOneAndUpdate(

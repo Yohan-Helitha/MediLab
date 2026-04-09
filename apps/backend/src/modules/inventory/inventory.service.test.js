@@ -8,6 +8,8 @@ import Booking from "../booking/booking.model.js";
 
 import {
 	restockEquipment,
+	reserveEquipmentForBooking,
+	finalizeEquipmentUsageForReleasedResult,
 	getTestEquipmentRequirements,
 	upsertTestEquipmentRequirement,
 	deactivateTestEquipmentRequirement,
@@ -34,9 +36,117 @@ describe("inventory.service", () => {
 		InventoryStock.findOne = jest.fn();
 		InventoryStock.create = jest.fn();
 		StockTransaction.create = jest.fn();
+		StockTransaction.findOne = jest.fn();
 		TestEquipmentRequirement.find = jest.fn();
 		TestEquipmentRequirement.findByIdAndUpdate = jest.fn();
 		Booking.findById = jest.fn();
+	});
+
+	test("reserveEquipmentForBooking reserves stock (available -> reserved)", async () => {
+		Booking.findById.mockReturnValue({
+			exec: jest.fn().mockResolvedValue({
+				_id: "booking1",
+				diagnosticTestId: "tt1",
+			}),
+		});
+
+		TestEquipmentRequirement.find.mockReturnValue({
+			session: jest.fn().mockReturnValue([
+				{ equipmentId: "eq1", quantityPerTest: 2 },
+			]),
+		});
+
+		const txExec = jest.fn().mockResolvedValue(null);
+		StockTransaction.findOne.mockReturnValue({
+			session: jest.fn().mockReturnValue({ exec: txExec }),
+		});
+
+		const stockDoc = {
+			availableQuantity: 5,
+			reservedQuantity: 1,
+			save: jest.fn().mockResolvedValue(true),
+		};
+		const stockExec = jest.fn().mockResolvedValue(stockDoc);
+		InventoryStock.findOne.mockReturnValue({
+			session: jest.fn().mockReturnValue({ exec: stockExec }),
+		});
+
+		StockTransaction.create.mockResolvedValue(true);
+
+		const result = await reserveEquipmentForBooking("booking1", {
+			changedBy: "officer1",
+		});
+
+		expect(stockDoc.availableQuantity).toBe(3);
+		expect(stockDoc.reservedQuantity).toBe(3);
+		expect(StockTransaction.create).toHaveBeenCalledWith(
+			[
+				{
+					equipmentId: "eq1",
+					quantity: 2,
+					type: "RESERVE",
+					referenceBookingId: "booking1",
+					createdBy: "officer1",
+				},
+			],
+			{ session: expect.any(Object) },
+		);
+		expect(result.reservedItems).toEqual([
+			{ equipmentId: "eq1", quantity: 2 },
+		]);
+	});
+
+	test("finalizeEquipmentUsageForReleasedResult deducts CONSUMABLE using reservation first", async () => {
+		// Mock booking lookup
+		Booking.findById.mockReturnValue({
+			exec: jest.fn().mockResolvedValue({
+				_id: "booking1",
+				diagnosticTestId: "tt1",
+			}),
+		});
+
+		// Requirements
+		TestEquipmentRequirement.find.mockReturnValue({
+			session: jest.fn().mockReturnValue([
+				{ equipmentId: "eq1", quantityPerTest: 2 },
+			]),
+		});
+
+		// Equipment: CONSUMABLE
+		const equipmentExec = jest.fn().mockResolvedValue({ type: "CONSUMABLE" });
+		const equipmentSession = jest.fn().mockReturnValue({ exec: equipmentExec });
+		const equipmentFindById = jest.fn().mockReturnValue({ session: equipmentSession });
+		// Lazy import mocking: overwrite the method on the model instance used by service
+		const equipmentModule = await import("./equipment.model.js");
+		equipmentModule.default.findById = equipmentFindById;
+
+		// Idempotency: no prior DEDUCT
+		const txExec = jest.fn().mockResolvedValue(null);
+		StockTransaction.findOne.mockReturnValue({
+			session: jest.fn().mockReturnValue({ exec: txExec }),
+		});
+
+		// Stock has full reservation
+		const stockDoc = {
+			availableQuantity: 3,
+			reservedQuantity: 2,
+			save: jest.fn().mockResolvedValue(true),
+		};
+		InventoryStock.findOne.mockReturnValue({
+			session: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(stockDoc) }),
+		});
+
+		StockTransaction.create.mockResolvedValue(true);
+
+		const result = await finalizeEquipmentUsageForReleasedResult("booking1", {
+			changedBy: "officer1",
+		});
+
+		expect(stockDoc.reservedQuantity).toBe(0);
+		expect(stockDoc.availableQuantity).toBe(3);
+		expect(result.deductedItems).toEqual([
+			{ equipmentId: "eq1", quantity: 2 },
+		]);
 	});
 
 	test("restockEquipment creates new stock record when none exists", async () => {
@@ -98,8 +208,10 @@ describe("inventory.service", () => {
 	});
 
 	test("upsertTestEquipmentRequirement creates new requirement when id is not provided", async () => {
-		const saveMock = jest.fn().mockResolvedValue({ _id: "newReq" });
+		const saveMock = jest.fn().mockResolvedValue(true);
+		const populateMock = jest.fn().mockResolvedValue(true);
 		TestEquipmentRequirement.prototype.save = saveMock;
+		TestEquipmentRequirement.prototype.populate = populateMock;
 
 		const result = await upsertTestEquipmentRequirement({
 			testTypeId: "tt1",
@@ -109,13 +221,21 @@ describe("inventory.service", () => {
 		});
 
 		expect(saveMock).toHaveBeenCalled();
-		expect(result).toEqual({ _id: "newReq" });
+		expect(populateMock).toHaveBeenCalledWith(
+			"equipmentId",
+			"name type description isActive",
+		);
+		expect(result).toHaveProperty("_id");
+		expect(result.quantityPerTest).toBe(1);
+		expect(result.isActive).toBe(true);
 	});
 
 	test("deactivateTestEquipmentRequirement sets isActive to false", async () => {
 		const updated = { _id: "req1", isActive: false };
+		const execMock = jest.fn().mockResolvedValue(updated);
+		const populateMock = jest.fn().mockReturnValue({ exec: execMock });
 		TestEquipmentRequirement.findByIdAndUpdate.mockReturnValue({
-			exec: jest.fn().mockResolvedValue(updated),
+			populate: populateMock,
 		});
 
 		const result = await deactivateTestEquipmentRequirement("req1");
@@ -124,6 +244,10 @@ describe("inventory.service", () => {
 			"req1",
 			{ isActive: false },
 			{ new: true },
+		);
+		expect(populateMock).toHaveBeenCalledWith(
+			"equipmentId",
+			"name type description isActive",
 		);
 		expect(result).toBe(updated);
 	});

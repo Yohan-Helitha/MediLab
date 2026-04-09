@@ -27,11 +27,11 @@ export const applyEquipmentUsageForBookingController = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: "Equipment stock deducted after test completion",
+      message: "Equipment reserved for completed booking",
       ...result,
     });
   } catch (error) {
-    console.error("Error deducting equipment after test completion:", error);
+    console.error("Error reserving equipment after booking completion:", error);
     return res.status(400).json({ message: error.message });
   }
 };

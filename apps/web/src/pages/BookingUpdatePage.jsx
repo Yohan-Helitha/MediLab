@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import { useAuth } from "../context/AuthContext";
-import { createBooking, createPayHereCheckout } from "../api/bookingApi";
+import { getBookingsByPatientId, updateBooking, createPayHereCheckout } from "../api/bookingApi";
 
 function postToPayHere(checkoutUrl, fields) {
 	const form = document.createElement("form");
@@ -21,46 +21,61 @@ function postToPayHere(checkoutUrl, fields) {
 	form.submit();
 }
 
-function BookingCreatePage() {
+function BookingUpdatePage() {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const params = useParams();
 	const { user } = useAuth();
 
-	const state = location.state || {};
-	const lab = state.lab || null;
-	const labTest = state.labTest || null;
+	function normalizeTimeSlotValue(value) {
+		if (!value || typeof value !== "string") return "";
+		const trimmed = value.trim();
+		if (/^\d{2}:\d{2}$/.test(trimmed)) return trimmed;
+		const parts = trimmed.split("-");
+		const first = (parts[0] || "").trim();
+		return /^\d{2}:\d{2}$/.test(first) ? first : "";
+	}
 
-	const patientProfile = user?.profile || null;
-	const patientProfileId = patientProfile?._id || null;
+	const patientProfileId = user?.profile?._id || null;
+	const [booking, setBooking] = useState(location.state?.booking || null);
+	const bookingId = booking?._id || params?.id || null;
 
 	const testName =
-		labTest?.diagnosticTestId?.name || labTest?.diagnosticTestId?.name || labTest?.testName || "";
-	const diagnosticTestId =
-		labTest?.diagnosticTestId?._id || labTest?.diagnosticTestId || null;
-	const healthCenterId = lab?._id || labTest?.labId || null;
-	const centerName = lab?.name || "";
-	const price = useMemo(() => {
-		const p = labTest?.price;
-		if (p == null) return null;
-		const n = Number(p);
-		return Number.isNaN(n) ? null : n;
-	}, [labTest]);
+		booking?.diagnosticTestId?.name || booking?.testNameSnapshot || "";
+	const centerName =
+		booking?.healthCenterId?.name || booking?.centerNameSnapshot || "";
+
+	const initialDate = useMemo(() => {
+		const raw = booking?.bookingDate;
+		if (!raw) return "";
+		const d = new Date(raw);
+		if (Number.isNaN(d.getTime())) return "";
+		// YYYY-MM-DD for <input type="date"/>
+		return d.toISOString().slice(0, 10);
+	}, [booking?.bookingDate]);
 
 	const [formData, setFormData] = useState({
-		bookingDate: "",
-		timeSlot: "",
-		bookingType: "PRE_BOOKED",
-		priorityLevel: "NORMAL",
-		paymentMethod: "ONLINE",
+		bookingDate: initialDate,
+		timeSlot: normalizeTimeSlotValue(booking?.timeSlot || ""),
+		bookingType: booking?.bookingType || "PRE_BOOKED",
+		priorityLevel: booking?.priorityLevel || "NORMAL",
+		paymentMethod: booking?.paymentMethod || "ONLINE",
 	});
 
 	const isWalkIn = formData.bookingType === "WALK_IN";
 
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState("");
+	useEffect(() => {
+		setFormData({
+			bookingDate: initialDate,
+			timeSlot: normalizeTimeSlotValue(booking?.timeSlot || ""),
+			bookingType: booking?.bookingType || "PRE_BOOKED",
+			priorityLevel: booking?.priorityLevel || "NORMAL",
+			paymentMethod: booking?.paymentMethod || "ONLINE",
+		});
+	}, [booking, initialDate]);
 
 	const selectedOperatingHours = useMemo(() => {
-		const hours = lab?.operatingHours;
+		const hours = booking?.healthCenterId?.operatingHours;
 		if (!Array.isArray(hours) || hours.length === 0) return null;
 		if (!formData.bookingDate) return hours[0] || null;
 		const d = new Date(formData.bookingDate);
@@ -72,40 +87,10 @@ function BookingCreatePage() {
 				h.day.trim().toLowerCase() === weekday.toLowerCase(),
 		);
 		return byDay || hours[0] || null;
-	}, [lab?.operatingHours, formData.bookingDate]);
+	}, [booking?.healthCenterId?.operatingHours, formData.bookingDate]);
 
 	const openTime = selectedOperatingHours?.openTime || "";
 	const closeTime = selectedOperatingHours?.closeTime || "";
-
-	useEffect(() => {
-		// If user opened this page directly, force them back to labs.
-		if (!labTest || !diagnosticTestId || !healthCenterId) {
-			// Avoid redirect loop if already on home.
-			navigate("/health-centers", { replace: true });
-		}
-	}, [diagnosticTestId, healthCenterId, labTest, navigate]);
-
-	const onNavigate = (name, params = {}) => {
-		switch (name) {
-			case "home":
-				navigate("/");
-				return;
-			case "health-centers":
-				navigate("/health-centers");
-				return;
-			case "lab": {
-				const labId = params?.labId;
-				if (labId) navigate(`/labs/${labId}`);
-				return;
-			}
-			default:
-				return;
-		}
-	};
-
-	const setField = (name, value) => {
-		setFormData((prev) => ({ ...prev, [name]: value }));
-	};
 
 	const validateTimeSlot = (value) => {
 		if (!value) return true;
@@ -119,16 +104,82 @@ function BookingCreatePage() {
 		}
 	}, [isWalkIn, formData.paymentMethod]);
 
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState("");
+
+	useEffect(() => {
+		let cancelled = false;
+		const load = async () => {
+			// If navigation state didn't include booking, try to load it by id.
+			if (!booking && bookingId && patientProfileId) {
+				try {
+					const data = await getBookingsByPatientId(patientProfileId);
+					const payload = data?.bookings;
+					const list = Array.isArray(payload)
+						? payload
+						: Array.isArray(payload?.bookings)
+							? payload.bookings
+							: [];
+					const found = (list || []).find((x) => x?._id === bookingId) || null;
+					if (!cancelled) setBooking(found);
+				} catch {
+					// ignore; we'll redirect below
+				}
+			}
+		};
+		load();
+		return () => {
+			cancelled = true;
+		};
+	}, [booking, bookingId, patientProfileId]);
+
+	useEffect(() => {
+		if (!bookingId) {
+			navigate("/booking", { replace: true });
+			return;
+		}
+		if (!booking && !location.state?.booking) {
+			// Wait for load effect to try.
+			return;
+		}
+		if (!booking) {
+			navigate("/booking", { replace: true });
+			return;
+		}
+		const status = (booking?.status || "").toString().toUpperCase();
+		if (status === "COMPLETED") {
+			navigate("/booking", { replace: true });
+		}
+	}, [booking, bookingId, location.state, navigate]);
+
+	const onNavigate = (name, params2 = {}) => {
+		switch (name) {
+			case "home":
+				navigate("/");
+				return;
+			case "health-centers":
+				navigate("/health-centers");
+				return;
+			case "lab": {
+				const labId = params2?.labId;
+				if (labId) navigate(`/labs/${labId}`);
+				return;
+			}
+			default:
+				return;
+		}
+	};
+
+	const setField = (name, value) => {
+		setFormData((prev) => ({ ...prev, [name]: value }));
+	};
+
 	const submit = async ({ continueToPayment, e } = {}) => {
 		if (e && typeof e.preventDefault === "function") e.preventDefault();
 		setError("");
 
-		if (!patientProfileId) {
-			setError("Patient profile not found. Please log in again.");
-			return;
-		}
-		if (!healthCenterId || !diagnosticTestId) {
-			setError("Missing test selection. Please select a lab test again.");
+		if (!bookingId) {
+			setError("Missing booking id.");
 			return;
 		}
 		if (!formData.bookingDate) {
@@ -142,24 +193,17 @@ function BookingCreatePage() {
 
 		setLoading(true);
 		try {
-			const bookingPayload = {
-				patientProfileId,
-				healthCenterId,
-				diagnosticTestId,
+			const payload = {
 				bookingDate: formData.bookingDate,
-				timeSlot: formData.timeSlot || undefined,
+				timeSlot: normalizeTimeSlotValue(formData.timeSlot) || undefined,
 				bookingType: formData.bookingType,
 				priorityLevel: formData.priorityLevel,
 				paymentMethod: isWalkIn ? "CASH" : formData.paymentMethod,
 			};
 
-			const created = await createBooking(bookingPayload);
-			const bookingId = created?.booking?._id;
-			if (!bookingId) {
-				throw new Error("Booking was created but bookingId is missing in response");
-			}
+			await updateBooking(bookingId, payload);
 
-			// Proceed to PayHere ONLY when the user chose the payment flow.
+			// Continue to PayHere ONLY when the user chose the payment flow.
 			if (continueToPayment && !isWalkIn && formData.paymentMethod === "ONLINE") {
 				const checkout = await createPayHereCheckout({ bookingId });
 				if (!checkout?.checkoutUrl || !checkout?.fields) {
@@ -169,10 +213,9 @@ function BookingCreatePage() {
 				return;
 			}
 
-			// For save-only and non-online payment flows, go back to My Bookings.
-			navigate("/booking");
+			navigate("/booking", { replace: true });
 		} catch (err) {
-			setError(err?.message || "Failed to create booking");
+			setError(err?.message || "Failed to update booking");
 		} finally {
 			setLoading(false);
 		}
@@ -181,59 +224,42 @@ function BookingCreatePage() {
 	const handleSubmit = (e) => submit({ continueToPayment: true, e });
 	const handleSave = () => submit({ continueToPayment: false });
 
-	const patientName = patientProfile?.full_name || "";
-	const patientPhone = patientProfile?.contact_number || "";
-	const patientEmail = patientProfile?.email || "";
-
 	return (
 		<PublicLayout onNavigate={onNavigate}>
 			<div className="space-y-6">
 				<div className="rounded-2xl bg-white shadow-md border border-slate-200 overflow-hidden">
 					<div className="h-1 w-full bg-gradient-to-r from-teal-500 to-emerald-400" />
 					<div className="p-6 md:p-7">
-						<h1 className="text-2xl font-semibold text-slate-900">Book Test</h1>
+						<h1 className="text-2xl font-semibold text-slate-900">Update Booking</h1>
 						<p className="mt-1 text-sm text-slate-600">
-							Patient details are auto-filled. Test/booking details are entered below.
+							Update booking details, then continue to payment.
 						</p>
 					</div>
 				</div>
 
-				<form onSubmit={handleSubmit} className="rounded-2xl bg-white shadow-md border border-slate-200 p-6 md:p-7 space-y-6">
-					{/* Auto-filled patient info */}
-					<section className="space-y-3">
-						<h2 className="text-sm font-semibold text-slate-800">Client Details</h2>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Full Name</label>
-								<input value={patientName} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-							</div>
-							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</label>
-								<input value={patientPhone} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-							</div>
-							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
-								<input value={patientEmail} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-							</div>
-						</div>
-					</section>
-
-					{/* Selected test */}
+				<form
+					onSubmit={handleSubmit}
+					className="rounded-2xl bg-white shadow-md border border-slate-200 p-6 md:p-7 space-y-6"
+				>
 					<section className="space-y-3">
 						<h2 className="text-sm font-semibold text-slate-800">Selected Test</h2>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Health Center</label>
-								<input value={centerName} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-							</div>
-							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Test</label>
-								<input value={testName} readOnly className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-							</div>
-							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Price</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+									Health Center
+								</label>
 								<input
-									value={price == null ? "-" : `Rs ${price.toFixed(2)}`}
+									value={centerName || "-"}
+									readOnly
+									className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+								/>
+							</div>
+							<div>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+									Test
+								</label>
+								<input
+									value={testName || "-"}
 									readOnly
 									className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
 								/>
@@ -241,12 +267,13 @@ function BookingCreatePage() {
 						</div>
 					</section>
 
-					{/* Manual booking details */}
 					<section className="space-y-3">
 						<h2 className="text-sm font-semibold text-slate-800">Booking Details</h2>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Booking Type</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+									Booking Type
+								</label>
 								<select
 									value={formData.bookingType}
 									onChange={(e) => setField("bookingType", e.target.value)}
@@ -258,7 +285,9 @@ function BookingCreatePage() {
 							</div>
 
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Booking Date</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+									Booking Date
+								</label>
 								<input
 									type="date"
 									value={formData.bookingDate}
@@ -269,7 +298,9 @@ function BookingCreatePage() {
 							</div>
 
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Time Slot (optional)</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+									Time Slot (optional)
+								</label>
 								<input
 									type="time"
 									value={formData.timeSlot}
@@ -295,7 +326,9 @@ function BookingCreatePage() {
 							</div>
 
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+									Priority
+								</label>
 								<select
 									value={formData.priorityLevel}
 									onChange={(e) => setField("priorityLevel", e.target.value)}
@@ -309,7 +342,9 @@ function BookingCreatePage() {
 							</div>
 
 							<div>
-								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Payment Method</label>
+								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+									Payment Method
+								</label>
 								<select
 									value={formData.paymentMethod}
 									onChange={(e) => setField("paymentMethod", e.target.value)}
@@ -323,7 +358,7 @@ function BookingCreatePage() {
 						</div>
 					</section>
 
-					{error && <div className="text-sm text-rose-600">{error}</div>}
+					{error ? <div className="text-sm text-rose-600">{error}</div> : null}
 
 					<div className="flex flex-wrap items-center gap-3">
 						<button
@@ -331,12 +366,12 @@ function BookingCreatePage() {
 							disabled={loading}
 							className="rounded-full bg-teal-600 px-6 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
 						>
-							{loading ? "Processing..." : "Continue to Payment"}
+							{loading ? "Processing..." : "Update & Continue to Payment"}
 						</button>
 
 						<button
 							type="button"
-							onClick={() => (lab?._id ? navigate(`/labs/${lab._id}`) : navigate("/health-centers"))}
+							onClick={() => navigate("/booking")}
 							className="rounded-full bg-slate-100 px-6 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200"
 						>
 							Back
@@ -359,4 +394,4 @@ function BookingCreatePage() {
 	);
 }
 
-export default BookingCreatePage;
+export default BookingUpdatePage;
