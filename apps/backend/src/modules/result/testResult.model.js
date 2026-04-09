@@ -133,6 +133,15 @@ const testResultBaseSchema = new Schema(
       minlength: 10,
       trim: true,
     },
+
+    // Hard copy collection tracking
+    hardCopyCollection: {
+      isPrinted: { type: Boolean, default: false },
+      printedAt: { type: Date },
+      isCollected: { type: Boolean, default: false },
+      collectedAt: { type: Date },
+      handedOverBy: { type: Schema.Types.ObjectId, ref: "HealthOfficer" },
+    },
   },
   {
     discriminatorKey: "testType",
@@ -150,6 +159,11 @@ testResultBaseSchema.index({
 });
 testResultBaseSchema.index({ testTypeId: 1, releasedAt: -1 });
 testResultBaseSchema.index({ isDeleted: 1, releasedAt: -1 }); // For filtering deleted records
+testResultBaseSchema.index({
+  "hardCopyCollection.isPrinted": 1,
+  "hardCopyCollection.isCollected": 1,
+  "hardCopyCollection.printedAt": 1,
+});
 
 const TestResult = mongoose.model("TestResult", testResultBaseSchema);
 

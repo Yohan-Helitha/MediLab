@@ -3,7 +3,7 @@
 ## Test Management & Communication Module
 
 **Project:** Rural Health Diagnostic Test Management System  
-**Date:** February 12, 2026  
+**Date:** February 12, 2026 (Updated: April 9, 2026)  
 **Database:** MongoDB with Mongoose ODM  
 **Pattern:** Mongoose Discriminators for Type-Safe Test Results
 
@@ -175,7 +175,16 @@ Uses **single collection inheritance** pattern where all test results are stored
         required: true
       }
     }
-  ]
+  ],
+
+  // Hard copy report collection tracking
+  hardCopyCollection: {
+    isPrinted: { type: Boolean, default: false },
+    printedAt: { type: Date },
+    isCollected: { type: Boolean, default: false },
+    collectedAt: { type: Date },
+    handedOverBy: { type: ObjectId, ref: 'HealthOfficer' }  // Officer who handed over the report
+  }
 
   // Note: createdAt and updatedAt provided by Mongoose timestamps option
 }
@@ -1427,7 +1436,13 @@ db.testtypes.createIndex({ isActive: 1 });
   // Notification type
   type: {
     type: String,
-    enum: ['result_ready', 'unviewed_result_reminder', 'routine_checkup_reminder'],
+    enum: [
+      'result_ready',
+      'unviewed_result_reminder',
+      'routine_checkup_reminder',
+      'hard_copy_ready_for_pickup',
+      'hard_copy_collection_reminder'
+    ],
     required: true,
     index: true
   },
@@ -1435,7 +1450,7 @@ db.testtypes.createIndex({ isActive: 1 });
   // Communication channel
   channel: {
     type: String,
-    enum: ['sms', 'email'],
+    enum: ['whatsapp', 'email'],
     required: true
   },
 
@@ -1496,18 +1511,18 @@ db.testtypes.createIndex({ isActive: 1 });
 
 ### Example Documents:
 
-**Result Ready SMS:**
+**Result Ready WhatsApp:**
 
 ```json
 {
   "_id": "507f1f77bcf86cd799439020",
   "patientId": "507f1f77bcf86cd799439002",
   "type": "result_ready",
-  "channel": "sms",
-  "recipient": "+94771234567",
+  "channel": "whatsapp",
+  "recipient": "whatsapp:+94771234567",
   "status": "sent",
   "errorMessage": null,
-  "messageContent": "Rural Health Alert: Your Blood Glucose Test results are now ready. Login to view your report: https://app.ruralhealth.lk - Anytown Health Center",
+  "messageContent": "Rural Health Alert: Your Blood Glucose Test results are now ready. Login to view your report: http://localhost:3000 - Anytown Health Center",
   "testResultId": "507f1f77bcf86cd799439011",
   "reminderSubscriptionId": null,
   "sentAt": "2026-02-11T08:30:05Z",
@@ -1548,16 +1563,62 @@ db.testtypes.createIndex({ isActive: 1 });
   "_id": "507f1f77bcf86cd799439022",
   "patientId": "507f1f77bcf86cd799439002",
   "type": "routine_checkup_reminder",
-  "channel": "sms",
-  "recipient": "+94771234567",
+  "channel": "whatsapp",
+  "recipient": "whatsapp:+94771234567",
   "status": "sent",
   "errorMessage": null,
-  "messageContent": "Health Reminder: It's time for your routine Blood Glucose Test checkup. Last test: 2026-01-12. Book your appointment: https://app.ruralhealth.lk - Rural Health System",
+  "messageContent": "Health Reminder: It's time for your routine Blood Glucose Test checkup. Last test: 2026-01-12. Book your appointment: http://localhost:3000 - Rural Health System",
   "testResultId": null,
   "reminderSubscriptionId": "507f1f77bcf86cd799439030",
   "sentAt": "2026-02-11T08:00:00Z",
   "apiResponse": {
     "sid": "SM9876543210fedcba",
+    "status": "delivered",
+    "provider": "twilio"
+  }
+}
+```
+
+**Hard Copy Ready for Pickup WhatsApp:**
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439023",
+  "patientId": "507f1f77bcf86cd799439002",
+  "type": "hard_copy_ready_for_pickup",
+  "channel": "whatsapp",
+  "recipient": "whatsapp:+94771234567",
+  "status": "sent",
+  "errorMessage": null,
+  "messageContent": "Your Blood Glucose Test hard copy report is ready for pickup at Anytown Health Center.\nAddress: 123 Main St, Colombo 07\nCounter Hours: Mon-Fri 8AM-5PM\nPlease bring a valid ID when collecting your report.",
+  "testResultId": "507f1f77bcf86cd799439011",
+  "reminderSubscriptionId": null,
+  "sentAt": "2026-04-09T09:15:00Z",
+  "apiResponse": {
+    "sid": "SM1122334455aabbcc",
+    "status": "delivered",
+    "provider": "twilio"
+  }
+}
+```
+
+**Hard Copy Collection Reminder:**
+
+```json
+{
+  "_id": "507f1f77bcf86cd799439024",
+  "patientId": "507f1f77bcf86cd799439002",
+  "type": "hard_copy_collection_reminder",
+  "channel": "whatsapp",
+  "recipient": "whatsapp:+94771234567",
+  "status": "sent",
+  "errorMessage": null,
+  "messageContent": "Reminder: Your Blood Glucose Test hard copy report at Anytown Health Center has not been collected yet. Please collect it at your earliest convenience.",
+  "testResultId": "507f1f77bcf86cd799439011",
+  "reminderSubscriptionId": null,
+  "sentAt": "2026-04-12T09:00:00Z",
+  "apiResponse": {
+    "sid": "SMddeeff001122334455",
     "status": "delivered",
     "provider": "twilio"
   }
@@ -1575,8 +1636,10 @@ db.notificationlogs.createIndex({ sentAt: -1 });
 
 ### Notes:
 
-- `testResultId` is set for result_ready and unviewed_result_reminder types
-- `reminderSubscriptionId` is set for routine_checkup_reminder type
+- `testResultId` is set for `result_ready`, `unviewed_result_reminder`, `hard_copy_ready_for_pickup`, and `hard_copy_collection_reminder` types
+- `reminderSubscriptionId` is set for `routine_checkup_reminder` type
+- `channel` is `whatsapp` or `email` — SMS (carrier) is not used; WhatsApp is the primary real-time channel
+- WhatsApp `recipient` is formatted as `whatsapp:+[phoneNumber]` (Twilio format)
 - `messageContent` stores truncated version for reference
 - `apiResponse` stores third-party API (Twilio/SendGrid) response for debugging
 
@@ -1919,6 +1982,17 @@ const TestResultBaseSchema = new Schema(
       index: true,
     },
     viewedBy: [ViewedBySchema],
+    // Hard copy report collection tracking
+    hardCopyCollection: {
+      isPrinted: { type: Boolean, default: false },
+      printedAt: { type: Date },
+      isCollected: { type: Boolean, default: false },
+      collectedAt: { type: Date },
+      handedOverBy: {
+        type: Schema.Types.ObjectId,
+        ref: "HealthOfficer",
+      },
+    },
   },
   {
     discriminatorKey: "testType",
@@ -1935,6 +2009,12 @@ TestResultBaseSchema.index({
   releasedAt: -1,
 });
 TestResultBaseSchema.index({ testTypeId: 1, releasedAt: -1 });
+// Hard copy collection index for uncollected report queries
+TestResultBaseSchema.index({
+  "hardCopyCollection.isPrinted": 1,
+  "hardCopyCollection.isCollected": 1,
+  "hardCopyCollection.printedAt": 1,
+});
 
 const TestResult = mongoose.model("TestResult", TestResultBaseSchema);
 
@@ -2809,13 +2889,15 @@ const NotificationLogSchema = new Schema({
       "result_ready",
       "unviewed_result_reminder",
       "routine_checkup_reminder",
+      "hard_copy_ready_for_pickup",
+      "hard_copy_collection_reminder",
     ],
     required: true,
     index: true,
   },
   channel: {
     type: String,
-    enum: ["sms", "email"],
+    enum: ["whatsapp", "email"],
     required: true,
   },
   recipient: {
@@ -2971,6 +3053,8 @@ module.exports = mongoose.model(
 - **Scalability:** Easy to add new test types by creating new discriminators
 - **Query Efficiency:** Single collection allows unified patient history queries
 - **Flexibility:** Mix of form-based and upload-based tests supported
+- **Hard Copy Workflow Tracking:** `hardCopyCollection` sub-document on every TestResult tracks the full lifecycle — printed → notified → collected — with compound index for efficient uncollected report queries
+- **WhatsApp as Primary Channel:** NotificationLog `channel` enum is `['whatsapp', 'email']`; SMS (carrier) is not used; Twilio WhatsApp sandbox is the real-time patient communication channel
 - **Optimized Schema Design:**
   - Mongoose timestamps used for automatic createdAt/updatedAt management
   - Single source of truth: entryMethod stored only in TestType (not duplicated in TestResult)

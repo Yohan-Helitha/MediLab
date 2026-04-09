@@ -104,9 +104,11 @@ export const sendEmail = async (to, subject, html, text = null) => {
       errorMessage =
         "SendGrid sender not authorized — verify SENDGRID_FROM_EMAIL in Single Sender Verification on SendGrid dashboard";
     } else if (statusCode === 400) {
-      errorMessage = sgErrorMessage || "Invalid email data — check to/subject/html fields";
+      errorMessage =
+        sgErrorMessage || "Invalid email data — check to/subject/html fields";
     } else if (statusCode === 429) {
-      errorMessage = "SendGrid rate limit exceeded — free tier is 100 emails/day";
+      errorMessage =
+        "SendGrid rate limit exceeded — free tier is 100 emails/day";
     } else {
       errorMessage = sgErrorMessage || error.message;
     }
@@ -378,6 +380,87 @@ export const sendUnviewedResultReminderEmail = async (data) => {
 };
 
 /**
+ * Send hard copy ready for pickup notification email
+ * @param {Object} data - Email data { to, patientName, testName, centerName, centerAddress, bookingCode, operatingHours, centerPhone, loginUrl }
+ * @returns {Promise<Object>} Result of email sending
+ */
+export const sendHardCopyReadyEmail = async (data) => {
+  const {
+    to,
+    patientName,
+    testName,
+    centerName,
+    centerAddress,
+    bookingCode,
+    operatingHours,
+    centerPhone,
+    loginUrl,
+  } = data;
+
+  const subject = "Your Hard Copy Report is Ready for Pickup - MediLab";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #27ae60; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+    .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
+    .button { display: inline-block; padding: 12px 30px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
+    .details { background-color: white; padding: 15px; border-left: 4px solid #27ae60; margin: 20px 0; }
+    .pickup-box { background-color: #eafaf1; padding: 15px; border-left: 4px solid #27ae60; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏥 MediLab Rural Health System</h1>
+    </div>
+    <div class="content">
+      <h2>Dear ${patientName},</h2>
+
+      <p>Your printed hard copy report is ready for pickup at the health center.</p>
+
+      <div class="details">
+        <p><strong>Test:</strong> ${testName}</p>
+        <p><strong>Booking Reference:</strong> ${bookingCode || "N/A"}</p>
+      </div>
+
+      <div class="pickup-box">
+        <p><strong>📍 Pickup Location:</strong></p>
+        <p><strong>${centerName}</strong></p>
+        ${centerAddress ? `<p>${centerAddress}</p>` : ""}
+        ${centerPhone ? `<p>📞 ${centerPhone}</p>` : ""}
+        ${operatingHours ? `<p>🕐 Operating Hours: ${operatingHours}</p>` : ""}
+      </div>
+
+      <p>Please bring a valid ID when collecting your report. You can also view your results online by logging into your account.</p>
+
+      <p style="text-align: center;">
+        <a href="${loginUrl}" class="button">View My Results Online</a>
+      </p>
+
+      <p>If you have any questions, please contact the health center directly.</p>
+
+      <p>Thank you for using <strong>MediLab Rural Health System</strong>.</p>
+    </div>
+    <div class="footer">
+      <p>This is an automated notification. Please do not reply to this email.</p>
+      <p>© 2026 MediLab. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return await sendEmailWithRetry(to, subject, html);
+};
+
+/**
  * Validate email address format
  * @param {string} email - Email address to validate
  * @returns {boolean} True if valid email format
@@ -406,6 +489,7 @@ export default {
   sendResultReadyEmail,
   sendRoutineCheckupReminderEmail,
   sendUnviewedResultReminderEmail,
+  sendHardCopyReadyEmail,
   isValidEmail,
   isSendGridConfigured,
 };

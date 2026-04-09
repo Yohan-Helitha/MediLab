@@ -82,6 +82,15 @@ router.get(
   resultController.getStatusHistory,
 );
 
+// Uncollected hard copy reports (Health Officer only) — MUST be before /:id
+router.get(
+  "/uncollected",
+  authenticate,
+  isHealthOfficer,
+  resultValidation.uncollectedQueryValidation,
+  resultController.getUncollectedReports,
+);
+
 // Generic ID route last to avoid conflicts (Patient own released + Health Officer all)
 router.get(
   "/:id",
@@ -118,6 +127,24 @@ router.patch(
   resultValidation.idParamValidation,
   resultValidation.markViewedValidation,
   resultController.markAsViewed,
+);
+
+// Hard copy: mark as printed (Health Officer only)
+router.patch(
+  "/:id/mark-printed",
+  authenticate,
+  isHealthOfficer,
+  resultValidation.idParamValidation,
+  resultController.markAsPrinted,
+);
+
+// Hard copy: mark as collected by patient (Health Officer only)
+router.patch(
+  "/:id/mark-collected",
+  authenticate,
+  isHealthOfficer,
+  resultValidation.idParamValidation,
+  resultController.markAsCollected,
 );
 
 // Delete Routes

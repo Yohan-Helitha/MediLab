@@ -451,6 +451,146 @@ export const updateSubscription = async (req, res, next) => {
  * Send routine checkup reminder (usually triggered by scheduled job)
  * POST /api/notifications/send/routine-reminder
  */
+/**
+ * Manual trigger for hard copy ready-for-pickup notification
+ * POST /api/notifications/send/hard-copy-ready
+ * Body: { resultId }
+ */
+export const sendHardCopyReadyNotification = async (req, res, next) => {
+  try {
+    const { resultId } = req.body;
+
+    if (!resultId) {
+      return res.status(400).json({
+        success: false,
+        message: "resultId is required",
+      });
+    }
+
+    const populatedResult = await TestResult.findById(resultId)
+      .populate("patientProfileId", "full_name email contact_number")
+      .populate("testTypeId", "name")
+      .populate(
+        "healthCenterId",
+        "name addressLine1 addressLine2 district phoneNumber operatingHours",
+      );
+
+    if (!populatedResult) {
+      return res.status(404).json({
+        success: false,
+        message: "Test result not found",
+      });
+    }
+
+    if (!populatedResult.hardCopyCollection?.isPrinted) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Hard copy has not been printed yet. Call mark-printed first.",
+      });
+    }
+
+    const center = populatedResult.healthCenterId;
+    const addressParts = [
+      center.addressLine1,
+      center.addressLine2,
+      center.district,
+    ].filter(Boolean);
+    const operatingHoursSummary =
+      center.operatingHours?.length > 0
+        ? center.operatingHours
+            .map((h) => `${h.day}: ${h.openTime} - ${h.closeTime}`)
+            .join(", ")
+        : null;
+
+    const notificationData = {
+      testResult: { _id: populatedResult._id, bookingCode: null },
+      patient: {
+        _id: populatedResult.patientProfileId._id,
+        fullName: populatedResult.patientProfileId.full_name,
+        contactNumber: populatedResult.patientProfileId.contact_number,
+        email: populatedResult.patientProfileId.email,
+      },
+      testType: {
+        _id: populatedResult.testTypeId._id,
+        name: populatedResult.testTypeId.name,
+      },
+      healthCenter: {
+        name: center.name,
+        address: addressParts.join(", ") || null,
+        contactNumber: center.phoneNumber || null,
+        operatingHours: operatingHoursSummary,
+      },
+    };
+
+    const results =
+      await notificationService.sendHardCopyReadyNotification(notificationData);
+
+    res.status(200).json({
+      success: true,
+      message: "Hard copy ready notification sent",
+      data: {
+        whatsapp: results.whatsapp,
+        email: results.email,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Manual trigger for uncollected hard copy collection reminders
+ * POST /api/notifications/send/hard-copy-reminder
+ * Body: { daysThreshold: 3, maxReminders: 2 } (optional, defaults provided)
+ */
+export const sendUncollectedHardCopyReminder = async (req, res, next) => {
+  try {
+    const daysThreshold = parseInt(req.body.daysThreshold) || 3;
+    const maxReminders = parseInt(req.body.maxReminders) || 2;
+
+    const uncollectedResults =
+      await notificationService.findUncollectedHardCopies(
+        daysThreshold,
+        maxReminders,
+      );
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const data of uncollectedResults) {
+      try {
+        const results =
+          await notificationService.sendUncollectedHardCopyReminder(data);
+
+        if (results.whatsapp?.success || results.email?.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        failCount++;
+        console.error(
+          `Error sending hard copy reminder for result ${data.testResult._id}:`,
+          error.message,
+        );
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Hard copy collection reminders sent",
+      data: {
+        totalFound: uncollectedResults.length,
+        sent: successCount,
+        failed: failCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sendRoutineCheckupReminder = async (req, res, next) => {
   try {
     const { subscriptionId } = req.body;
@@ -479,7 +619,7 @@ export const sendRoutineCheckupReminder = async (req, res, next) => {
       success: true,
       message: "Routine checkup reminder sent",
       data: {
-        sms: results.sms,
+        whatsapp: results.whatsapp,
         email: results.email,
       },
     });

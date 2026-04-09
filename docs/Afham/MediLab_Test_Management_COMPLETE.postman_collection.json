@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "test-management-complete-verified",
     "name": "MediLab - Test Management (Verified)",
-    "description": "Complete API documentation for Test Management Component - All endpoints verified against backend implementation.\n\n**Component Owner**: Afham\n**Created**: February 26, 2026\n**Last Updated**: February 27, 2026 (Two-Stage Workflow Update)\n**Base URL**: http://localhost:5000/api\n\n## Authentication Required\nAll endpoints require JWT Bearer token authentication except login endpoints.\n\n### Login Endpoints (Public):\n- **Patient Login**: POST /api/auth/patient/login\n- **Health Officer Login**: POST /api/auth/health-officer/login\n- **Admin Login**: POST /api/auth/health-officer/login (with Admin credentials)\n\n### Authorization:\n- **Patients**: View own released results, manage own subscriptions, download PDFs\n- **Health Officers**: Submit results, send notifications, view all data\n- **Admins**: All Health Officer permissions + permanent delete\n\n## Total Endpoints: 28\n- Authentication: 2 endpoints (public, 3 login variations)\n- TestResult Management: 14 endpoints (includes PDF Download, Status History, Update Result, Permanent Delete)\n- Notification Management: 12 endpoints\n\n## Workflow:\n**Two-Stage Status Flow**: pending → released\n- Results submitted with status: **pending** (default)\n- Lab staff updates to: **released** (triggers PDF generation)\n- Patients can only view/download: **released** results\n\n## Discriminator Pattern Support:\nSupports 8 test types with specialized fields: Blood Glucose, Hemoglobin, Blood Pressure, Pregnancy, X-Ray, ECG, Ultrasound, Automated Report.",
+    "description": "Complete API documentation for Test Management Component - All endpoints verified against backend implementation.\n\n**Component Owner**: Afham\n**Created**: February 26, 2026\n**Last Updated**: April 10, 2026 (Hard Copy Feature Added)\n**Base URL**: http://localhost:5000/api\n\n## Authentication Required\nAll endpoints require JWT Bearer token authentication except login endpoints.\n\n### Login Endpoints (Public):\n- **Patient Login**: POST /api/auth/patient/login\n- **Health Officer Login**: POST /api/auth/health-officer/login\n- **Admin Login**: POST /api/auth/health-officer/login (with Admin credentials)\n\n### Authorization:\n- **Patients**: View own released results, manage own subscriptions, download PDFs\n- **Health Officers**: Submit results, send notifications, view all data\n- **Admins**: All Health Officer permissions + permanent delete\n\n## Total Endpoints: 34\n- Authentication: 3 endpoints (public login variations)\n- TestResult Management: 17 endpoints (includes PDF Download, Status History, Update Result, Hard Copy tracking, Permanent Delete)\n- Notification Management: 14 endpoints\n\n## Workflow:\n**Two-Stage Status Flow**: pending → released\n- Results submitted with status: **pending** (default)\n- Lab staff updates to: **released** (triggers PDF generation)\n- Patients can only view/download: **released** results\n\n## Discriminator Pattern Support:\nSupports 8 test types with specialized fields: Blood Glucose, Hemoglobin, Blood Pressure, Pregnancy, X-Ray, ECG, Ultrasound, Automated Report.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -560,6 +560,87 @@
           "response": []
         },
         {
+          "name": "Get Uncollected Hard Copy Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/uncollected?centerId={{health_center_id}}&daysThreshold=3",
+              "host": ["{{base_url}}"],
+              "path": ["results", "uncollected"],
+              "query": [
+                {
+                  "key": "centerId",
+                  "value": "{{health_center_id}}",
+                  "description": "Optional. Filter by health center MongoDB ObjectId."
+                },
+                {
+                  "key": "daysThreshold",
+                  "value": "3",
+                  "description": "Optional. Only return reports printed at least this many days ago. Default: 0 (all uncollected)."
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: uncollectedQueryValidation\n\nRetrieve all printed but uncollected hard copy reports. Optionally filter by health center or by how long the report has been waiting.\n\n**Query Parameters**:\n- `centerId` (MongoId, optional): Filter by health center\n- `daysThreshold` (integer ≥ 1, optional): Only include reports printed at least N days ago\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Uncollected hard copy reports retrieved\",\n  \"count\": 5,\n  \"data\": [\n    {\n      \"hardCopyCollection\": {\n        \"isPrinted\": true,\n        \"printedAt\": \"2026-04-09T...\",\n        \"isCollected\": false\n      },\n      \"patientProfileId\": { \"full_name\": \"...\", \"contact_number\": \"...\" },\n      \"testTypeId\": { \"name\": \"Blood Glucose\" },\n      \"healthCenterId\": { \"name\": \"...\" }\n    }\n  ]\n}\n```\n\n**Use Case**: Daily report for health officers to identify patients who have not yet collected their printed reports."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Hard Copy as Printed",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/:id/mark-printed",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "mark-printed"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{result_id}}"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: idParamValidation\n\nMark a released test result's hard copy as printed. Automatically sends a pickup-ready notification to the patient via WhatsApp and Email.\n\n**Prerequisites**:\n- Result must have `currentStatus === 'released'`\n- Result must NOT already be marked as printed\n\n**Side Effects**:\n- Sets `hardCopyCollection.isPrinted = true`\n- Sets `hardCopyCollection.printedAt = now()`\n- Sets `hardCopyCollection.handedOverBy = req.user.id`\n- Fires `sendHardCopyReadyNotification` (WhatsApp + Email) — non-blocking\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Hard copy marked as printed. Patient notification sent.\",\n  \"data\": { ...testResult }\n}\n```\n\n**Error Conditions**:\n- 400: Result not released yet\n- 409: Already marked as printed\n- 404: Result not found"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Hard Copy as Collected",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/results/:id/mark-collected",
+              "host": ["{{base_url}}"],
+              "path": ["results", ":id", "mark-collected"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{result_id}}"
+                }
+              ]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: idParamValidation\n\nMark a printed hard copy as collected by the patient.\n\n**Prerequisites**:\n- `hardCopyCollection.isPrinted` must be `true`\n- `hardCopyCollection.isCollected` must be `false`\n\n**Side Effects**:\n- Sets `hardCopyCollection.isCollected = true`\n- Sets `hardCopyCollection.collectedAt = now()`\n- Updates `hardCopyCollection.handedOverBy = req.user.id`\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Hard copy marked as collected by patient.\",\n  \"data\": { ...testResult }\n}\n```\n\n**Error Conditions**:\n- 400: Hard copy not yet printed\n- 409: Already marked as collected\n- 404: Result not found"
+          },
+          "response": []
+        },
+        {
           "name": "Delete Test Result (Soft)",
           "request": {
             "method": "DELETE",
@@ -661,13 +742,11 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "// Auto-capture notification ID after successful send",
+                  "// This endpoint returns delivery status only (whatsapp/email), not a notification log ID.",
+                  "// Run 'Get Patient Notification History' after this to capture notification_id.",
                   "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
-                  "    if (response.notifications && response.notifications.length > 0) {",
-                  "        pm.collectionVariables.set('notification_id', response.notifications[0]._id);",
-                  "        console.log('✅ Notification ID captured:', response.notifications[0]._id);",
-                  "    }",
+                  "    console.log('✅ Result ready notification sent:', JSON.stringify(response.data));",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -700,6 +779,60 @@
           "response": []
         },
         {
+          "name": "Send Hard Copy Ready Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resultId\": \"{{result_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send/hard-copy-ready",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send", "hard-copy-ready"]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n\nManual trigger for the `hard_copy_ready_for_pickup` notification — informs the patient their printed hard copy is ready for pickup (WhatsApp + Email).\n\n**Prerequisites**:\n- Result must have `hardCopyCollection.isPrinted === true`\n- (Call Mark Hard Copy as Printed first if not already done)\n\n**Request Body**:\n- `resultId` (MongoId, required): The test result ID\n\n**Note**: This notification fires **automatically** (non-blocking) when `PATCH /results/:id/mark-printed` is called. Use this endpoint only to resend or test without going through mark-printed again.\n\n**Backend Process**:\n1. Fetches and populates the result (patient, testType, healthCenter)\n2. Builds notificationData with center address and operating hours\n3. Calls `sendHardCopyReadyNotification` (WhatsApp + Email)\n4. Logs each attempt as `type: hard_copy_ready_for_pickup`\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Hard copy ready notification sent\",\n  \"data\": {\n    \"whatsapp\": { \"success\": true, \"sid\": \"SM...\" },\n    \"email\": { \"success\": true }\n  }\n}\n```\n\n**Error Conditions**:\n- 400: Hard copy not yet printed (mark-printed first)\n- 404: Result not found\n- 400: resultId missing"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Hard Copy Collection Reminder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{health_officer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"daysThreshold\": 3,\n  \"maxReminders\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send/hard-copy-reminder",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send", "hard-copy-reminder"]
+            },
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: None (body optional, defaults provided)\n\nManual trigger for the 3PM cron job — sends collection reminders to all patients whose printed hard copy has not been collected after N days.\n\n**Request Body** (all optional):\n- `daysThreshold` (integer, optional, default: 3): Only remind for reports printed at least this many days ago\n- `maxReminders` (integer, optional, default: 2): Skip patients who already received this many reminders\n\n**Backend Process**:\n1. Queries results where `isPrinted=true`, `isCollected=false`, `printedAt ≤ (today - daysThreshold)`\n2. Filters out results that already have `≥ maxReminders` `hard_copy_collection_reminder` log entries\n3. Sends WhatsApp + Email reminder for each remaining result\n4. Logs each attempt as `type: hard_copy_collection_reminder`\n\n**Note**: The automatic version of this runs daily at **3PM** via cron job. Use this endpoint to trigger it on demand for testing.\n\n**Also testable via**: Run `PATCH /results/:id/mark-printed` to test the `hard_copy_ready_for_pickup` notification (that fires automatically when a hard copy is marked as printed).\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Hard copy collection reminders sent\",\n  \"data\": {\n    \"totalFound\": 3,\n    \"sent\": 3,\n    \"failed\": 0\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
           "name": "Send Routine Checkup Reminder",
           "request": {
             "method": "POST",
@@ -722,7 +855,7 @@
               "host": ["{{base_url}}"],
               "path": ["notifications", "send", "routine-reminder"]
             },
-            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: sendRoutineReminderValidation\n\nSend routine checkup reminder to patient based on their subscription settings.\n\n**Request Body**:\n- `subscriptionId` (MongoId, required): ID of the patient's subscription record\n\n**Backend Process**:\n1. Fetches subscription with populated patient, testType\n2. Retrieves patient contact info\n3. Sends notification via configured channels\n4. Updates subscription's lastReminderDate\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Routine reminder sent successfully\",\n  \"notifications\": [...]\n}\n```"
+            "description": "**Auth**: Health Officer only\n**Middleware**: authenticate + isHealthOfficer\n**Validation**: sendRoutineReminderValidation\n\nSend routine checkup reminder to patient based on their subscription settings.\n\n**Request Body**:\n- `subscriptionId` (MongoId, required): ID of the patient's subscription record\n\n**Backend Process**:\n1. Fetches subscription with populated patient, testType\n2. Retrieves patient contact info\n3. Sends notification via configured channels (WhatsApp + Email)\n4. Updates subscription's lastReminderDate and recalculates nextReminderDate\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Routine checkup reminder sent\",\n  \"data\": {\n    \"whatsapp\": { \"success\": true, \"sid\": \"SM...\" },\n    \"email\": { \"success\": true }\n  }\n}\n```"
           },
           "response": []
         },
@@ -788,14 +921,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/notifications/patient/:patientId?type=result_ready&channel=sms&status=sent&startDate=2026-01-01&endDate=2026-02-28",
+              "raw": "{{base_url}}/notifications/patient/:patientId?type=result_ready&channel=whatsapp&status=sent&startDate=2026-01-01&endDate=2026-02-28",
               "host": ["{{base_url}}"],
               "path": ["notifications", "patient", ":patientId"],
               "query": [
                 {
                   "key": "type",
                   "value": "result_ready",
-                  "description": "Filter: result_ready | unviewed_result_reminder | routine_checkup_reminder"
+                  "description": "Filter: result_ready | unviewed_result_reminder | routine_checkup_reminder | hard_copy_ready_for_pickup | hard_copy_collection_reminder"
                 },
                 {
                   "key": "channel",
@@ -825,8 +958,28 @@
                 }
               ]
             },
-            "description": "**Auth**: Patient (own) OR Health Officer (any)\n**Middleware**: authenticate\n**Validation**: patientIdParamValidation + notificationHistoryQueryValidation\n\nGet notification history for a specific patient with optional filters.\n\n**Patient Access**:\n- URL `patientId` must match `req.user.id`\n\n**Health Officer Access**:\n- Can access any patient's notification history\n\n**Query Parameters**:\n- `type` (enum, optional): result_ready | unviewed_result_reminder | routine_checkup_reminder\n- `channel` (enum, optional): email | whatsapp\n- `status` (enum, optional): sent | failed\n- `startDate` (ISO8601, optional)\n- `endDate` (ISO8601, optional)\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"notifications\": [...]\n}\n```"
+            "description": "**Auth**: Patient (own) OR Health Officer (any)\n**Middleware**: authenticate\n**Validation**: patientIdParamValidation + notificationHistoryQueryValidation\n\nGet notification history for a specific patient with optional filters.\n\n**Patient Access**:\n- URL `patientId` must match `req.user.id`\n\n**Health Officer Access**:\n- Can access any patient's notification history\n\n**Query Parameters**:\n- `type` (enum, optional): result_ready | unviewed_result_reminder | routine_checkup_reminder | hard_copy_ready_for_pickup | hard_copy_collection_reminder\n- `channel` (enum, optional): email | whatsapp\n- `status` (enum, optional): sent | failed\n- `startDate` (ISO8601, optional)\n- `endDate` (ISO8601, optional)\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"notifications\": [...]\n}\n```"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-capture the most recent notification ID from patient notification history",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.notifications && response.notifications.length > 0) {",
+                  "        pm.collectionVariables.set('notification_id', response.notifications[0]._id);",
+                  "        console.log('✅ Notification ID captured:', response.notifications[0]._id);",
+                  "    } else {",
+                  "        console.warn('⚠️ No notifications found for this patient.');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {

@@ -10,6 +10,7 @@ import {
   sendResultReadyEmail,
   sendRoutineCheckupReminderEmail,
   sendUnviewedResultReminderEmail,
+  sendHardCopyReadyEmail,
 } from "../../config/sendgrid.js";
 import config from "../../config/environment.js";
 
@@ -117,7 +118,7 @@ export const sendResultReadyNotification = async (data) => {
   };
 
   // Prepare message content
-  const smsMessage = `Rural Health Alert: Your ${testType.name} results are now ready. Login to view your report: ${config.appUrl} - ${healthCenter.name}`;
+  const smsMessage = `Rural Health Alert: Your ${testType.name} results are now ready. Login to view your report: ${config.frontendUrl} - ${healthCenter.name}`;
 
   // Send SMS/WhatsApp if patient has phone number
   // NOTE: Twilio carrier SMS does not work in Sri Lanka. WhatsApp is used as primary channel.
@@ -207,7 +208,7 @@ export const sendUnviewedResultReminder = async (data) => {
     email: null,
   };
 
-  const smsMessage = `MediLab Reminder: Your ${testType.name} results (released ${daysUnviewed} days ago) have not been viewed. Please login to check: ${config.appUrl} - ${healthCenter.name}`;
+  const smsMessage = `MediLab Reminder: Your ${testType.name} results (released ${daysUnviewed} days ago) have not been viewed. Please login to check: ${config.frontendUrl} - ${healthCenter.name}`;
 
   // Send WhatsApp + SMS if patient has phone number
   if (patient.contactNumber) {
@@ -674,4 +675,216 @@ export const updateSubscriptionAfterTest = async (
 
   await subscription.save();
   return subscription;
+};
+
+// ===== HARD COPY NOTIFICATION SERVICES =====
+
+/**
+ * Send hard copy ready for pickup notification (WhatsApp + Email)
+ * @param {Object} data - { testResult, patient, testType, healthCenter }
+ * @returns {Promise<Object>} { whatsapp: result, email: result }
+ */
+export const sendHardCopyReadyNotification = async (data) => {
+  const { testResult, patient, testType, healthCenter } = data;
+
+  const results = {
+    whatsapp: null,
+    email: null,
+  };
+
+  const whatsappMessage = `MediLab: Your ${testType.name} hard copy report is printed and ready for pickup at ${healthCenter.name}. Please bring a valid ID. Visit ${config.frontendUrl}/login to view online.`;
+
+  if (patient.contactNumber) {
+    const whatsappResult = await sendWhatsAppWithRetry(
+      patient.contactNumber,
+      whatsappMessage,
+    );
+
+    await createNotificationLog({
+      patientProfileId: patient._id,
+      type: "hard_copy_ready_for_pickup",
+      channel: "whatsapp",
+      recipient: patient.contactNumber,
+      status: whatsappResult.success ? "sent" : "failed",
+      errorMessage: whatsappResult.error || null,
+      messageContent: whatsappMessage,
+      testResultId: testResult._id,
+      sentAt: new Date(),
+      apiResponse: whatsappResult,
+    });
+
+    results.whatsapp = whatsappResult;
+  }
+
+  if (patient.email) {
+    const emailData = {
+      to: patient.email,
+      patientName: patient.fullName || "Patient",
+      testName: testType.name,
+      centerName: healthCenter.name,
+      centerAddress: healthCenter.address || null,
+      bookingCode: testResult.bookingCode || null,
+      operatingHours: healthCenter.operatingHours || null,
+      centerPhone: healthCenter.contactNumber || null,
+      loginUrl: `${config.frontendUrl}/login`,
+    };
+
+    const emailResult = await sendHardCopyReadyEmail(emailData);
+
+    await createNotificationLog({
+      patientProfileId: patient._id,
+      type: "hard_copy_ready_for_pickup",
+      channel: "email",
+      recipient: patient.email,
+      status: emailResult.success ? "sent" : "failed",
+      errorMessage: emailResult.error || null,
+      messageContent: `Hard Copy Ready for Pickup: ${testType.name}`,
+      testResultId: testResult._id,
+      sentAt: new Date(),
+      apiResponse: emailResult,
+    });
+
+    results.email = emailResult;
+  }
+
+  return results;
+};
+
+/**
+ * Find printed but uncollected hard copy reports eligible for reminder
+ * @param {number} daysThreshold - Days since printing before sending reminder (default: 3)
+ * @param {number} maxReminders - Maximum number of reminders to send per result (default: 2)
+ * @returns {Promise<Array>} Array of uncollected result data objects
+ */
+export const findUncollectedHardCopies = async (
+  daysThreshold = 3,
+  maxReminders = 2,
+) => {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysThreshold);
+
+  const uncollectedResults = await TestResult.find({
+    "hardCopyCollection.isPrinted": true,
+    "hardCopyCollection.isCollected": false,
+    "hardCopyCollection.printedAt": { $lte: cutoffDate },
+    isDeleted: false,
+  })
+    .populate("patientProfileId", "full_name email contact_number")
+    .populate("testTypeId", "name code")
+    .populate("healthCenterId", "name address contact_number")
+    .sort({ "hardCopyCollection.printedAt": 1 });
+
+  const filteredResults = [];
+
+  for (const result of uncollectedResults) {
+    const reminderCount = await NotificationLog.countDocuments({
+      testResultId: result._id,
+      type: "hard_copy_collection_reminder",
+    });
+
+    if (reminderCount < maxReminders) {
+      const daysSincePrinting = Math.floor(
+        (new Date() - result.hardCopyCollection.printedAt) /
+          (1000 * 60 * 60 * 24),
+      );
+
+      filteredResults.push({
+        testResult: {
+          _id: result._id,
+          printedAt: result.hardCopyCollection.printedAt,
+        },
+        patient: {
+          _id: result.patientProfileId._id,
+          fullName: result.patientProfileId.full_name,
+          contactNumber: result.patientProfileId.contact_number,
+          email: result.patientProfileId.email,
+        },
+        testType: {
+          _id: result.testTypeId._id,
+          name: result.testTypeId.name,
+        },
+        healthCenter: {
+          name: result.healthCenterId.name,
+          address: result.healthCenterId.address || null,
+          contactNumber: result.healthCenterId.contact_number || null,
+        },
+        daysSincePrinting,
+        remindersSent: reminderCount,
+      });
+    }
+  }
+
+  return filteredResults;
+};
+
+/**
+ * Send uncollected hard copy reminder notification (WhatsApp + Email)
+ * @param {Object} data - { testResult, patient, testType, healthCenter, daysSincePrinting }
+ * @returns {Promise<Object>} { whatsapp: result, email: result }
+ */
+export const sendUncollectedHardCopyReminder = async (data) => {
+  const { testResult, patient, testType, healthCenter, daysSincePrinting } =
+    data;
+
+  const results = {
+    whatsapp: null,
+    email: null,
+  };
+
+  const whatsappMessage = `MediLab Reminder: Your ${testType.name} hard copy report has been waiting ${daysSincePrinting} day(s) at ${healthCenter.name}. Please collect it at your earliest convenience.`;
+
+  if (patient.contactNumber) {
+    const whatsappResult = await sendWhatsAppWithRetry(
+      patient.contactNumber,
+      whatsappMessage,
+    );
+
+    await createNotificationLog({
+      patientProfileId: patient._id,
+      type: "hard_copy_collection_reminder",
+      channel: "whatsapp",
+      recipient: patient.contactNumber,
+      status: whatsappResult.success ? "sent" : "failed",
+      errorMessage: whatsappResult.error || null,
+      messageContent: whatsappMessage,
+      testResultId: testResult._id,
+      sentAt: new Date(),
+      apiResponse: whatsappResult,
+    });
+
+    results.whatsapp = whatsappResult;
+  }
+
+  if (patient.email) {
+    const emailData = {
+      to: patient.email,
+      patientName: patient.fullName || "Patient",
+      testName: testType.name,
+      centerName: healthCenter.name,
+      centerAddress: healthCenter.address || null,
+      bookingCode: null,
+      operatingHours: null,
+      centerPhone: healthCenter.contactNumber || null,
+      loginUrl: `${config.frontendUrl}/login`,
+    };
+
+    const emailResult = await sendHardCopyReadyEmail(emailData);
+
+    await createNotificationLog({
+      patientProfileId: patient._id,
+      type: "hard_copy_collection_reminder",
+      channel: "email",
+      recipient: patient.email,
+      status: emailResult.success ? "sent" : "failed",
+      errorMessage: emailResult.error || null,
+      messageContent: `Hard Copy Collection Reminder: ${testType.name} (${daysSincePrinting} days waiting)`,
+      testResultId: testResult._id,
+      sentAt: new Date(),
+      apiResponse: emailResult,
+    });
+
+    results.email = emailResult;
+  }
+
+  return results;
 };

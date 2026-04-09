@@ -577,3 +577,116 @@ export const getDiscriminatorModel = (discriminatorType) => {
 
   return models[discriminatorType] || TestResult;
 };
+
+// ===== HARD COPY MANAGEMENT SERVICES =====
+
+/**
+ * Mark a test result's hard copy as printed
+ * @param {string} id - Test result ID
+ * @param {string} staffId - Health officer ID who printed the report
+ * @returns {Promise<Object>} Updated test result
+ */
+export const markResultAsPrinted = async (id, staffId) => {
+  const result = await TestResult.findOne({ _id: id, isDeleted: false });
+
+  if (!result) {
+    const error = new Error("Test result not found or has been deleted");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (result.currentStatus !== "released") {
+    const error = new Error(
+      "Hard copy can only be printed for released results",
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (result.hardCopyCollection?.isPrinted) {
+    const error = new Error("Hard copy has already been marked as printed");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  result.hardCopyCollection = {
+    isPrinted: true,
+    printedAt: new Date(),
+    isCollected: false,
+    handedOverBy: staffId,
+  };
+
+  await result.save();
+  return result;
+};
+
+/**
+ * Mark a test result's hard copy as collected by patient
+ * @param {string} id - Test result ID
+ * @param {string} staffId - Health officer ID who handed over the report
+ * @returns {Promise<Object>} Updated test result
+ */
+export const markResultAsCollected = async (id, staffId) => {
+  const result = await TestResult.findOne({ _id: id, isDeleted: false });
+
+  if (!result) {
+    const error = new Error("Test result not found or has been deleted");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!result.hardCopyCollection?.isPrinted) {
+    const error = new Error(
+      "Hard copy must be marked as printed before marking as collected",
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (result.hardCopyCollection?.isCollected) {
+    const error = new Error("Hard copy has already been marked as collected");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  result.hardCopyCollection.isCollected = true;
+  result.hardCopyCollection.collectedAt = new Date();
+  result.hardCopyCollection.handedOverBy = staffId;
+
+  await result.save();
+  return result;
+};
+
+/**
+ * Find printed but uncollected reports for a health center
+ * @param {string|null} centerId - Health center ID filter (optional)
+ * @param {number} daysThreshold - Only include reports printed at least this many days ago (default: 0 = all)
+ * @returns {Promise<Array>} Array of uncollected test results
+ */
+export const findUncollectedReports = async (
+  centerId = null,
+  daysThreshold = 0,
+) => {
+  const query = {
+    "hardCopyCollection.isPrinted": true,
+    "hardCopyCollection.isCollected": false,
+    isDeleted: false,
+  };
+
+  if (centerId) {
+    query.healthCenterId = centerId;
+  }
+
+  if (daysThreshold > 0) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysThreshold);
+    query["hardCopyCollection.printedAt"] = { $lte: cutoffDate };
+  }
+
+  return await TestResult.find(query)
+    .populate("patientProfileId", "full_name email contact_number")
+    .populate("testTypeId", "name code")
+    .populate("healthCenterId", "name address")
+    .populate("hardCopyCollection.handedOverBy", "full_name")
+    .sort({ "hardCopyCollection.printedAt": 1 });
+};

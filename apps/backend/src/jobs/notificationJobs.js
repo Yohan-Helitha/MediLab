@@ -132,6 +132,69 @@ export const sendUnviewedResultReminders = async () => {
 };
 
 /**
+ * Send reminders for printed hard copy reports not yet collected (older than 3 days)
+ * This should be run daily
+ */
+export const sendUncollectedHardCopyReminders = async () => {
+  console.log(
+    "🔔 Running scheduled job: Send uncollected hard copy reminders",
+  );
+
+  try {
+    const uncollectedItems = await notificationService.findUncollectedHardCopies(3, 2);
+
+    console.log(
+      `🔍 Found ${uncollectedItems.length} uncollected hard copies to remind`,
+    );
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const data of uncollectedItems) {
+      try {
+        const results =
+          await notificationService.sendUncollectedHardCopyReminder(data);
+
+        if (results.whatsapp?.success || results.email?.success) {
+          successCount++;
+          console.log(
+            `✅ Reminder sent for result ${data.testResult._id} (${data.daysSincePrinting} days since printing)`,
+          );
+        } else {
+          failCount++;
+          console.log(
+            `❌ Failed to send reminder for result ${data.testResult._id}`,
+          );
+        }
+      } catch (error) {
+        failCount++;
+        console.error(
+          `❌ Error sending reminder for result ${data.testResult._id}:`,
+          error.message,
+        );
+      }
+    }
+
+    console.log(
+      `🔔 Uncollected hard copy reminders job completed: ${successCount} sent, ${failCount} failed`,
+    );
+
+    return {
+      success: true,
+      totalFound: uncollectedItems.length,
+      sent: successCount,
+      failed: failCount,
+    };
+  } catch (error) {
+    console.error("❌ Error in sendUncollectedHardCopyReminders job:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
+/**
  * Setup cron jobs (to be called on server startup)
  * Uses node-cron for scheduling
  */
@@ -152,9 +215,16 @@ export const setupScheduledJobs = async () => {
       await sendUnviewedResultReminders();
     });
 
+    // Run sendUncollectedHardCopyReminders every day at 3:00 PM
+    cron.schedule("0 15 * * *", async () => {
+      console.log("⏰ Cron: Sending uncollected hard copy reminders");
+      await sendUncollectedHardCopyReminders();
+    });
+
     console.log("✅ Scheduled notification jobs initialized");
     console.log("   - Due reminders: Daily at 8:00 AM");
     console.log("   - Unviewed result reminders: Daily at 10:00 AM");
+    console.log("   - Uncollected hard copy reminders: Daily at 3:00 PM");
   } catch (error) {
     console.error("❌ Failed to setup scheduled jobs:", error.message);
   }
@@ -163,5 +233,6 @@ export const setupScheduledJobs = async () => {
 export default {
   sendDueReminders,
   sendUnviewedResultReminders,
+  sendUncollectedHardCopyReminders,
   setupScheduledJobs,
 };

@@ -3,6 +3,8 @@ import * as resultService from "./result.service.js";
 import TestType from "../test/testType.model.js";
 import fs from "fs";
 import path from "path";
+import { sendHardCopyReadyNotification } from "../notification/notification.service.js";
+import TestResult from "./testResult.model.js";
 
 // Test Result Controller
 // Handles test result submission, viewing, and management
@@ -297,7 +299,7 @@ export const getStatusHistory = async (req, res, next) => {
       });
     }
 
-    const result = await resultService.findById(req.params.id);
+    const result = await resultService.findTestResultById(req.params.id);
 
     if (!result) {
       return res.status(404).json({
@@ -705,6 +707,166 @@ export const downloadTestResultPDF = async (req, res, next) => {
         message: error.message,
       });
     }
+    next(error);
+  }
+};
+
+// ===== HARD COPY MANAGEMENT CONTROLLERS =====
+
+/**
+ * Mark a test result hard copy as printed and notify the patient
+ * PATCH /api/results/:id/mark-printed
+ */
+export const markAsPrinted = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const result = await resultService.markResultAsPrinted(
+      req.params.id,
+      req.user.id,
+    );
+
+    // Fetch full populated result for notification
+    const populatedResult = await TestResult.findById(result._id)
+      .populate("patientProfileId", "full_name email contact_number")
+      .populate("testTypeId", "name")
+      .populate(
+        "healthCenterId",
+        "name addressLine1 addressLine2 district phoneNumber operatingHours",
+      );
+
+    // Send notification (non-blocking — do not fail the request if notification fails)
+    if (
+      populatedResult.patientProfileId &&
+      populatedResult.testTypeId &&
+      populatedResult.healthCenterId
+    ) {
+      const center = populatedResult.healthCenterId;
+      const addressParts = [
+        center.addressLine1,
+        center.addressLine2,
+        center.district,
+      ].filter(Boolean);
+      const operatingHoursSummary =
+        center.operatingHours?.length > 0
+          ? center.operatingHours
+              .map((h) => `${h.day}: ${h.openTime} - ${h.closeTime}`)
+              .join(", ")
+          : null;
+
+      const notificationData = {
+        testResult: { _id: result._id, bookingCode: null },
+        patient: {
+          _id: populatedResult.patientProfileId._id,
+          fullName: populatedResult.patientProfileId.full_name,
+          contactNumber: populatedResult.patientProfileId.contact_number,
+          email: populatedResult.patientProfileId.email,
+        },
+        testType: {
+          _id: populatedResult.testTypeId._id,
+          name: populatedResult.testTypeId.name,
+        },
+        healthCenter: {
+          name: center.name,
+          address: addressParts.join(", ") || null,
+          contactNumber: center.phoneNumber || null,
+          operatingHours: operatingHoursSummary,
+        },
+      };
+
+      sendHardCopyReadyNotification(notificationData).catch((err) =>
+        console.error("⚠️ Hard copy notification failed:", err.message),
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Hard copy marked as printed. Patient notification sent.",
+      data: result,
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Mark a test result hard copy as collected by the patient
+ * PATCH /api/results/:id/mark-collected
+ */
+export const markAsCollected = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const result = await resultService.markResultAsCollected(
+      req.params.id,
+      req.user.id,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Hard copy marked as collected by patient.",
+      data: result,
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Get all printed but uncollected hard copy reports
+ * GET /api/results/uncollected
+ */
+export const getUncollectedReports = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const { centerId, daysThreshold } = req.query;
+
+    const results = await resultService.findUncollectedReports(
+      centerId || null,
+      daysThreshold ? parseInt(daysThreshold, 10) : 0,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Uncollected hard copy reports retrieved",
+      count: results.length,
+      data: results,
+    });
+  } catch (error) {
     next(error);
   }
 };

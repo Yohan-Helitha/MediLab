@@ -19,6 +19,8 @@ const notificationLogSchema = new Schema(
         "result_ready",
         "unviewed_result_reminder",
         "routine_checkup_reminder",
+        "hard_copy_ready_for_pickup",
+        "hard_copy_collection_reminder",
       ],
       required: true,
       index: true,
