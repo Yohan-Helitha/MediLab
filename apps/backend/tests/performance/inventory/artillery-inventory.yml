@@ -1,0 +1,123 @@
+# Artillery Load Test - Inventory Module
+# Usage (smoke/default): npx artillery run tests/performance/inventory/artillery-inventory.yml
+# Usage (full):          npx artillery run --environment full tests/performance/inventory/artillery-inventory.yml
+
+config:
+  target: "http://localhost:5000"
+  http:
+    timeout: 60
+
+  phases:
+    - duration: 5
+      arrivalCount: 1
+      name: "Smoke"
+
+  environments:
+    full:
+      phases:
+        - duration: 30
+          arrivalRate: 2
+          name: "Warm up"
+        - duration: 60
+          arrivalRate: 6
+          name: "Ramp up"
+        - duration: 90
+          arrivalRate: 10
+          name: "Peak"
+
+scenarios:
+  - name: "Inventory Admin Ops"
+    flow:
+      # 1) Register Admin staff and capture token
+      - post:
+          url: "/api/auth/staff/register"
+          json:
+            fullName: "Perf Admin"
+            email: "perf.admin.{{ $timestamp }}.{{ $randomNumber(1, 1000000) }}@example.com"
+            contactNumber: "0771234567"
+            role: "Admin"
+            password: "AdminPassword123!"
+          capture:
+            - json: "$.data.token"
+              as: "adminToken"
+          expect:
+            - statusCode: 201
+
+      # 2) Create equipment (requires Admin)
+      - post:
+          url: "/api/equipment"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          json:
+            name: "Perf Equipment {{ $timestamp }}"
+            type: "CONSUMABLE"
+            description: "Perf testing equipment"
+            initialQuantity: 500
+            minimumThreshold: 10
+            isActive: true
+          capture:
+            - json: "$._id"
+              as: "equipmentId"
+          expect:
+            - statusCode: 201
+
+      # 3) Create test type (unprotected) for requirements mapping
+      - post:
+          url: "/api/test-types"
+          json:
+            name: "Perf Inv TestType {{ $timestamp }}"
+            code: "IT{{ $randomNumber(1000, 9999) }}"
+            category: "Other"
+            entryMethod: "form"
+            discriminatorType: "BloodGlucose"
+            description: "Performance test test-type for inventory requirements."
+            reportTemplate: "/templates/perf-inventory-test-type"
+            isActive: true
+          capture:
+            - json: "$._id"
+              as: "testTypeId"
+          expect:
+            - statusCode: 201
+
+      # 4) Upsert requirement (Admin)
+      - post:
+          url: "/api/inventory/requirements"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          json:
+            testTypeId: "{{ testTypeId }}"
+            equipmentId: "{{ equipmentId }}"
+            quantityPerTest: 1
+            isActive: true
+          capture:
+            - json: "$.requirement._id"
+              as: "requirementId"
+          expect:
+            - statusCode: [201, 200]
+
+      # 5) List requirements (Admin)
+      - get:
+          url: "/api/inventory/requirements?testTypeId={{ testTypeId }}"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: 200
+
+      # 6) Restock equipment (Admin)
+      - post:
+          url: "/api/inventory/restock"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          json:
+            equipmentId: "{{ equipmentId }}"
+            quantity: 50
+          expect:
+            - statusCode: 200
+
+      # 7) List inventory stock (Admin)
+      - get:
+          url: "/api/inventory/stock"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: 200

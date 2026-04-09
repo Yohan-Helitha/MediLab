@@ -1,0 +1,125 @@
+# Artillery Load Test - Booking Module
+# Usage (smoke/default): npx artillery run tests/performance/booking/artillery-booking.yml
+# Usage (full):          npx artillery run --environment full tests/performance/booking/artillery-booking.yml
+
+config:
+  target: "http://localhost:5000"
+  http:
+    timeout: 60
+
+  phases:
+    - duration: 5
+      arrivalCount: 1
+      name: "Smoke"
+
+  environments:
+    full:
+      phases:
+        - duration: 30
+          arrivalRate: 3
+          name: "Warm up"
+        - duration: 60
+          arrivalRate: 8
+          name: "Ramp up"
+        - duration: 90
+          arrivalRate: 15
+          name: "Peak"
+
+scenarios:
+  - name: "Booking CRUD & Reads"
+    flow:
+      # 1) Register patient and capture token + patientProfileId
+      - post:
+          url: "/api/auth/patient/register"
+          json:
+            full_name: "Perf Test Patient"
+            email: "perf.patient.{{ $timestamp }}.{{ $randomNumber(1, 1000000) }}@example.com"
+            contact_number: "0712345678"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.data.token"
+              as: "patientToken"
+            - json: "$.data.user.profile._id"
+              as: "patientProfileId"
+          expect:
+            - statusCode: 201
+
+      # 2) Create lab and capture labId
+      - post:
+          url: "/api/labs"
+          json:
+            name: "Perf Lab {{ $timestamp }}"
+          capture:
+            - json: "$._id"
+              as: "labId"
+          expect:
+            - statusCode: 201
+
+      # 3) Create test type and capture diagnosticTestId
+      - post:
+          url: "/api/test-types"
+          json:
+            name: "Perf TestType {{ $timestamp }}"
+            code: "PT{{ $randomNumber(1000, 9999) }}"
+            category: "Other"
+            entryMethod: "form"
+            discriminatorType: "BloodGlucose"
+            description: "Performance test diagnostic test type."
+            reportTemplate: "/templates/perf-test-type"
+            isActive: true
+          capture:
+            - json: "$._id"
+              as: "diagnosticTestId"
+          expect:
+            - statusCode: 201
+
+      # 4) Create lab-test mapping (price required for downstream payment flows)
+      - post:
+          url: "/api/lab-tests"
+          json:
+            labId: "{{ labId }}"
+            diagnosticTestId: "{{ diagnosticTestId }}"
+            price: 1200
+            estimatedResultTimeHours: 24
+            availabilityStatus: "AVAILABLE"
+            dailyCapacity: 50
+            isActive: true
+          expect:
+            - statusCode: [201, 400]
+
+      # 5) Create booking
+      - post:
+          url: "/api/bookings"
+          headers:
+            Authorization: "Bearer {{ patientToken }}"
+          json:
+            patientProfileId: "{{ patientProfileId }}"
+            healthCenterId: "{{ labId }}"
+            diagnosticTestId: "{{ diagnosticTestId }}"
+            bookingDate: "2026-04-09T10:00:00.000Z"
+            bookingType: "PRE_BOOKED"
+            priorityLevel: "NORMAL"
+            paymentMethod: "CASH"
+          capture:
+            - json: "$.booking._id"
+              as: "bookingId"
+          expect:
+            - statusCode: 201
+
+      # 6) Read bookings by patient
+      - get:
+          url: "/api/bookings/patient/{{ patientProfileId }}"
+          headers:
+            Authorization: "Bearer {{ patientToken }}"
+          expect:
+            - statusCode: 200
+
+      # 7) Update booking (status)
+      - put:
+          url: "/api/bookings/{{ bookingId }}"
+          headers:
+            Authorization: "Bearer {{ patientToken }}"
+          json:
+            status: "CONFIRMED"
+          expect:
+            - statusCode: [200, 400]

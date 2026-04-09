@@ -1,0 +1,128 @@
+# Artillery Load Test - Payment (PayHere) Module
+# Usage (smoke/default): npx artillery run tests/performance/payment/artillery-payment.yml
+# Usage (full):          npx artillery run --environment full tests/performance/payment/artillery-payment.yml
+# Notes:
+# - /checkout may return 400 if MERCHANT_ID / MERCHANT_SECRET env vars are not set.
+# - /notify is unauthenticated and will return 200 even for invalid signatures.
+
+config:
+  target: "http://localhost:5000"
+  http:
+    timeout: 60
+
+  phases:
+    - duration: 5
+      arrivalCount: 1
+      name: "Smoke"
+
+  environments:
+    full:
+      phases:
+        - duration: 30
+          arrivalRate: 2
+          name: "Warm up"
+        - duration: 60
+          arrivalRate: 6
+          name: "Ramp up"
+        - duration: 90
+          arrivalRate: 10
+          name: "Peak"
+
+scenarios:
+  - name: "PayHere Checkout + Notify"
+    flow:
+      # Create booking owned by this patient
+      - post:
+          url: "/api/auth/patient/register"
+          json:
+            full_name: "Payment Perf Patient"
+            email: "perf.payment.patient.{{ $timestamp }}.{{ $randomNumber(1, 1000000) }}@example.com"
+            contact_number: "0712345678"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.data.token"
+              as: "patientToken"
+            - json: "$.data.user.profile._id"
+              as: "patientProfileId"
+          expect:
+            - statusCode: 201
+
+      - post:
+          url: "/api/labs"
+          json:
+            name: "Payment Perf Lab {{ $timestamp }}"
+          capture:
+            - json: "$._id"
+              as: "labId"
+          expect:
+            - statusCode: 201
+
+      - post:
+          url: "/api/test-types"
+          json:
+            name: "Payment Perf TestType {{ $timestamp }}"
+            code: "PY{{ $randomNumber(1000, 9999) }}"
+            category: "Other"
+            entryMethod: "form"
+            discriminatorType: "BloodGlucose"
+            description: "Performance test test-type for payment flows."
+            reportTemplate: "/templates/perf-payment-test-type"
+            isActive: true
+          capture:
+            - json: "$._id"
+              as: "diagnosticTestId"
+          expect:
+            - statusCode: 201
+
+      - post:
+          url: "/api/lab-tests"
+          json:
+            labId: "{{ labId }}"
+            diagnosticTestId: "{{ diagnosticTestId }}"
+            price: 1800
+            estimatedResultTimeHours: 24
+            availabilityStatus: "AVAILABLE"
+            dailyCapacity: 50
+            isActive: true
+          expect:
+            - statusCode: [201, 400]
+
+      - post:
+          url: "/api/bookings"
+          headers:
+            Authorization: "Bearer {{ patientToken }}"
+          json:
+            patientProfileId: "{{ patientProfileId }}"
+            healthCenterId: "{{ labId }}"
+            diagnosticTestId: "{{ diagnosticTestId }}"
+            bookingDate: "2026-04-09T10:00:00.000Z"
+            bookingType: "PRE_BOOKED"
+            priorityLevel: "NORMAL"
+            paymentMethod: "ONLINE"
+          capture:
+            - json: "$.booking._id"
+              as: "bookingId"
+          expect:
+            - statusCode: 201
+
+      # Checkout payload (may be 200 or 400 depending on PayHere env vars)
+      - post:
+          url: "/api/payments/payhere/checkout"
+          headers:
+            Authorization: "Bearer {{ patientToken }}"
+          json:
+            bookingId: "{{ bookingId }}"
+          expect:
+            - statusCode: [200, 400]
+
+      # Notify handler (unauthenticated); this uses invalid signature on purpose
+      - post:
+          url: "/api/payments/payhere/notify"
+          form:
+            order_id: "{{ bookingId }}"
+            status_code: "2"
+            payhere_amount: "1800.00"
+            payhere_currency: "LKR"
+            md5sig: "INVALID"
+          expect:
+            - statusCode: 200
