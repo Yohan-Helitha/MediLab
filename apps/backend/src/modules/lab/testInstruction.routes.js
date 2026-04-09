@@ -1,6 +1,6 @@
 import express from 'express';
 import * as testInstructionController from './testInstruction.controller.js';
-import { handleValidationErrors } from '../auth/auth.middleware.js';
+import { authenticate, isStaff, handleValidationErrors } from '../auth/auth.middleware.js';
 import {
 	createTestInstructionValidation,
 	updateTestInstructionValidation,
@@ -12,6 +12,8 @@ const router = express.Router();
 // Only staff can create, update, or delete test instructions
 router.post(
 	'/',
+	authenticate,
+	isStaff,
 	createTestInstructionValidation,
 	handleValidationErrors,
 	testInstructionController.createTestInstruction
@@ -23,6 +25,8 @@ router.get('/language/:testTypeId', testInstructionController.getTestInstruction
 router.get('/:id', testInstructionController.getTestInstructionById);
 router.put(
 	'/:id',
+	authenticate,
+	isStaff,
 	testInstructionIdParamValidation,
 	updateTestInstructionValidation,
 	handleValidationErrors,
@@ -30,6 +34,8 @@ router.put(
 );
 router.delete(
 	'/:id',
+	authenticate,
+	isStaff,
 	testInstructionIdParamValidation,
 	handleValidationErrors,
 	testInstructionController.deleteTestInstructions
