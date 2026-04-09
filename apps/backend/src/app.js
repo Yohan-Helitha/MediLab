@@ -13,6 +13,7 @@ import bookingRoutes from "./modules/booking/booking.routes.js";
 import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 import equipmentRoutes from "./modules/inventory/equipment.routes.js";
 import financeRoutes from "./modules/finance/finance.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
 
 // Payment gateway routes (PayHere)
 import payHereRoutes from "./modules/payment/payhere.routes.js";
@@ -99,6 +100,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/finance", financeRoutes);
+app.use("/api/admin", adminRoutes);
 
 // PayHere (checkout + notify)
 app.use("/api/payments/payhere", payHereRoutes);

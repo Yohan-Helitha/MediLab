@@ -1,66 +1,91 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { fetchAdminOverview } from "../api/adminApi";
+
+function formatTimeAgo(value) {
+	if (!value) return "-";
+	const date = value instanceof Date ? value : new Date(value);
+	if (Number.isNaN(date.getTime())) return "-";
+	const diffMs = Date.now() - date.getTime();
+	const diffMin = Math.floor(diffMs / 60000);
+	if (diffMin < 1) return "Just now";
+	if (diffMin < 60) return `${diffMin} min ago`;
+	const diffHr = Math.floor(diffMin / 60);
+	if (diffHr < 24) return `${diffHr} hr ago`;
+	const diffDay = Math.floor(diffHr / 24);
+	return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
+}
 
 function AdminOverviewDashboard() {
-	const metrics = {
-		totalRevenue: 1250000,
-		totalBookings: 342,
-		totalUsers: 58,
-		lowStockItems: 7,
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState("");
+	const [data, setData] = useState(null);
+
+	useEffect(() => {
+		let isMounted = true;
+		setIsLoading(true);
+		setError("");
+		fetchAdminOverview({ windowHours: 24, limit: 3 })
+			.then((payload) => {
+				if (!isMounted) return;
+				setData(payload);
+			})
+			.catch((err) => {
+				console.error("Failed to load admin overview", err);
+				if (isMounted) setError(err.message || "Failed to load overview");
+			})
+			.finally(() => {
+				if (isMounted) setIsLoading(false);
+			});
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
+
+	const metrics = data?.metrics || {
+		totalRevenue: 0,
+		totalBookings: 0,
+		totalUsers: 0,
+		lowStockItems: 0,
 	};
 
-	const recentBookings = [
-		{
-			id: "BK-1023",
-			patient: "John Carter",
-			status: "Completed",
-			time: "10 min ago",
-		},
-		{
-			id: "BK-1022",
-			patient: "Emily Rose",
-			status: "Pending",
-			time: "25 min ago",
-		},
-		{
-			id: "BK-1021",
-			patient: "Michael Lee",
-			status: "In Progress",
-			time: "1 hr ago",
-		},
-	];
+	const recentBookings = useMemo(() => {
+		return (data?.recent?.bookings || []).map((b) => ({
+			id: b.id,
+			title: b.title,
+			status: b.status,
+			time: formatTimeAgo(b.timestamp),
+		}));
+	}, [data]);
 
-	const recentPayments = [
-		{
-			id: "PM-8901",
-			label: "Invoice for BK-1020",
-			status: "Paid",
-			time: "5 min ago",
-		},
-		{
-			id: "PM-8900",
-			label: "Invoice for BK-1019",
-			status: "Pending",
-			time: "40 min ago",
-		},
-		{
-			id: "PM-8899",
-			label: "Refund for BK-1018",
-			status: "Processed",
-			time: "2 hrs ago",
-		},
-	];
+	const recentPayments = useMemo(() => {
+		return (data?.recent?.payments || []).map((p) => ({
+			id: p.id,
+			title: p.title,
+			status: p.status,
+			time: formatTimeAgo(p.timestamp),
+		}));
+	}, [data]);
 
-	const lowStockItems = [
-		{ id: "INV-2001", title: "Rapid Test Kits", status: "Low stock", time: "Needs restock" },
-		{ id: "INV-2002", title: "Nitrile Gloves (M)", status: "Below threshold", time: "Monitor today" },
-		{ id: "INV-2003", title: "Syringe Pack (5ml)", status: "Approaching low", time: "This week" },
-	];
+	const lowStockItems = useMemo(() => {
+		return (data?.recent?.lowStock || []).map((s) => ({
+			id: s.id,
+			title: s.title,
+			status: s.status,
+			time: s.meta
+				? `${s.meta.availableQuantity}/${s.meta.minimumThreshold}`
+				: formatTimeAgo(s.timestamp),
+		}));
+	}, [data]);
 
-	const recentUsers = [
-		{ id: "USR-301", title: "Dr. Anika Perera", status: "New doctor account", time: "30 min ago" },
-		{ id: "USR-300", title: "Lab Tech - Jane Doe", status: "Role updated", time: "1 hr ago" },
-		{ id: "USR-299", title: "Front Desk - Mark", status: "Activated", time: "3 hrs ago" },
-	];
+	const recentUsers = useMemo(() => {
+		return (data?.recent?.users || []).map((u) => ({
+			id: u.id,
+			title: u.title,
+			status: u.status,
+			time: formatTimeAgo(u.timestamp),
+		}));
+	}, [data]);
 
 	const formatCurrency = (value) =>
 		new Intl.NumberFormat("en-LK", {
@@ -79,6 +104,12 @@ function AdminOverviewDashboard() {
 					</p>
 				</div>
 			</header>
+
+			{error && (
+				<div className="rounded-md bg-rose-50 px-3 py-2 text-xs text-rose-700">
+					{error}
+				</div>
+			)}
 
 			{/* Summary metrics */}
 			<section className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -107,7 +138,7 @@ function AdminOverviewDashboard() {
 					title="Recent Bookings"
 					items={recentBookings.map((b) => ({
 						id: b.id,
-						title: `${b.id} - ${b.patient}`,
+						title: b.title,
 						status: b.status,
 						time: b.time,
 					}))}
@@ -116,7 +147,7 @@ function AdminOverviewDashboard() {
 					title="Recent Payments"
 					items={recentPayments.map((p) => ({
 						id: p.id,
-						title: p.label,
+						title: p.title,
 						status: p.status,
 						time: p.time,
 					}))}
@@ -130,6 +161,10 @@ function AdminOverviewDashboard() {
 					items={recentUsers}
 				/>
 			</section>
+
+			{isLoading && (
+				<div className="text-sm text-slate-500">Loading overview...</div>
+			)}
 		</div>
 	);
 }
