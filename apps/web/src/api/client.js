@@ -28,6 +28,12 @@ export async function apiRequest(path, options = {}) {
 	const headers = buildHeaders(options.headers || {});
 
 	const response = await fetch(url, { ...options, headers });
+
+	// Some endpoints (like DELETE) return 204 No Content; avoid parsing JSON for them
+	if (response.status === 204) {
+		return null;
+	}
+
 	if (!response.ok) {
 		let message = `Request failed with status ${response.status}`;
 		let errors = null;

@@ -141,7 +141,15 @@ function TestAvailabilityPage() {
 				estimatedResultTimeHours: hours,
 			});
 			setLabTests((prev) =>
-				prev.map((t) => (t._id === updated._id ? { ...t, ...updated } : t))
+				prev.map((t) =>
+					t._id === updated._id
+						? {
+							...t,
+							price: updated.price,
+							estimatedResultTimeHours: updated.estimatedResultTimeHours,
+						}
+						: t
+				)
 			);
 			closeEditModal();
 		} catch (err) {
