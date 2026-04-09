@@ -8,7 +8,11 @@ import {
 } from "../validations/referralValidation.js";
 import { handleValidationErrors } from "../middlewares/referralMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", referralController.getAllReferrals);
 
@@ -16,6 +20,11 @@ router.get("/visit/:visitId",
   validateVisitId,
   handleValidationErrors,
   referralController.getReferralsByVisitId
+);
+
+router.get("/member/:memberId",
+  handleValidationErrors,
+  referralController.getReferralsByMemberId
 );
 
 router.get("/:id", 

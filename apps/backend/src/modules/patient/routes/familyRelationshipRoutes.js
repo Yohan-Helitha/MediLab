@@ -8,7 +8,11 @@ import {
 import { param } from "express-validator";
 import { handleValidationErrors } from "../middlewares/familyRelationshipMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", familyRelationshipController.getAllFamilyRelationships);
 

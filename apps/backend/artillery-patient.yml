@@ -1,0 +1,290 @@
+# Artillery.io Load Testing Configuration - Patient API
+# @author Lakni (IT23772922)
+#
+# Usage: artillery run artillery-patient.yml
+# This tests the Patient module APIs under various load scenarios
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    # Warm up phase
+    - duration: 30
+      arrivalRate: 3
+      name: "Warm up"
+    # Ramp up phase
+    - duration: 60
+      arrivalRate: 8
+      name: "Ramp up"
+    # Peak load phase
+    - duration: 120
+      arrivalRate: 20
+      name: "Peak load"
+    # Cool down phase
+    - duration: 30
+      arrivalRate: 3
+      name: "Cool down"
+
+  # Connection settings
+  http:
+    timeout: 15
+    max: 50
+
+  # Reporting
+  output:
+    - "./reports/artillery-patient-results.json"
+
+scenarios:
+  # Scenario 1: Patient Profile CRUD Load Test
+  - name: "Patient Profile CRUD"
+    weight: 35
+    flow:
+      # First, authenticate
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "patient-{{ $timestamp }}-{{ $randomNumber(1, 1000000) }}@example.com"
+            password: "TestPassword123!"
+            full_name: "Test Patient"
+            phone: "0712345678"
+            role: "Patient"
+          capture:
+            json: "$.token"
+            as: "token"
+      # Create profile
+      - post:
+          url: "/api/patient/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            dateOfBirth: "1990-05-15"
+            gender: "Male"
+            bloodType: "O+"
+            height: 175
+            weight: 70
+            address: "123 Main Street"
+            city: "Colombo"
+            province: "Western"
+            postalCode: "10100"
+          expect:
+            - statusCode: [201, 400, 401]
+      # Retrieve profile
+      - get:
+          url: "/api/patient/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: [200, 401]
+      # Update profile
+      - put:
+          url: "/api/patient/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            weight: 72
+            height: 176
+          expect:
+            - statusCode: [200, 400, 401]
+
+  # Scenario 2: Health Information Management Load Test
+  - name: "Health Information CRUD"
+    weight: 30
+    flow:
+      # Authenticate
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "health-{{ $timestamp }}-{{ $randomNumber(1, 1000000) }}@example.com"
+            password: "TestPassword123!"
+            full_name: "Test Patient"
+            phone: "0712345678"
+            role: "Patient"
+          capture:
+            json: "$.token"
+            as: "token"
+      # Create profile
+      - post:
+          url: "/api/patient/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            dateOfBirth: "1990-05-15"
+            gender: "Male"
+            bloodType: "O+"
+            height: 175
+            weight: 70
+            address: "123 Main Street"
+            city: "Colombo"
+            province: "Western"
+            postalCode: "10100"
+      # Add allergy
+      - post:
+          url: "/api/patient/health"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            type: "Allergy"
+            name: "Penicillin"
+            reactions:
+              - "Rash"
+              - "Itching"
+            severity: "High"
+          expect:
+            - statusCode: [201, 400, 401]
+          capture:
+            json: "$.health.allergies[0]._id"
+            as: "allergyId"
+      # Add disease
+      - post:
+          url: "/api/patient/health"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            type: "Disease"
+            name: "Diabetes Type 2"
+            diagnosisDate: "2015-06-10"
+            status: "Chronic"
+          expect:
+            - statusCode: [201, 400, 401]
+      # Add medication
+      - post:
+          url: "/api/patient/health"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            type: "Medication"
+            name: "Metformin"
+            dosage: "500mg"
+            frequency: "Twice daily"
+            reason: "Diabetes control"
+          expect:
+            - statusCode: [201, 400, 401]
+
+  # Scenario 3: Family Member Management Load Test
+  - name: "Family Member Management"
+    weight: 20
+    flow:
+      # Authenticate
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "family-{{ $timestamp }}-{{ $randomNumber(1, 1000000) }}@example.com"
+            password: "TestPassword123!"
+            full_name: "Test Patient"
+            phone: "0712345678"
+            role: "Patient"
+          capture:
+            json: "$.token"
+            as: "token"
+      # Create profile
+      - post:
+          url: "/api/patient/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            dateOfBirth: "1990-05-15"
+            gender: "Male"
+            bloodType: "O+"
+            height: 175
+            weight: 70
+            address: "123 Main Street"
+            city: "Colombo"
+            province: "Western"
+            postalCode: "10100"
+      # Add family member
+      - post:
+          url: "/api/patient/family"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            name: "John Doe"
+            relationship: "Father"
+            age: 65
+            contact: "0712345678"
+            notes: "Primary emergency contact"
+          expect:
+            - statusCode: [201, 400, 401]
+
+  # Scenario 4: Emergency Contact Management Load Test
+  - name: "Emergency Contact Management"
+    weight: 15
+    flow:
+      # Authenticate
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "emergency-{{ $timestamp }}-{{ $randomNumber(1, 1000000) }}@example.com"
+            password: "TestPassword123!"
+            full_name: "Test Patient"
+            phone: "0712345678"
+            role: "Patient"
+          capture:
+            json: "$.token"
+            as: "token"
+      # Create profile
+      - post:
+          url: "/api/patient/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            dateOfBirth: "1990-05-15"
+            gender: "Male"
+            bloodType: "O+"
+            height: 175
+            weight: 70
+            address: "123 Main Street"
+            city: "Colombo"
+            province: "Western"
+            postalCode: "10100"
+      # Add emergency contact
+      - post:
+          url: "/api/patient/emergency-contact"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            name: "Sarah Doe"
+            relationship: "Sister"
+            phone: "0712345678"
+            email: "sarah@example.com"
+          expect:
+            - statusCode: [201, 400, 401]
+
+  # Scenario 5: High Volume Read Operations
+  - name: "High Volume Profile Reads"
+    weight: 10
+    flow:
+      # Authenticate
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "read-{{ $timestamp }}-{{ $randomNumber(1, 1000000) }}@example.com"
+            password: "TestPassword123!"
+            full_name: "Test Patient"
+            phone: "0712345678"
+            role: "Patient"
+          capture:
+            json: "$.token"
+            as: "token"
+      # Create profile
+      - post:
+          url: "/api/patient/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            dateOfBirth: "1990-05-15"
+            gender: "Male"
+            bloodType: "O+"
+            height: 175
+            weight: 70
+            address: "123 Main Street"
+            city: "Colombo"
+            province: "Western"
+            postalCode: "10100"
+      # Multiple read operations
+      - loop:
+          - get:
+              url: "/api/patient/profile"
+              headers:
+                Authorization: "Bearer {{ token }}"
+              expect:
+                - statusCode: 200
+        count: 5

@@ -37,28 +37,27 @@ router.post(
   authController.loginPatient
 );
 
-// ==================== Health Officer Routes ====================
+// ==================== Health Officer Routes (Now Staff Routes) ====================
 
 /**
- * @route   POST /api/auth/health-officer/register
- * @desc    Register a new health officer
- * @access  Public (or can be protected based on your requirements)
- * @note    In production, you may want to restrict this to admin-only access
+ * @route   POST /api/auth/staff/register
+ * @desc    Register a new staff member (MOH, Nurse, PHI, Lab Tech, etc.)
+ * @access  Public (In production, restrict to admin)
  */
 router.post(
-  '/health-officer/register',
+  '/staff/register',
   validateHealthOfficerRegister,
   handleValidationErrors,
   authController.registerHealthOfficer
 );
 
 /**
- * @route   POST /api/auth/health-officer/login
- * @desc    Login health officer
+ * @route   POST /api/auth/staff/login
+ * @desc    Login staff member
  * @access  Public
  */
 router.post(
-  '/health-officer/login',
+  '/staff/login',
   validateHealthOfficerLogin,
   handleValidationErrors,
   authController.loginHealthOfficer
@@ -97,6 +96,17 @@ router.post(
 router.post(
   '/logout',
   authController.logout
+);
+
+/**
+ * @route   PUT /api/auth/update
+ * @desc    Update user profile and password
+ * @access  Private
+ */
+router.put(
+  '/update',
+  authenticate,
+  authController.updateProfile
 );
 
 export default router;

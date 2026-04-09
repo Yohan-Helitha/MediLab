@@ -1,46 +1,85 @@
 import express from "express";
+import { registerInventoryLifecycleHooks } from "./inventory.lifecycle-hooks.js";
 import {
-  reserveForBookingController,
-  deductAfterCompletionController,
+  listInventoryStockController,
+  applyEquipmentUsageForBookingController,
   restockEquipmentController,
+  listTestEquipmentRequirementsController,
+  upsertTestEquipmentRequirementController,
+  deactivateTestEquipmentRequirementController,
 } from "./inventory.controller.js";
 import {
-  reserveForBookingValidation,
   restockInventoryValidation,
+  upsertTestEquipmentRequirementValidation,
 } from "./inventory.validation.js";
-import { protect, adminOnly } from "../middleware/auth.middleware.js";
+// Use the new JWT-based auth middleware
+import {
+  authenticate,
+  isHealthOfficer,
+  checkRole,
+} from "../auth/auth.middleware.js";
 
 const router = express.Router();
 
-// Reserve equipment for a booking (based on test type requirements)
-router.post(
-  "/reserve",
+// Ensure booking/result lifecycle hooks are registered once.
+registerInventoryLifecycleHooks();
+
+// Local alias to keep `protect` naming
+const protect = authenticate;
+
+// Inventory stock overview
+router.get(
+  "/stock",
   protect,
-  reserveForBookingValidation,
-  reserveForBookingController,
+  checkRole(["Admin", "ADMIN"]),
+  listInventoryStockController,
 );
 
-// Deduct equipment after a test is completed for a booking
+// Reserve equipment for a booking (based on test type requirements)
 router.post(
   "/deduct-after-completion/:bookingId",
   protect,
-  deductAfterCompletionController,
+  isHealthOfficer, // only health officers can deduct after completion
+  applyEquipmentUsageForBookingController,
 );
-
-// Restock equipment - ADMIN only
-// router.post(
-//   "/restock",
-//   protect,
-//   adminOnly,
-//   restockInventoryValidation,
-//   restockEquipmentController,
-// );
 
 router.post(
   "/restock",
   protect,
+  checkRole(["Admin", "ADMIN"]), // admin health officers only
   restockInventoryValidation,
   restockEquipmentController,
+);
+
+// Admin configuration of required equipment per test type
+router.get(
+  "/requirements",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  listTestEquipmentRequirementsController,
+);
+
+router.post(
+  "/requirements",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  upsertTestEquipmentRequirementValidation,
+  upsertTestEquipmentRequirementController,
+);
+
+router.put(
+  "/requirements/:id",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  upsertTestEquipmentRequirementValidation,
+  upsertTestEquipmentRequirementController,
+);
+
+router.delete(
+  "/requirements/:id",
+  protect,
+  checkRole(["Admin", "ADMIN"]),
+  deactivateTestEquipmentRequirementController,
 );
 
 

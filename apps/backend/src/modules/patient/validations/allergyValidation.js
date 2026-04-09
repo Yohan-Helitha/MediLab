@@ -13,8 +13,8 @@ export const validateAllergyCreate = [
     .trim()
     .isLength({ min: 1, max: 50 })
     .withMessage("Allergy type must be between 1 and 50 characters")
-    .matches(/^[a-zA-Z\s-]+$/)
-    .withMessage("Allergy type can only contain letters, spaces, and hyphens"),
+    .matches(/^[a-zA-Z\s\/-]+$/)
+    .withMessage("Allergy type can only contain letters, spaces, hyphens, and slashes"),
   
   body("allergen_name")
     .notEmpty()
@@ -39,8 +39,8 @@ export const validateAllergyCreate = [
   
   body("since_year")
     .optional()
-    .isInt({ min: 1900, max: new Date().getFullYear() - 1 })
-    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear() - 1} (past years only)`)
+    .isInt({ min: 1900, max: new Date().getFullYear() })
+    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()}`)
 ];
 
 export const validateAllergyUpdate = [
@@ -56,8 +56,8 @@ export const validateAllergyUpdate = [
     .trim()
     .isLength({ min: 1, max: 50 })
     .withMessage("Allergy type must be between 1 and 50 characters")
-    .matches(/^[a-zA-Z\s-]+$/)
-    .withMessage("Allergy type can only contain letters, spaces, and hyphens"),
+    .matches(/^[a-zA-Z\s\/-]+$/)
+    .withMessage("Allergy type can only contain letters, spaces, hyphens, and slashes"),
   
   body("allergen_name")
     .optional()
@@ -79,8 +79,8 @@ export const validateAllergyUpdate = [
   
   body("since_year")
     .optional()
-    .isInt({ min: 1900, max: new Date().getFullYear() - 1 })
-    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear() - 1} (past years only)`)
+    .isInt({ min: 1900, max: new Date().getFullYear() })
+    .withMessage(`Since year must be between 1900 and ${new Date().getFullYear()}`)
 ];
 
 export const validateAllergyId = [

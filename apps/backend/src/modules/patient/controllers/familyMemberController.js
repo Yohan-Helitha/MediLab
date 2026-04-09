@@ -54,9 +54,14 @@ class FamilyMemberController {
         data: familyMember
       });
     } catch (error) {
+      // Log detailed validation errors
+      console.error('Update family member error:', error.message, error.errors || error);
+      
+      // Return detailed error information
       res.status(error.message === "Family member not found" ? 404 : 400).json({
         success: false,
-        message: error.message
+        message: error.message,
+        details: error.errors || error.message
       });
     }
   }

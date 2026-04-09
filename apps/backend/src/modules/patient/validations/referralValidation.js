@@ -11,6 +11,14 @@ export const validateReferralCreate = [
     .isLength({ max: 50 })
     .withMessage("Visit ID must be less than 50 characters"),
   
+  body("member_id")
+    .notEmpty()
+    .withMessage("Member ID is required")
+    .isString()
+    .withMessage("Member ID must be a string")
+    .isLength({ max: 50 })
+    .withMessage("Member ID must be less than 50 characters"),
+  
   body("referred_to")
     .notEmpty()
     .withMessage("Referred to is required")

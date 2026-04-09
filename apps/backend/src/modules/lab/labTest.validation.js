@@ -1,40 +1,87 @@
-import Joi from 'joi';
+import { body, param } from 'express-validator';
+
+// Validation for creating a lab-test assignment (adding a test to a lab)
+export const createLabTestValidation = [
+	body('labId')
+		.notEmpty()
+		.withMessage('labId is required')
+		.isHexadecimal()
+		.withMessage('labId must be a valid hex string')
+		.isLength({ min: 24, max: 24 })
+		.withMessage('labId must be a 24-character ObjectId'),
+	body('diagnosticTestId')
+		.notEmpty()
+		.withMessage('diagnosticTestId is required')
+		.isHexadecimal()
+		.withMessage('diagnosticTestId must be a valid hex string')
+		.isLength({ min: 24, max: 24 })
+		.withMessage('diagnosticTestId must be a 24-character ObjectId'),
+	body('price')
+		.notEmpty()
+		.withMessage('price is required')
+		.isFloat({ min: 0 })
+		.withMessage('price must be a number greater than or equal to 0'),
+	body('estimatedResultTimeHours')
+		.notEmpty()
+		.withMessage('estimatedResultTimeHours is required')
+		.isFloat({ min: 0 })
+		.withMessage('estimatedResultTimeHours must be a number greater than or equal to 0'),
+	body('availabilityStatus')
+		.optional()
+		.isIn(['AVAILABLE', 'UNAVAILABLE', 'TEMPORARILY_SUSPENDED'])
+		.withMessage('availabilityStatus must be one of: AVAILABLE, UNAVAILABLE, TEMPORARILY_SUSPENDED'),
+	body('dailyCapacity')
+		.optional()
+		.isInt({ min: 0 })
+		.withMessage('dailyCapacity must be an integer greater than or equal to 0'),
+	body('isActive')
+		.optional()
+		.isBoolean()
+		.withMessage('isActive must be a boolean'),
+];
 
 export const updateLabTestStatusValidation = [
-  (req, res, next) => {
-    const schema = Joi.object({
-      status: Joi.string().valid('AVAILABLE', 'UNAVAILABLE', 'TEMPORARILY_SUSPENDED').required()
-    });
-    const { error } = schema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-    next();
-  }
+	body('status')
+		.isIn(['AVAILABLE', 'UNAVAILABLE', 'TEMPORARILY_SUSPENDED'])
+		.withMessage('status must be one of: AVAILABLE, UNAVAILABLE, TEMPORARILY_SUSPENDED'),
+];
+
+// Validation for updating lab-test details (e.g., price, result time, capacity)
+export const updateLabTestDetailsValidation = [
+	body('price')
+		.optional()
+		.isFloat({ min: 0 })
+		.withMessage('price must be a number greater than or equal to 0'),
+	body('estimatedResultTimeHours')
+		.optional()
+		.isFloat({ min: 0 })
+		.withMessage('estimatedResultTimeHours must be a number greater than or equal to 0'),
+	body('dailyCapacity')
+		.optional()
+		.isInt({ min: 0 })
+		.withMessage('dailyCapacity must be an integer greater than or equal to 0'),
+	body('availabilityStatus')
+		.optional()
+		.isIn(['AVAILABLE', 'UNAVAILABLE', 'TEMPORARILY_SUSPENDED'])
+		.withMessage('availabilityStatus must be one of: AVAILABLE, UNAVAILABLE, TEMPORARILY_SUSPENDED'),
+	body('isActive')
+		.optional()
+		.isBoolean()
+		.withMessage('isActive must be a boolean'),
 ];
 
 export const labIdParamValidation = [
-  (req, res, next) => {
-    const schema = Joi.object({
-      labId: Joi.string().length(24).hex().required()
-    });
-    const { error } = schema.validate({ labId: req.params.labId });
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-    next();
-  }
+	param('labId')
+		.isHexadecimal()
+		.withMessage('labId must be a valid hex string')
+		.isLength({ min: 24, max: 24 })
+		.withMessage('labId must be a 24-character ObjectId'),
 ];
 
 export const labTestIdParamValidation = [
-  (req, res, next) => {
-    const schema = Joi.object({
-      id: Joi.string().length(24).hex().required()
-    });
-    const { error } = schema.validate({ id: req.params.id });
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-    next();
-  }
+	param('id')
+		.isHexadecimal()
+		.withMessage('id must be a valid hex string')
+		.isLength({ min: 24, max: 24 })
+		.withMessage('id must be a 24-character ObjectId'),
 ];

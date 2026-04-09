@@ -17,6 +17,7 @@ const config = {
   isDev: (env.NODE_ENV || "development") === "development",
   port: Number(env.PORT) || 5000,
   databaseUrl: env.DATABASE_URL || "",
+  databaseUrlTest: env.DATABASE_URL_TEST || "",
   jwtSecret: env.JWT_SECRET || "",
 
   // Test Management Component - Third-party APIs
@@ -42,6 +43,8 @@ const config = {
 export function validateEnv() {
   const missing = [];
   if (!config.databaseUrl) missing.push("DATABASE_URL");
+  // Optional: DATABASE_URL_TEST is used automatically during Jest runs.
+  // If missing, we will attempt to derive a safe test DB name from DATABASE_URL.
   if (!config.jwtSecret) missing.push("JWT_SECRET");
 
   // Test Management Component validations (warnings only for development)

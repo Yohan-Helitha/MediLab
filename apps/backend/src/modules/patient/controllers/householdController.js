@@ -19,12 +19,38 @@ class HouseholdController {
   async getHouseholdById(req, res) {
     try {
       const household = await householdService.getHouseholdById(req.params.id);
+      const populatedHousehold = await householdService.populateHouseholdMembers(household);
       res.status(200).json({
         success: true,
-        data: household
+        data: populatedHousehold
       });
     } catch (error) {
       res.status(error.message === "Household not found" ? 404 : 500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async getHouseholdBySubmittedBy(req, res) {
+    try {
+      // Use systemId from authenticated user if parameter is 'me' or matches user
+      const searchId = req.params.id === 'me' ? req.user.systemId : req.params.id;
+      
+      const household = await householdService.getHouseholdBySubmittedBy(searchId);
+      if (!household) {
+        return res.status(200).json({
+          success: true,
+          data: null
+        });
+      }
+      const populatedHousehold = await householdService.populateHouseholdMembers(household);
+      res.status(200).json({
+        success: true,
+        data: populatedHousehold
+      });
+    } catch (error) {
+      res.status(500).json({
         success: false,
         message: error.message
       });

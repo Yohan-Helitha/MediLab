@@ -92,7 +92,8 @@ export const validateMemberCreate = [
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("Date of birth must be in YYYY-MM-DD format")
     .custom((value) => {
-      const inputDate = new Date(value);
+      const [year, month, day] = value.split('-').map(Number);
+      const inputDate = new Date(year, month - 1, day); // Create date in local timezone
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Reset time to compare only dates
       
@@ -113,7 +114,7 @@ export const validateMemberCreate = [
     .withMessage("Gender is required")
     .isIn(['male', 'female', 'Male', 'Female'])
     .withMessage("Gender must be either 'male' or 'female'")
-    .customSanitizer(value => value.toLowerCase()),
+    .customSanitizer(value => value ? value.toLowerCase() : value),
   
   body("gn_division")
     .notEmpty()
@@ -129,16 +130,23 @@ export const validateMemberCreate = [
   
   body("photo")
     .optional()
-    .isLength({ max: 255 })
-    .withMessage("Photo path must be less than 255 characters"),
+    .custom((value, { req }) => {
+      // If a file was uploaded, skip this string validation
+      if (req.file) return true;
+      // Otherwise, check if it's a valid path string (if provided)
+      if (typeof value === 'string' && value.length > 255) {
+        throw new Error("Photo path must be less than 255 characters");
+      }
+      return true;
+    }),
   
   body("disability_status")
-    .optional()
+    .optional({ checkFalsy: true })
     .isBoolean()
     .withMessage("Disability status must be boolean"),
   
   body("pregnancy_status")
-    .optional()
+    .optional({ checkFalsy: true })
     .isBoolean()
     .withMessage("Pregnancy status must be boolean")
 ];
@@ -180,6 +188,11 @@ export const validateMemberUpdate = [
     .optional()
     .isLength({ max: 150 })
     .withMessage("Full name must be less than 150 characters"),
+  
+  body("diseases")
+    .optional()
+    .isArray()
+    .withMessage("Diseases must be an array of strings"),
   
   body("contact_number")
     .optional()
@@ -250,6 +263,12 @@ export const validateMemberUpdate = [
       
       return true;
     }),
+
+  body("isProfileComplete")
+    .optional(),
+
+  body("diseases")
+    .optional(),
   
   body("gender")
     .optional()
@@ -269,16 +288,23 @@ export const validateMemberUpdate = [
   
   body("photo")
     .optional()
-    .isLength({ max: 255 })
-    .withMessage("Photo path must be less than 255 characters"),
+    .custom((value, { req }) => {
+      // If a file was uploaded, skip this string validation
+      if (req.file) return true;
+      // Otherwise, check if it's a valid path string (if provided)
+      if (typeof value === 'string' && value.length > 255) {
+        throw new Error("Photo path must be less than 255 characters");
+      }
+      return true;
+    }),
   
   body("disability_status")
-    .optional()
+    .optional({ checkFalsy: true })
     .isBoolean()
     .withMessage("Disability status must be boolean"),
   
   body("pregnancy_status")
-    .optional()
+    .optional({ checkFalsy: true })
     .isBoolean()
     .withMessage("Pregnancy status must be boolean")
 ];

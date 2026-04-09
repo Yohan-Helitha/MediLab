@@ -7,7 +7,12 @@ import {
 } from "../validations/memberValidation.js";
 import { handleValidationErrors } from "../middlewares/memberMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+import upload from "../../../middlewares/uploadMiddleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", memberController.getAllMembers);
 
@@ -18,12 +23,14 @@ router.get("/:id",
 );
 
 router.post("/",
+  upload.single('photo'),
   validateMemberCreate,
   handleValidationErrors,
   memberController.createMember
 );
 
 router.put("/:id",
+  upload.single('photo'),
   validateMemberUpdate,
   handleValidationErrors,
   memberController.updateMember

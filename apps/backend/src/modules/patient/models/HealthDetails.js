@@ -49,13 +49,47 @@ const healthDetailsSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  family_diabetes: {
+    type: Boolean,
+    default: false
+  },
+  family_heart_disease: {
+    type: Boolean,
+    default: false
+  },
+  family_genetic_disorders: [String],
+  family_no_history: {
+    type: Boolean,
+    default: true
+  },
   free_text: {
     type: String
   },
   voice_recording: {
     type: String,
     maxlength: 255
-  }
+  },
+  lifestyle_history: [{
+    id: Number,
+    smoking_status: String,
+    alcohol_usage: String,
+    occupation: String,
+    chemical_exposure: Boolean,
+    additional_notes: String,
+    date: { type: Date, default: Date.now }
+  }],
+  additional_notes: [{
+    id: Number,
+    text: String,
+    speaker: String,
+    date: String
+  }],
+  voice_notes: [{
+    id: Number,
+    url: String,
+    speaker: String,
+    date: String
+  }]
 }, {
   timestamps: true
 });

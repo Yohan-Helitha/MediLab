@@ -80,7 +80,8 @@ export const isHealthOfficer = (req, res, next) => {
     });
   }
 
-  if (req.user.userType !== 'healthOfficer') {
+  // Backward compatible: older tokens used userType='staff' for health officers
+  if (!["healthOfficer", "staff"].includes(req.user.userType)) {
     return res.status(403).json({
       success: false,
       message: 'Access denied. This endpoint is only for health officers.'
@@ -103,7 +104,8 @@ export const checkRole = (allowedRoles) => {
       });
     }
 
-    if (req.user.userType !== 'healthOfficer') {
+    // Backward compatible: older tokens used userType='staff' for health officers
+    if (!["healthOfficer", "staff"].includes(req.user.userType)) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Role-based access is only for health officers.'
@@ -120,6 +122,9 @@ export const checkRole = (allowedRoles) => {
     next();
   };
 };
+
+// Convenience middleware to allow only Staff health officers
+export const isStaff = checkRole(['Staff']);
 
 /**
  * Optional authentication - doesn't fail if token is missing

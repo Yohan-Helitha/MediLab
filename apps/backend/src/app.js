@@ -11,11 +11,18 @@ import testInstructionRoutes from "./modules/lab/testInstruction.routes.js";
 // booking routes
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import inventoryRoutes from "./modules/inventory/inventory.routes.js";
+import equipmentRoutes from "./modules/inventory/equipment.routes.js";
+import financeRoutes from "./modules/finance/finance.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
+
+// Payment gateway routes (PayHere)
+import payHereRoutes from "./modules/payment/payhere.routes.js";
 
 //patient module
 import authRoutes from "./modules/auth/auth.routes.js";
 // Consultation module routes (AI Doctor)
-//import consultationRoutes from "./modules/consultation/consultation.routes.js";
+import consultationRoutes from "./modules/consultation/routes/consultationRoutes.js";
+import geminiRoutes from "./modules/consultation/routes/geminiRoutes.js";
 //patient module routes
 import memberRoutes from "./modules/patient/routes/memberRoutes.js";
 import householdRoutes from "./modules/patient/routes/householdRoutes.js";
@@ -34,13 +41,27 @@ import referralRoutes from "./modules/patient/routes/referralRoutes.js";
 import resultRoutes from "./modules/result/result.routes.js";
 import notificationRoutes from "./modules/notification/notification.routes.js";
 
+import { fileURLToPath } from 'url';
+import path from 'path';
+import dotenv from "dotenv";
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 // Core middleware
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 app.use(morgan(config.isDev ? "dev" : "combined"));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Feature routes
 app.use("/api/labs", labRoutes);
@@ -56,8 +77,9 @@ app.get("/api/health", (req, res) => {
 // Auth module routes
 app.use("/api/auth", authRoutes);
 
-// Consultation module (AI Doctor) - TODO
-//app.use("/api/consultation", consultationRoutes);
+// Consultation module (AI Doctor)
+app.use("/api/consultation", consultationRoutes);
+app.use("/api/ai", geminiRoutes);
 
 // Patient module - api routes
 app.use("/api/members", memberRoutes);
@@ -76,6 +98,12 @@ app.use("/api/referrals", referralRoutes);
 // Booking and Inventory module routes
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/equipment", equipmentRoutes);
+app.use("/api/finance", financeRoutes);
+app.use("/api/admin", adminRoutes);
+
+// PayHere (checkout + notify)
+app.use("/api/payments/payhere", payHereRoutes);
 
 // Test Management Component Routes
 // Note: TestType CRUD endpoints (/api/test-types) are managed by Lab Operations Component (Arani)

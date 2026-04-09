@@ -15,7 +15,7 @@ class FamilyMemberService {
       })
       .skip(skip)
       .limit(parseInt(limit))
-      .sort({ createdAt: -1 });
+      .sort({ isHead: -1, createdAt: -1 }); // Sort by isHead first (heads first), then by createdAt
     
     const total = await FamilyMember.countDocuments(filter);
     
@@ -55,16 +55,35 @@ class FamilyMemberService {
   }
 
   async updateFamilyMember(familyMemberId, updateData) {
-    const familyMember = await FamilyMember.findByIdAndUpdate(
-      familyMemberId,
-      updateData,
-      { returnDocument: 'after', runValidators: true }
-    ).populate({
-      path: 'household_id',
-      model: 'Household',
-      localField: 'household_id',
-      foreignField: 'household_id'
-    });
+    let familyMember;
+    
+    try {
+      // Build query based on ID format
+      // Check if it looks like a MongoDB ObjectId (24 hex characters)
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(familyMemberId);
+      
+      let query;
+      if (isMongoId) {
+        // Try both _id and family_member_id for MongoDB IDs
+        query = { $or: [{ _id: familyMemberId }, { family_member_id: familyMemberId }] };
+      } else {
+        // For custom IDs, only search by family_member_id to avoid ObjectId casting errors
+        query = { family_member_id: familyMemberId };
+      }
+      
+      familyMember = await FamilyMember.findOneAndUpdate(
+        query,
+        updateData,
+        { returnDocument: 'after', new: true }
+      ).populate({
+        path: 'household_id',
+        model: 'Household',
+        localField: 'household_id',
+        foreignField: 'household_id'
+      });
+    } catch (err) {
+      throw err;
+    }
     
     if (!familyMember) {
       throw new Error("Family member not found");

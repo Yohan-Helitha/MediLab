@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Member from "../models/Member.js";
 
 class MemberService {
@@ -24,11 +25,22 @@ class MemberService {
   }
 
   async getMemberById(id) {
-    const member = await Member.findById(id);
+    const member = await Member.findById(id).lean();
     if (!member) {
       throw new Error("Member not found");
     }
-    return member;
+
+    // Attach additional health and medical info
+    const [health_info, medical_history] = await Promise.all([
+      mongoose.model("HealthDetails").findOne({ member_id: id }).lean(),
+      mongoose.model("PastMedicalHistory").findOne({ member_id: id }).lean()
+    ]);
+
+    return {
+      ...member,
+      health_info,
+      medical_history
+    };
   }
 
   async createMember(memberData) {
@@ -72,10 +84,78 @@ class MemberService {
   }
 
   async deleteMember(id) {
-    const member = await Member.findByIdAndDelete(id);
+    const member = await Member.findById(id);
     if (!member) {
       throw new Error("Member not found");
     }
+
+    const memberId = member.member_id;
+    const memberEmail = member.email;
+
+    // List of models that contain data related to a member
+    // Some use 'member_id', others might use 'submitted_by'
+    const modelsToClean = [
+      "Allergy",
+      "Medication",
+      "ChronicDisease",
+      "HealthDetails",
+      "PastMedicalHistory",
+      "EmergencyContact",
+      "Referral",
+      "Visit",
+      "Household" // Records submitted by this member
+    ];
+
+    // Perform cascading deletion
+    await Promise.all(modelsToClean.map(async (modelName) => {
+      try {
+        const Model = mongoose.model(modelName);
+        
+        // Delete records where this member is the owner/patient
+        await Model.deleteMany({ member_id: memberId });
+        
+        // Delete records submitted by this member (for snapshots, notes, etc.)
+        await Model.deleteMany({ submitted_by: memberId });
+      } catch (error) {
+        console.error(`Error cleaning up ${modelName} for member ${memberId}:`, error);
+      }
+    }));
+
+    // Special case: If this member belongs to a household, update the household's member list
+    if (member.household_id) {
+      await mongoose.model("Household").updateOne(
+        { household_id: member.household_id },
+        { $pull: { members: memberId } }
+      );
+    }
+
+    // Delete corresponding Auth record by email, profileId, and systemId
+    try {
+      if (mongoose.models.Auth) {
+        // Delete by profileId (MongoDB ObjectId), systemId (member_id), AND email
+        const deleteConditions = [
+          { profileId: id, onModel: 'Member' },
+          { systemId: member.member_id }
+        ];
+        
+        // Add email condition if member has an email address
+        if (memberEmail) {
+          deleteConditions.push({ email: memberEmail });
+        }
+        
+        await mongoose.model("Auth").deleteMany({ 
+          $or: deleteConditions
+        });
+        
+        console.log(`Deleted Auth records for member ${memberId} (email: ${memberEmail})`);
+      }
+    } catch (authError) {
+      console.error(`Error deleting Auth record for member ${id}:`, authError);
+    }
+
+    // Finally delete the member itself
+    await Member.findByIdAndDelete(id);
+    
     return member;
   }
 }

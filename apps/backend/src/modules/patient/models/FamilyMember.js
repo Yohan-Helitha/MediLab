@@ -24,6 +24,22 @@ const familyMemberSchema = new mongoose.Schema({
   date_of_birth: {
     type: Date,
     required: true
+  },
+  isHead: {
+    type: Boolean,
+    default: false
+  },
+  spouse_name: {
+    type: String,
+    default: ""
+  },
+  parent_name: {
+    type: String,
+    default: ""
+  },
+  diseases: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true
@@ -32,7 +48,7 @@ const familyMemberSchema = new mongoose.Schema({
 // Pre-save middleware to auto-generate family member ID
 familyMemberSchema.pre('save', async function() {
   // Generate custom family member ID if it's not already set (for new documents)
-  if (!this.family_member_id) {
+  if (!this.family_member_id && this.isNew) {
     // Find the latest family member with the highest code
     const latestFamilyMember = await mongoose.model('FamilyMember').findOne({
       family_member_id: { $regex: /^FAM-ANU-PADGNDIV-\d{5}$/ }
@@ -44,12 +60,11 @@ familyMemberSchema.pre('save', async function() {
       // Extract the numeric part and increment
       const idParts = latestFamilyMember.family_member_id.split('-');
       const lastNumber = parseInt(idParts[3]);
-      nextNumber = lastNumber + 1;
+      nextNumber = isNaN(lastNumber) ? 1 : lastNumber + 1;
     }
     
     // Format the family member ID with leading zeros
-    const familyMemberId = `FAM-ANU-PADGNDIV-${nextNumber.toString().padStart(5, '0')}`;
-    this.family_member_id = familyMemberId;
+    this.family_member_id = `FAM-ANU-PADGNDIV-${String(nextNumber).padStart(5, '0')}`;
   }
 });
 

@@ -33,7 +33,11 @@ class MemberController {
 
   async createMember(req, res) {
     try {
-      const member = await memberService.createMember(req.body);
+      const memberData = { ...req.body };
+      if (req.file) {
+        memberData.photo = `/uploads/profiles/${req.file.filename}`;
+      }
+      const member = await memberService.createMember(memberData);
       res.status(201).json({
         success: true,
         data: member
@@ -48,7 +52,11 @@ class MemberController {
 
   async updateMember(req, res) {
     try {
-      const member = await memberService.updateMember(req.params.id, req.body);
+      const updateData = { ...req.body };
+      if (req.file) {
+        updateData.photo = `/uploads/profiles/${req.file.filename}`;
+      }
+      const member = await memberService.updateMember(req.params.id, updateData);
       res.status(200).json({
         success: true,
         data: member

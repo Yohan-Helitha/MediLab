@@ -7,7 +7,11 @@ import {
 } from "../validations/visitValidation.js";
 import { handleValidationErrors } from "../middlewares/visitMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", visitController.getAllVisits);
 

@@ -10,11 +10,10 @@ const healthOfficerSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ['MALE', 'FEMALE', 'OTHER'],
-      required: true
+      default: 'OTHER'
     },
     employeeId: {
       type: String,
-      required: true,
       unique: true,
       trim: true
     },
@@ -35,7 +34,7 @@ const healthOfficerSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['MOH', 'PHI', 'Nurse', 'Admin', 'Lab_Technician', 'Doctor'],
+      enum: ['MOH', 'PHI', 'Nurse', 'Admin', 'Lab_Technician', 'Doctor', 'HealthOfficer', 'Staff'],
       required: true
     },
 
@@ -60,12 +59,29 @@ const healthOfficerSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
-healthOfficerSchema.index({ employeeId: 1 });
-healthOfficerSchema.index({ username: 1 });
-healthOfficerSchema.index({ email: 1 });
+// Indexes (unique fields already have indexes, so only non-unique fields need explicit indexes)
 healthOfficerSchema.index({ role: 1 });
 healthOfficerSchema.index({ assignedArea: 1 });
+
+// Pre-save middleware to auto-generate employee ID
+healthOfficerSchema.pre('save', async function() {
+  if (!this.employeeId) {
+    const currentYear = new Date().getFullYear();
+    const prefix = this.role === 'Lab_Technician' ? 'LAB' : 'HO';
+    const regex = new RegExp(`^${prefix}-${currentYear}-\\d{3}$`);
+
+    const latestOfficer = await mongoose.model('HealthOfficer').findOne({
+      employeeId: { $regex: regex }
+    }).sort({ employeeId: -1 }).exec();
+
+    let nextNumber = 1;
+    if (latestOfficer && latestOfficer.employeeId) {
+      const idParts = latestOfficer.employeeId.split('-');
+      nextNumber = parseInt(idParts[2]) + 1;
+    }
+    this.employeeId = `${prefix}-${currentYear}-${nextNumber.toString().padStart(3, '0')}`;
+  }
+});
 
 const HealthOfficer = mongoose.model('HealthOfficer', healthOfficerSchema);
 

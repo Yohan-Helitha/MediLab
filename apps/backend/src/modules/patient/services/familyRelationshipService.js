@@ -1,24 +1,77 @@
+import mongoose from "mongoose";
 import FamilyRelationship from "../models/FamilyRelationship.js";
 import FamilyMember from "../models/FamilyMember.js";
 
 class FamilyRelationshipService {
-  // Helper method to get reciprocal relationship type
-  getReciprocalRelationship(relationshipType) {
-    const reciprocals = {
-      'husband': 'wife',
-      'wife': 'husband',
-      'father': 'son', // father -> child becomes child -> father
-      'mother': 'daughter', // mother -> child becomes child -> mother
-      'son': 'father', // son -> parent becomes parent -> son
-      'daughter': 'mother', // daughter -> parent becomes parent -> daughter
-      'brother': 'sister',
-      'sister': 'brother',
-      'grandfather': 'grandson',
-      'grandmother': 'granddaughter',
-      'grandson': 'grandfather',
-      'granddaughter': 'grandmother'
-    };
-    return reciprocals[relationshipType];
+  getReciprocalRelationship(relationshipType, targetGender) {
+    if (!relationshipType) return null;
+    const type = relationshipType.toLowerCase();
+    
+    if (['father', 'mother', 'parent'].includes(type)) {
+      if (targetGender === 'Male') return 'son';
+      if (targetGender === 'Female') return 'daughter';
+      return 'child';
+    }
+    
+    if (['son', 'daughter', 'child'].includes(type)) {
+      if (targetGender === 'Male') return 'father';
+      if (targetGender === 'Female') return 'mother';
+      return 'parent';
+    }
+    
+    if (['husband', 'wife', 'spouse'].includes(type)) {
+      if (targetGender === 'Male') return 'husband';
+      if (targetGender === 'Female') return 'wife';
+      return 'spouse';
+    }
+
+    if (['brother', 'sister', 'sibling'].includes(type)) {
+      if (targetGender === 'Male') return 'brother';
+      if (targetGender === 'Female') return 'sister';
+      return 'sibling';
+    }
+    
+    if (['grandfather', 'grandmother', 'grandparent'].includes(type)) {
+      if (targetGender === 'Male') return 'grandson';
+      if (targetGender === 'Female') return 'granddaughter';
+      return 'grandchild';
+    }
+    
+    if (['grandson', 'granddaughter', 'grandchild'].includes(type)) {
+      if (targetGender === 'Male') return 'grandfather';
+      if (targetGender === 'Female') return 'grandmother';
+      return 'grandparent';
+    }
+
+    if (type === 'mother-in-law') {
+      if (targetGender === 'Male') return 'son-in-law';
+      if (targetGender === 'Female') return 'daughter-in-law';
+      return 'child-in-law';
+    }
+
+    if (type === 'father-in-law') {
+      if (targetGender === 'Male') return 'son-in-law';
+      if (targetGender === 'Female') return 'daughter-in-law';
+      return 'child-in-law';
+    }
+
+    if (type === 'son-in-law' || type === 'daughter-in-law' || type === 'child-in-law') {
+      if (targetGender === 'Male') return 'father-in-law';
+      if (targetGender === 'Female') return 'mother-in-law';
+      return 'parent-in-law';
+    }
+
+    if (type === 'aunt' || type === 'uncle') {
+        if (targetGender === 'Male') return 'nephew';
+        if (targetGender === 'Female') return 'niece';
+        return 'nibling';
+    }
+
+    if (type === 'guardian') {
+        return 'ward';
+    }
+
+    return type;
   }
 
   // Validate relationship logic
@@ -86,6 +139,31 @@ class FamilyRelationshipService {
     };
   }
 
+  async createRelationshipByNames(householdId, member1Name, member2Name, relationshipType) {
+    const member1 = await FamilyMember.findOne({ household_id: householdId, full_name: member1Name });
+    const member2 = await FamilyMember.findOne({ household_id: householdId, full_name: member2Name });
+
+    if (!member1 || !member2) {
+      return null;
+    }
+
+    // Check if relationship already exists
+    const existing = await FamilyRelationship.findOne({
+      $or: [
+        { family_member1_id: member1.family_member_id, family_member2_id: member2.family_member_id },
+        { family_member1_id: member2.family_member_id, family_member2_id: member1.family_member_id }
+      ]
+    });
+
+    if (existing) return existing;
+
+    return await this.createFamilyRelationship({
+      family_member1_id: member1.family_member_id,
+      family_member2_id: member2.family_member_id,
+      relationship_type: relationshipType
+    });
+  }
+
   async getFamilyRelationshipById(id) {
     const familyRelationship = await FamilyRelationship.findById(id)
       .populate({
@@ -123,7 +201,7 @@ class FamilyRelationshipService {
     await familyRelationship.save();
 
     // Create the reciprocal relationship (bidirectional)
-    const reciprocalType = this.getReciprocalRelationship(relationship_type);
+    const reciprocalType = this.getReciprocalRelationship(relationship_type, familyMember1.gender);
     if (reciprocalType) {
       const reciprocalRelationship = new FamilyRelationship({
         family_member1_id: family_member2_id,
@@ -179,14 +257,10 @@ class FamilyRelationshipService {
     }
 
     // Find and delete the reciprocal relationship
-    const reciprocalType = this.getReciprocalRelationship(familyRelationship.relationship_type);
-    if (reciprocalType) {
-      await FamilyRelationship.findOneAndDelete({
-        family_member1_id: familyRelationship.family_member2_id,
-        family_member2_id: familyRelationship.family_member1_id,
-        relationship_type: reciprocalType
-      });
-    }
+    await FamilyRelationship.findOneAndDelete({
+      family_member1_id: familyRelationship.family_member2_id,
+      family_member2_id: familyRelationship.family_member1_id
+    });
 
     // Delete the primary relationship
     await FamilyRelationship.findByIdAndDelete(id);
@@ -202,35 +276,90 @@ class FamilyRelationshipService {
         path: "family_member1_id",
         model: "FamilyMember",
         localField: "family_member1_id",
-        foreignField: "family_member_id"
+        foreignField: "family_member_id",
+        justOne: true
       },
       {
         path: "family_member2_id",
         model: "FamilyMember",
         localField: "family_member2_id",
-        foreignField: "family_member_id"
+        foreignField: "family_member_id",
+        justOne: true
       }
     ]);
 
     const familyTree = {
-      member: await FamilyMember.findOne({ family_member_id: familyMemberId }),
-      relationships: relationships.map(rel => {
-        // Compare using the actual family_member_id field from populated object
-        const member1Id = rel.family_member1_id?.family_member_id || rel.family_member1_id;
-        const member2Id = rel.family_member2_id?.family_member_id || rel.family_member2_id;
-        const isMainMemberFirst = member1Id === familyMemberId;
-        
-        return {
-          id: rel._id,
-          relatedMember: isMainMemberFirst ? rel.family_member2_id : rel.family_member1_id,
-          relationship: isMainMemberFirst 
-            ? rel.relationship_type 
-            : this.getReciprocalRelationship(rel.relationship_type)
-        };
-      })
+      member: await this._enrichMemberData(await FamilyMember.findOne({ family_member_id: familyMemberId })),
+      relationships: []
     };
 
+    // Deduplicate relationships to ensure each related member appears only once
+    const seenMemberIds = new Set();
+    
+    for (const rel of relationships) {
+        const m1 = rel.family_member1_id;
+        const m2 = rel.family_member2_id;
+        const m1Id = m1?.family_member_id || m1;
+        const m2Id = m2?.family_member_id || m2;
+
+        const isMainMemberFirst = (m1Id === familyMemberId);
+        let relatedMember = isMainMemberFirst ? m2 : m1;
+        
+        // Ensure relatedMember is a full object and enriched
+        if (typeof relatedMember === 'string') {
+            relatedMember = await FamilyMember.findOne({ family_member_id: relatedMember });
+        }
+        relatedMember = await this._enrichMemberData(relatedMember);
+
+        const relatedId = relatedMember?.family_member_id;
+
+        if (relatedId && !seenMemberIds.has(relatedId)) {
+            seenMemberIds.add(relatedId);
+            
+            let finalRelationship = "";
+            if (!isMainMemberFirst) {
+              finalRelationship = rel.relationship_type;
+            } else {
+              finalRelationship = this.getReciprocalRelationship(rel.relationship_type, relatedMember.gender);
+            }
+
+            familyTree.relationships.push({
+              id: rel._id,
+              relatedMember: relatedMember,
+              relationship: finalRelationship
+            });
+        }
+    }
+
     return familyTree;
+  }
+
+  // Internal helper to enrich FamilyMember with main Member data (like diseases/photo)
+  async _enrichMemberData(familyMember) {
+    if (!familyMember) return null;
+    
+    // Convert to plain object if it's a Mongoose document
+    const memberObj = familyMember.toObject ? familyMember.toObject() : { ...familyMember };
+    
+    // Look for a corresponding member in the main Member collection
+    // We match by full_name and household_id as a reliable link
+    const mainMember = await mongoose.model("Member").findOne({
+      full_name: memberObj.full_name,
+      household_id: memberObj.household_id
+    }).select('diseases photo member_id').lean();
+
+    if (mainMember) {
+      // Merge important fields if they exist in main member collection
+      return {
+        ...memberObj,
+        diseases: mainMember.diseases || memberObj.diseases || [],
+        photo: mainMember.photo || memberObj.photo,
+        linked_system_id: mainMember.member_id,
+        isSystemUser: true
+      };
+    }
+
+    return memberObj;
   }
 }
 

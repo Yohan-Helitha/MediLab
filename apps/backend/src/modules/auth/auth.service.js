@@ -1,7 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import Auth from './auth.model.js';
 import Member from '../patient/models/Member.js';
 import HealthOfficer from './healthOfficer.model.js';
+import mongoose from 'mongoose';
 
 class AuthService {
   /**
@@ -31,119 +33,61 @@ class AuthService {
   }
 
   /**
-   * Register a new patient (member)
+   * Register a new patient
    */
   async registerPatient(registrationData) {
-    const {
-      household_id,
+    const { full_name, email, contact_number, password } = registrationData;
+
+    // Check if auth record already exists
+    const existingAuth = await Auth.findOne({ email });
+    if (existingAuth) {
+      throw new Error('A user with this email already exists');
+    }
+
+    const passwordHash = await this.hashPassword(password);
+
+    // 1. Create Profile (Member)
+    const patientProfile = new Member({
       full_name,
-      address,
+      email,
       contact_number,
-      nic,
-      password,
-      date_of_birth,
-      gender,
-      gn_division,
-      district,
-      photo,
-      disability_status,
-      pregnancy_status
-    } = registrationData;
-
-    // Check if patient with this NIC already exists
-    if (nic) {
-      const existingPatient = await Member.findOne({ nic });
-      if (existingPatient) {
-        throw new Error('A patient with this NIC already exists');
-      }
-    }
-
-    // Check if contact number already exists
-    const existingContact = await Member.findOne({ contact_number });
-    if (existingContact) {
-      throw new Error('A patient with this contact number already exists');
-    }
-
-    // Hash password
-    const password_hash = await this.hashPassword(password);
-
-    // Create new patient
-    const patient = new Member({
-      household_id,
-      full_name,
-      address,
-      contact_number,
-      nic,
-      password_hash,
-      date_of_birth,
-      gender,
-      gn_division,
-      district,
-      photo,
-      disability_status,
-      pregnancy_status
+      address: 'Not Provided',
+      gn_division: 'Not Provided',
+      district: 'Not Provided',
+      password_hash: passwordHash, // Mirroring for legacy code
+      date_of_birth: new Date('2000-01-01'),
+      gender: 'OTHER'
     });
+    await patientProfile.save();
 
-    await patient.save();
+    // 2. Create Auth Record (Master Credentials)
+    const authRecord = new Auth({
+      email,
+      passwordHash,
+      role: 'patient',
+      systemId: patientProfile.member_id,
+      profileId: patientProfile._id,
+      onModel: 'Member'
+    });
+    await authRecord.save();
 
-    // Generate token
     const token = this.generateToken({
-      id: patient._id,
-      member_id: patient.member_id,
+      id: authRecord._id,
+      systemId: patientProfile.member_id,
+      profileId: patientProfile._id,
       userType: 'patient',
-      full_name: patient.full_name
+      fullName: patientProfile.full_name
     });
 
-    // Return patient data without password
-    const patientData = patient.toObject();
-    delete patientData.password_hash;
-
-    return {
-      patient: patientData,
-      token
-    };
-  }
-
-  /**
-   * Login patient (member)
-   */
-  async loginPatient(credentials) {
-    const { identifier, password } = credentials; // identifier can be member_id, nic, or contact_number
-
-    // Find patient by member_id, nic, or contact_number
-    const patient = await Member.findOne({
-      $or: [
-        { member_id: identifier },
-        { nic: identifier },
-        { contact_number: identifier }
-      ]
-    });
-
-    if (!patient) {
-      throw new Error('Invalid credentials');
-    }
-
-    // Verify password
-    const isPasswordValid = await this.comparePassword(password, patient.password_hash);
-    if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
-    }
-
-    // Generate token
-    const token = this.generateToken({
-      id: patient._id,
-      member_id: patient.member_id,
-      userType: 'patient',
-      full_name: patient.full_name
-    });
-
-    // Return patient data without password
-    const patientData = patient.toObject();
-    delete patientData.password_hash;
-
-    return {
-      patient: patientData,
-      token
+    return { 
+      user: { 
+        email: authRecord.email, 
+        role: authRecord.role, 
+        systemId: patientProfile.member_id, 
+        isProfileComplete: patientProfile.isProfileComplete || false,
+        profile: patientProfile 
+      }, 
+      token 
     };
   }
 
@@ -151,121 +95,126 @@ class AuthService {
    * Register a new health officer
    */
   async registerHealthOfficer(registrationData) {
-    const {
-      fullName,
-      gender,
-      employeeId,
-      contactNumber,
-      email,
-      assignedArea,
-      role,
-      username,
-      password
-    } = registrationData;
+    const { fullName, email, contactNumber, password, role } = registrationData;
 
-    // Check if health officer with this employee ID already exists
-    const existingEmployee = await HealthOfficer.findOne({ employeeId });
-    if (existingEmployee) {
-      throw new Error('A health officer with this employee ID already exists');
+    // Check if auth record already exists
+    const existingAuth = await Auth.findOne({ email });
+    if (existingAuth) {
+      throw new Error('A user with this email already exists');
     }
 
-    // Check if email already exists
-    const existingEmail = await HealthOfficer.findOne({ email });
-    if (existingEmail) {
-      throw new Error('A health officer with this email already exists');
-    }
-
-    // Check if username already exists
-    const existingUsername = await HealthOfficer.findOne({ username });
-    if (existingUsername) {
-      throw new Error('This username is already taken');
-    }
-
-    // Hash password
     const passwordHash = await this.hashPassword(password);
 
-    // Create new health officer
-    const healthOfficer = new HealthOfficer({
+    // 1. Create Profile (HealthOfficer)
+    const officerProfile = new HealthOfficer({
       fullName,
-      gender,
-      employeeId,
-      contactNumber,
       email,
-      assignedArea,
+      contactNumber,
       role,
-      username,
+      username: email,
+      passwordHash: passwordHash // Mirroring for legacy code
+    });
+    await officerProfile.save();
+
+    // 2. Create Auth Record (Master Credentials)
+    const authRecord = new Auth({
+      email,
       passwordHash,
-      isActive: true
+      role: role,
+      systemId: officerProfile.employeeId,
+      profileId: officerProfile._id,
+      onModel: 'HealthOfficer'
     });
+    await authRecord.save();
 
-    await healthOfficer.save();
-
-    // Generate token
     const token = this.generateToken({
-      id: healthOfficer._id,
-      employeeId: healthOfficer.employeeId,
+      id: authRecord._id,
+      systemId: officerProfile.employeeId,
+      profileId: officerProfile._id,
       userType: 'healthOfficer',
-      role: healthOfficer.role,
-      fullName: healthOfficer.fullName
+      role: authRecord.role,
+      fullName: officerProfile.fullName
     });
 
-    // Return health officer data without password
-    const officerData = healthOfficer.toObject();
-    delete officerData.passwordHash;
-
-    return {
-      healthOfficer: officerData,
-      token
+    return { 
+      user: { 
+        email: authRecord.email, 
+        role: authRecord.role, 
+        userType: 'healthOfficer',
+        systemId: officerProfile.employeeId, 
+        profile: officerProfile 
+      }, 
+      token 
     };
   }
 
   /**
-   * Login health officer
+   * Universal Login (Patient or Staff)
    */
-  async loginHealthOfficer(credentials) {
-    const { identifier, password } = credentials; // identifier can be employeeId, email, or username
+  async login(credentials) {
+    const { identifier, password } = credentials;
 
-    // Find health officer by employeeId, email, or username
-    const healthOfficer = await HealthOfficer.findOne({
+    // 1. Find the Auth record using email, systemId (Employee ID / Member ID), or contact number (via profile)
+    let authRecord = await Auth.findOne({ 
       $or: [
-        { employeeId: identifier },
         { email: identifier },
-        { username: identifier }
+        { systemId: identifier }
       ]
     });
 
-    if (!healthOfficer) {
+    if (!authRecord) {
       throw new Error('Invalid credentials');
     }
 
-    // Check if account is active
-    if (!healthOfficer.isActive) {
-      throw new Error('Your account has been deactivated. Please contact the administrator.');
-    }
-
-    // Verify password
-    const isPasswordValid = await this.comparePassword(password, healthOfficer.passwordHash);
+    // 2. Validate password
+    const isPasswordValid = await this.comparePassword(password, authRecord.passwordHash);
     if (!isPasswordValid) {
       throw new Error('Invalid credentials');
     }
 
-    // Generate token
+    // 3. Dynamically fetch the linked profile (Member or HealthOfficer)
+    const ProfileModel = mongoose.model(authRecord.onModel);
+    const profile = await ProfileModel.findById(authRecord.profileId);
+    if (!profile) {
+      throw new Error('Profile not found for this user');
+    }
+
+    // 4. Generate token with unified payload
     const token = this.generateToken({
-      id: healthOfficer._id,
-      employeeId: healthOfficer.employeeId,
-      userType: 'healthOfficer',
-      role: healthOfficer.role,
-      fullName: healthOfficer.fullName
+      id: authRecord._id,
+      systemId: authRecord.systemId,
+      profileId: authRecord.profileId,
+      userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
+      role: authRecord.role,
+      fullName: profile.full_name || profile.fullName
     });
 
-    // Return health officer data without password
-    const officerData = healthOfficer.toObject();
-    delete officerData.passwordHash;
-
-    return {
-      healthOfficer: officerData,
-      token
+    return { 
+      user: { 
+        email: authRecord.email, 
+        role: authRecord.role, 
+        userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
+        systemId: authRecord.systemId,
+        firstName: profile.full_name?.split(' ')[0] || profile.fullName?.split(' ')[0],
+        isProfileComplete: profile.isProfileComplete || false,
+        profile 
+      }, 
+      token 
     };
+  }
+
+  /**
+   * Health Officer specific Login (Aliased for backward compatibility)
+   */
+  async loginHealthOfficer(credentials) {
+    return this.login(credentials);
+  }
+
+  /**
+   * Patient specific Login (Aliased for backward compatibility)
+   */
+  async loginPatient(credentials) {
+    return this.login(credentials);
   }
 
   /**
@@ -287,24 +236,96 @@ class AuthService {
    * Get user profile by token
    */
   async getUserProfile(decoded) {
-    if (decoded.userType === 'patient') {
-      const patient = await Member.findById(decoded.id).select('-password_hash');
-      if (!patient) {
-        throw new Error('Patient not found');
-      }
-      return { user: patient, userType: 'patient' };
-    } else if (decoded.userType === 'healthOfficer') {
-      const healthOfficer = await HealthOfficer.findById(decoded.id).select('-passwordHash');
-      if (!healthOfficer) {
-        throw new Error('Health officer not found');
-      }
-      if (!healthOfficer.isActive) {
-        throw new Error('Account is deactivated');
-      }
-      return { user: healthOfficer, userType: 'healthOfficer' };
-    } else {
-      throw new Error('Invalid user type');
+    const authRecord = await Auth.findById(decoded.id);
+    if (!authRecord) {
+      throw new Error('User not found');
     }
+
+    const ProfileModel = mongoose.model(authRecord.onModel);
+    const profile = await ProfileModel.findById(authRecord.profileId);
+    
+    if (!profile) {
+      throw new Error('Profile not found');
+    }
+
+    return { user: profile, userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer', role: authRecord.role };
+  }
+
+  /**
+   * Legacy login methods for backward compatibility with controller
+   */
+  async loginPatient(credentials) {
+    return this.login(credentials);
+  }
+
+  async loginHealthOfficer(credentials) {
+    return this.login(credentials);
+  }
+
+  /**
+   * Update user profile and security settings
+   */
+  async updateProfile(decodedUser, updateData) {
+    const { email, contact_number, currentPassword, newPassword } = updateData;
+
+    // 1. Find the Auth record
+    const authRecord = await Auth.findById(decodedUser.id);
+    if (!authRecord) {
+      throw new Error('User not found');
+    }
+
+    // 2. Fetch the Profile
+    const ProfileModel = mongoose.model(authRecord.onModel);
+    const profile = await ProfileModel.findById(authRecord.profileId);
+    if (!profile) {
+      throw new Error('Profile not found');
+    }
+
+    // 3. Handle Password Change (if requested)
+    if (newPassword) {
+      if (!currentPassword) {
+        throw new Error('Current password is required to set a new one');
+      }
+
+      const isMatch = await this.comparePassword(currentPassword, authRecord.passwordHash);
+      if (!isMatch) {
+        throw new Error('Incorrect current password');
+      }
+
+      const newHash = await this.hashPassword(newPassword);
+      authRecord.passwordHash = newHash;
+      
+      // Update password_hash in Profile too if it exists (for compatibility)
+      if (profile.password_hash !== undefined) {
+        profile.password_hash = newHash;
+      }
+    }
+
+    // 4. Update Email & Contact Number
+    if (email && email !== authRecord.email) {
+      const emailExists = await Auth.findOne({ email, _id: { $ne: authRecord._id } });
+      if (emailExists) {
+        throw new Error('This email is already taken');
+      }
+      authRecord.email = email;
+      profile.email = email;
+    }
+
+    if (contact_number) {
+      profile.contact_number = contact_number;
+    }
+
+    // 5. Save changes
+    await authRecord.save();
+    await profile.save();
+
+    return {
+      email: authRecord.email,
+      role: authRecord.role,
+      userType: authRecord.onModel === 'Member' ? 'patient' : 'healthOfficer',
+      systemId: authRecord.systemId,
+      profile: profile
+    };
   }
 }
 

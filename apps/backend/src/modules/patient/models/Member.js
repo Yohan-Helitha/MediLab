@@ -8,7 +8,7 @@ const memberSchema = new mongoose.Schema({
   },
   household_id: {
     type: String,
-    required: true,
+    required: false,
     maxlength: 50
   },
   full_name: {
@@ -16,9 +16,17 @@ const memberSchema = new mongoose.Schema({
     required: true,
     maxlength: 150
   },
+  email: {
+    type: String,
+    unique: true,
+    sparse: true,
+    lowercase: true,
+    trim: true,
+    maxlength: 100
+  },
   address: {
     type: String,
-    required: true
+    required: false
   },
   contact_number: {
     type: String,
@@ -38,7 +46,7 @@ const memberSchema = new mongoose.Schema({
   },
   date_of_birth: {
     type: Date,
-    required: true
+    required: false
   },
   age: {
     type: Number,
@@ -55,17 +63,17 @@ const memberSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    required: true,
+    required: false,
     maxlength: 20
   },
   gn_division: {
     type: String,
-    required: true,
+    required: false,
     maxlength: 100
   },
   district: {
     type: String,
-    required: true,
+    required: false,
     maxlength: 100
   },
   photo: {
@@ -79,6 +87,14 @@ const memberSchema = new mongoose.Schema({
   pregnancy_status: {
     type: Boolean,
     default: false
+  },
+  isProfileComplete: {
+    type: Boolean,
+    default: false
+  },
+  diseases: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true

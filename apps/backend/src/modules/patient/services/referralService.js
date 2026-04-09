@@ -61,6 +61,10 @@ class ReferralService {
   async getReferralsByVisitId(visitId) {
     return await Referral.find({ visit_id: visitId }).sort({ createdAt: -1 });
   }
+
+  async getReferralsByMemberId(memberId) {
+    return await Referral.find({ member_id: memberId }).sort({ createdAt: -1 });
+  }
 }
 
 export default new ReferralService();

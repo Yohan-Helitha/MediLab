@@ -7,7 +7,11 @@ import {
 } from "../validations/healthDetailsValidation.js";
 import { handleValidationErrors } from "../middlewares/healthDetailsMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", healthDetailsController.getAllHealthDetails);
 

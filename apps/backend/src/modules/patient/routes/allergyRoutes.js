@@ -7,7 +7,11 @@ import {
 } from "../validations/allergyValidation.js";
 import { handleValidationErrors } from "../middlewares/allergyMiddleware.js";
 
+import { authenticate } from "../../auth/auth.middleware.js";
+
 const router = express.Router();
+
+router.use(authenticate);
 
 router.get("/", allergyController.getAllAllergies);
 
