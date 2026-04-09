@@ -59,6 +59,24 @@ function BookingCreatePage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
+	const selectedOperatingHours = useMemo(() => {
+		const hours = lab?.operatingHours;
+		if (!Array.isArray(hours) || hours.length === 0) return null;
+		if (!formData.bookingDate) return hours[0] || null;
+		const d = new Date(formData.bookingDate);
+		if (Number.isNaN(d.getTime())) return hours[0] || null;
+		const weekday = d.toLocaleDateString("en-US", { weekday: "long" });
+		const byDay = hours.find(
+			(h) =>
+				typeof h?.day === "string" &&
+				h.day.trim().toLowerCase() === weekday.toLowerCase(),
+		);
+		return byDay || hours[0] || null;
+	}, [lab?.operatingHours, formData.bookingDate]);
+
+	const openTime = selectedOperatingHours?.openTime || "";
+	const closeTime = selectedOperatingHours?.closeTime || "";
+
 	useEffect(() => {
 		// If user opened this page directly, force them back to labs.
 		if (!labTest || !diagnosticTestId || !healthCenterId) {
@@ -89,6 +107,12 @@ function BookingCreatePage() {
 		setFormData((prev) => ({ ...prev, [name]: value }));
 	};
 
+	const validateTimeSlot = (value) => {
+		if (!value) return true;
+		if (!openTime || !closeTime) return true;
+		return value >= openTime && value <= closeTime;
+	};
+
 	useEffect(() => {
 		if (isWalkIn && formData.paymentMethod !== "CASH") {
 			setFormData((prev) => ({ ...prev, paymentMethod: "CASH" }));
@@ -109,6 +133,10 @@ function BookingCreatePage() {
 		}
 		if (!formData.bookingDate) {
 			setError("Please select a booking date.");
+			return;
+		}
+		if (formData.timeSlot && !validateTimeSlot(formData.timeSlot)) {
+			setError("Selected time is outside lab opening hours.");
 			return;
 		}
 
@@ -243,10 +271,25 @@ function BookingCreatePage() {
 							<div>
 								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Time Slot (optional)</label>
 								<input
-									type="text"
+									type="time"
 									value={formData.timeSlot}
-									onChange={(e) => setField("timeSlot", e.target.value)}
-									placeholder="e.g. 09:00 - 10:00"
+									min={openTime || undefined}
+									max={closeTime || undefined}
+									step={900}
+									onChange={(e) => {
+										const next = e.target.value;
+										if (!next) {
+											setError("");
+											setField("timeSlot", "");
+											return;
+										}
+										if (!validateTimeSlot(next)) {
+											setError("Selected time is outside lab opening hours.");
+											return;
+										}
+										setError("");
+										setField("timeSlot", next);
+									}}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 								/>
 							</div>

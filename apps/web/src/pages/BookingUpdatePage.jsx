@@ -27,6 +27,15 @@ function BookingUpdatePage() {
 	const params = useParams();
 	const { user } = useAuth();
 
+	function normalizeTimeSlotValue(value) {
+		if (!value || typeof value !== "string") return "";
+		const trimmed = value.trim();
+		if (/^\d{2}:\d{2}$/.test(trimmed)) return trimmed;
+		const parts = trimmed.split("-");
+		const first = (parts[0] || "").trim();
+		return /^\d{2}:\d{2}$/.test(first) ? first : "";
+	}
+
 	const patientProfileId = user?.profile?._id || null;
 	const [booking, setBooking] = useState(location.state?.booking || null);
 	const bookingId = booking?._id || params?.id || null;
@@ -47,7 +56,7 @@ function BookingUpdatePage() {
 
 	const [formData, setFormData] = useState({
 		bookingDate: initialDate,
-		timeSlot: booking?.timeSlot || "",
+		timeSlot: normalizeTimeSlotValue(booking?.timeSlot || ""),
 		bookingType: booking?.bookingType || "PRE_BOOKED",
 		priorityLevel: booking?.priorityLevel || "NORMAL",
 		paymentMethod: booking?.paymentMethod || "ONLINE",
@@ -58,12 +67,36 @@ function BookingUpdatePage() {
 	useEffect(() => {
 		setFormData({
 			bookingDate: initialDate,
-			timeSlot: booking?.timeSlot || "",
+			timeSlot: normalizeTimeSlotValue(booking?.timeSlot || ""),
 			bookingType: booking?.bookingType || "PRE_BOOKED",
 			priorityLevel: booking?.priorityLevel || "NORMAL",
 			paymentMethod: booking?.paymentMethod || "ONLINE",
 		});
 	}, [booking, initialDate]);
+
+	const selectedOperatingHours = useMemo(() => {
+		const hours = booking?.healthCenterId?.operatingHours;
+		if (!Array.isArray(hours) || hours.length === 0) return null;
+		if (!formData.bookingDate) return hours[0] || null;
+		const d = new Date(formData.bookingDate);
+		if (Number.isNaN(d.getTime())) return hours[0] || null;
+		const weekday = d.toLocaleDateString("en-US", { weekday: "long" });
+		const byDay = hours.find(
+			(h) =>
+				typeof h?.day === "string" &&
+				h.day.trim().toLowerCase() === weekday.toLowerCase(),
+		);
+		return byDay || hours[0] || null;
+	}, [booking?.healthCenterId?.operatingHours, formData.bookingDate]);
+
+	const openTime = selectedOperatingHours?.openTime || "";
+	const closeTime = selectedOperatingHours?.closeTime || "";
+
+	const validateTimeSlot = (value) => {
+		if (!value) return true;
+		if (!openTime || !closeTime) return true;
+		return value >= openTime && value <= closeTime;
+	};
 
 	useEffect(() => {
 		if (isWalkIn && formData.paymentMethod !== "CASH") {
@@ -153,12 +186,16 @@ function BookingUpdatePage() {
 			setError("Please select a booking date.");
 			return;
 		}
+		if (formData.timeSlot && !validateTimeSlot(formData.timeSlot)) {
+			setError("Selected time is outside lab opening hours.");
+			return;
+		}
 
 		setLoading(true);
 		try {
 			const payload = {
 				bookingDate: formData.bookingDate,
-				timeSlot: formData.timeSlot || undefined,
+				timeSlot: normalizeTimeSlotValue(formData.timeSlot) || undefined,
 				bookingType: formData.bookingType,
 				priorityLevel: formData.priorityLevel,
 				paymentMethod: isWalkIn ? "CASH" : formData.paymentMethod,
@@ -265,10 +302,25 @@ function BookingUpdatePage() {
 									Time Slot (optional)
 								</label>
 								<input
-									type="text"
+									type="time"
 									value={formData.timeSlot}
-									onChange={(e) => setField("timeSlot", e.target.value)}
-									placeholder="e.g. 09:00 - 10:00"
+									min={openTime || undefined}
+									max={closeTime || undefined}
+									step={900}
+									onChange={(e) => {
+										const next = e.target.value;
+										if (!next) {
+											setError("");
+											setField("timeSlot", "");
+											return;
+										}
+										if (!validateTimeSlot(next)) {
+											setError("Selected time is outside lab opening hours.");
+											return;
+										}
+										setError("");
+										setField("timeSlot", next);
+									}}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 								/>
 							</div>

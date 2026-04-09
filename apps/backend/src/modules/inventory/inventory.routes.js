@@ -1,4 +1,5 @@
 import express from "express";
+import { registerInventoryLifecycleHooks } from "./inventory.lifecycle-hooks.js";
 import {
   listInventoryStockController,
   applyEquipmentUsageForBookingController,
@@ -19,6 +20,9 @@ import {
 } from "../auth/auth.middleware.js";
 
 const router = express.Router();
+
+// Ensure booking/result lifecycle hooks are registered once.
+registerInventoryLifecycleHooks();
 
 // Local alias to keep `protect` naming
 const protect = authenticate;

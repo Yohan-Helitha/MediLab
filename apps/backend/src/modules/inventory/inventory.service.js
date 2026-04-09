@@ -3,13 +3,120 @@ import mongoose from "mongoose";
 import InventoryStock from "./inventoryStock.model.js";
 import StockTransaction from "./stockTransaction.model.js";
 import TestEquipmentRequirement from "./testEquipmentRequirement.model.js";
+import Equipment from "./equipment.model.js";
 import Booking from "../booking/booking.model.js";
 import TestType from "../test/testType.model.js";
 
-// Apply equipment usage for a completed booking.
-// This should be called by the booking module (via HTTP) only
-// when a booking moves to COMPLETED status.
-export const applyEquipmentUsageForBooking = async (
+// Reserve required equipment for a booking.
+// This should be called only when a booking moves to COMPLETED status.
+export const reserveEquipmentForBooking = async (
+  bookingId,
+  { changedBy = null } = {},
+) => {
+  const booking = await Booking.findById(bookingId).exec();
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  const testTypeId = booking.diagnosticTestId;
+
+  const session = await mongoose.startSession();
+
+  try {
+    let result;
+
+    await session.withTransaction(async () => {
+      const requirements = await TestEquipmentRequirement.find({
+        testTypeId,
+        isActive: true,
+      }).session(session);
+
+      if (!requirements.length) {
+        result = {
+          reservedItems: [],
+          message: "No equipment requirements for test",
+        };
+        return;
+      }
+
+      const reservedItems = [];
+
+      for (const req of requirements) {
+        // Idempotency: if we've already reserved this equipment for this booking,
+        // do not reserve again.
+        const existingReservation = await StockTransaction.findOne({
+          equipmentId: req.equipmentId,
+          referenceBookingId: bookingId,
+          type: "RESERVE",
+        })
+          .session(session)
+          .exec();
+
+        if (existingReservation) {
+          continue;
+        }
+
+        const stock = await InventoryStock.findOne({
+          equipmentId: req.equipmentId,
+        })
+          .session(session)
+          .exec();
+
+        if (!stock) {
+          throw new Error(
+            "Inventory stock not configured for required equipment",
+          );
+        }
+
+        const quantity = req.quantityPerTest;
+
+        if (stock.availableQuantity < quantity) {
+          throw new Error(
+            `Available quantity too low for equipment ${req.equipmentId}. Available ${stock.availableQuantity}, trying to reserve ${quantity}`,
+          );
+        }
+
+        stock.availableQuantity -= quantity;
+        stock.reservedQuantity += quantity;
+        await stock.save({ session });
+
+        await StockTransaction.create(
+          [
+            {
+              equipmentId: req.equipmentId,
+              quantity,
+              type: "RESERVE",
+              referenceBookingId: bookingId,
+              createdBy: changedBy,
+            },
+          ],
+          { session },
+        );
+
+        reservedItems.push({
+          equipmentId: req.equipmentId,
+          quantity,
+        });
+      }
+
+      result = { reservedItems };
+    });
+
+    return result;
+  } finally {
+    await session.endSession();
+  }
+};
+
+// Backward compatible alias (older route name).
+export const applyEquipmentUsageForBooking = reserveEquipmentForBooking;
+
+
+// Finalize stock changes after test result release.
+// - CONSUMABLE: deduct (reservation becomes consumption)
+// - REUSABLE: return reserved back to available stock
+export const finalizeEquipmentUsageForReleasedResult = async (
   bookingId,
   { changedBy = null } = {},
 ) => {
@@ -35,14 +142,41 @@ export const applyEquipmentUsageForBooking = async (
       if (!requirements.length) {
         result = {
           deductedItems: [],
+          restockedItems: [],
           message: "No equipment requirements for test",
         };
         return;
       }
 
       const deductedItems = [];
+      const restockedItems = [];
 
       for (const req of requirements) {
+        const equipment = await Equipment.findById(req.equipmentId)
+          .session(session)
+          .exec();
+
+        if (!equipment) {
+          throw new Error(
+            `Equipment not found for requirement ${req.equipmentId}`,
+          );
+        }
+
+        const quantity = req.quantityPerTest;
+
+        // Idempotency: if we already finalized this equipment for this booking, skip.
+        const alreadyFinalized = await StockTransaction.findOne({
+          equipmentId: req.equipmentId,
+          referenceBookingId: bookingId,
+          type: equipment.type === "CONSUMABLE" ? "DEDUCT" : "RESTOCK",
+        })
+          .session(session)
+          .exec();
+
+        if (alreadyFinalized) {
+          continue;
+        }
+
         const stock = await InventoryStock.findOne({
           equipmentId: req.equipmentId,
         })
@@ -55,37 +189,69 @@ export const applyEquipmentUsageForBooking = async (
           );
         }
 
-        const quantity = req.quantityPerTest;
+        const reservedToRelease = Math.min(stock.reservedQuantity, quantity);
+        stock.reservedQuantity -= reservedToRelease;
 
-        if (stock.availableQuantity < quantity) {
-          throw new Error(
-            `Available quantity too low for equipment ${req.equipmentId}. Available ${stock.availableQuantity}, trying to deduct ${quantity}`,
-          );
+        if (equipment.type === "REUSABLE") {
+          // Return only what was actually reserved.
+          if (reservedToRelease > 0) {
+            stock.availableQuantity += reservedToRelease;
+          }
+        } else {
+          // CONSUMABLE: ensure the full quantity is deducted.
+          const remainingToDeductFromAvailable = quantity - reservedToRelease;
+          if (remainingToDeductFromAvailable > 0) {
+            if (stock.availableQuantity < remainingToDeductFromAvailable) {
+              throw new Error(
+                `Available quantity too low for equipment ${req.equipmentId}. Available ${stock.availableQuantity}, trying to deduct ${remainingToDeductFromAvailable}`,
+              );
+            }
+            stock.availableQuantity -= remainingToDeductFromAvailable;
+          }
         }
 
-        stock.availableQuantity -= quantity;
         await stock.save({ session });
 
-        await StockTransaction.create(
-          [
-            {
-              equipmentId: req.equipmentId,
-              quantity,
-              type: "DEDUCT",
-              referenceBookingId: bookingId,
-              createdBy: changedBy,
-            },
-          ],
-          { session },
-        );
+        if (equipment.type === "CONSUMABLE") {
+          await StockTransaction.create(
+            [
+              {
+                equipmentId: req.equipmentId,
+                quantity,
+                type: "DEDUCT",
+                referenceBookingId: bookingId,
+                createdBy: changedBy,
+              },
+            ],
+            { session },
+          );
 
-        deductedItems.push({
-          equipmentId: req.equipmentId,
-          quantity,
-        });
+          deductedItems.push({
+            equipmentId: req.equipmentId,
+            quantity,
+          });
+        } else if (reservedToRelease > 0) {
+          await StockTransaction.create(
+            [
+              {
+                equipmentId: req.equipmentId,
+                quantity: reservedToRelease,
+                type: "RESTOCK",
+                referenceBookingId: bookingId,
+                createdBy: changedBy,
+              },
+            ],
+            { session },
+          );
+
+          restockedItems.push({
+            equipmentId: req.equipmentId,
+            quantity: reservedToRelease,
+          });
+        }
       }
 
-      result = { deductedItems };
+      result = { deductedItems, restockedItems };
     });
 
     return result;
@@ -231,6 +397,8 @@ export const deactivateTestEquipmentRequirement = async (id) => {
 
 export default {
   applyEquipmentUsageForBooking,
+  reserveEquipmentForBooking,
+  finalizeEquipmentUsageForReleasedResult,
   restockEquipment,
   listInventoryStock,
   getTestEquipmentRequirements,
