@@ -82,8 +82,11 @@ export const sendResultReadyNotification = async (req, res, next) => {
  */
 export const sendUnviewedResultReminder = async (req, res, next) => {
   try {
-    const daysThreshold = parseInt(req.body.daysThreshold) || 3;
-    const maxReminders = parseInt(req.body.maxReminders) || 2;
+    // Use != null so daysThreshold=0 is treated as 0, not coerced to default
+    const daysThreshold =
+      req.body.daysThreshold != null ? parseInt(req.body.daysThreshold) : 3;
+    const maxReminders =
+      req.body.maxReminders != null ? parseInt(req.body.maxReminders) : 2;
 
     // Find unviewed results
     const unviewedResults = await notificationService.findUnviewedResults(
@@ -137,7 +140,7 @@ export const getNotificationHistory = async (req, res, next) => {
     const { patientId } = req.params;
 
     // AUTHORIZATION: Patients can only view their own notifications
-    if (req.user.userType === "patient" && req.user.id !== patientId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== patientId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You can only view your own notifications.",
@@ -272,7 +275,7 @@ export const subscribeToReminder = async (req, res, next) => {
     // AUTHORIZATION: Patients can only create subscriptions for themselves
     if (
       req.user.userType === "patient" &&
-      req.user.id !== req.body.patientProfileId
+      req.user.profileId?.toString() !== req.body.patientProfileId
     ) {
       return res.status(403).json({
         success: false,
@@ -314,7 +317,7 @@ export const unsubscribeFromReminder = async (req, res, next) => {
     // AUTHORIZATION: Patients can only unsubscribe their own subscriptions
     if (
       req.user.userType === "patient" &&
-      req.user.id !== subscription.patientProfileId.toString()
+      req.user.profileId?.toString() !== subscription.patientProfileId._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -344,7 +347,7 @@ export const getPatientSubscriptions = async (req, res, next) => {
     const { patientId } = req.params;
 
     // AUTHORIZATION: Patients can only view their own subscriptions
-    if (req.user.userType === "patient" && req.user.id !== patientId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== patientId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You can only view your own subscriptions.",
@@ -384,7 +387,7 @@ export const getSubscriptionById = async (req, res, next) => {
     // AUTHORIZATION: Patients can only view their own subscriptions
     if (
       req.user.userType === "patient" &&
-      req.user.id !== subscription.patientProfileId.toString()
+      req.user.profileId?.toString() !== subscription.patientProfileId._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -422,7 +425,7 @@ export const updateSubscription = async (req, res, next) => {
     // AUTHORIZATION: Patients can only update their own subscriptions
     if (
       req.user.userType === "patient" &&
-      req.user.id !== subscription.patientProfileId.toString()
+      req.user.profileId?.toString() !== subscription.patientProfileId._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -485,8 +488,7 @@ export const sendHardCopyReadyNotification = async (req, res, next) => {
     if (!populatedResult.hardCopyCollection?.isPrinted) {
       return res.status(400).json({
         success: false,
-        message:
-          "Hard copy has not been printed yet. Call mark-printed first.",
+        message: "Hard copy has not been printed yet. Call mark-printed first.",
       });
     }
 
@@ -546,8 +548,11 @@ export const sendHardCopyReadyNotification = async (req, res, next) => {
  */
 export const sendUncollectedHardCopyReminder = async (req, res, next) => {
   try {
-    const daysThreshold = parseInt(req.body.daysThreshold) || 3;
-    const maxReminders = parseInt(req.body.maxReminders) || 2;
+    // Use != null so daysThreshold=0 is treated as 0, not coerced to default
+    const daysThreshold =
+      req.body.daysThreshold != null ? parseInt(req.body.daysThreshold) : 3;
+    const maxReminders =
+      req.body.maxReminders != null ? parseInt(req.body.maxReminders) : 2;
 
     const uncollectedResults =
       await notificationService.findUncollectedHardCopies(
@@ -595,6 +600,13 @@ export const sendRoutineCheckupReminder = async (req, res, next) => {
   try {
     const { subscriptionId } = req.body;
 
+    if (!subscriptionId) {
+      return res.status(400).json({
+        success: false,
+        message: "subscriptionId is required in request body",
+      });
+    }
+
     const subscription =
       await notificationService.findSubscriptionById(subscriptionId);
 
@@ -605,9 +617,15 @@ export const sendRoutineCheckupReminder = async (req, res, next) => {
       });
     }
 
-    // Get patient and test type data
-    const patient = subscription.patientProfileId; // Assuming populated
-    const testType = subscription.testTypeId; // Assuming populated
+    // Map populated patientProfileId (snake_case Mongoose doc) to camelCase for service
+    const patientDoc = subscription.patientProfileId;
+    const patient = {
+      _id: patientDoc._id,
+      fullName: patientDoc.full_name,
+      contactNumber: patientDoc.contact_number,
+      email: patientDoc.email,
+    };
+    const testType = subscription.testTypeId;
 
     const results = await notificationService.sendRoutineCheckupReminder({
       subscription,

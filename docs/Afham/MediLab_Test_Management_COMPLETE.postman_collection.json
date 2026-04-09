@@ -73,12 +73,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"identifier\": \"demo_officer\",\n  \"password\": \"Demo@123\"\n}"
+              "raw": "{\n  \"identifier\": \"DEMO_TECH_001\",\n  \"password\": \"Demo@123\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/auth/health-officer/login",
+              "raw": "{{base_url}}/auth/staff/login",
               "host": ["{{base_url}}"],
-              "path": ["auth", "health-officer", "login"]
+              "path": ["auth", "staff", "login"]
             },
             "description": "**Access**: Public\n**Validation**: validateHealthOfficerLogin\n\nLogin as health officer to receive JWT token with health officer permissions.\n\n**Request Body**:\n- `identifier` (string, required): Can be employeeId, email, or username\n- `password` (string, required): Health officer password\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"healthOfficer\": {...},\n    \"token\": \"<jwt_token>\"\n  }\n}\n```\n\n**Token Payload**:\n```json\n{\n  \"id\": \"<health_officer_id>\",\n  \"userType\": \"healthOfficer\",\n  \"role\": \"Lab_Technician\",\n  \"employeeId\": \"EMP001\",\n  \"fullName\": \"Dr. Jane Smith\"\n}\n```\n\n**Available Roles**: MOH, PHI, Nurse, Admin, Lab_Technician, Doctor\n\n**Next Step**: Copy `data.token` and save as `{{health_officer_token}}` or `{{admin_token}}`"
           },
@@ -95,7 +95,7 @@
                   "        console.log(\"✅ Health officer token captured automatically\");",
                   "        ",
                   "        // Also check if user is Admin and set admin_token",
-                  "        if (response.data.healthOfficer && response.data.healthOfficer.role === 'Admin') {",
+                  "        if (response.data.user && response.data.user.role === 'Admin') {",
                   "            pm.collectionVariables.set(\"admin_token\", response.data.token);",
                   "            console.log(\"✅ Admin token also captured\");",
                   "        }",
@@ -120,12 +120,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"identifier\": \"admin_demo\",\n  \"password\": \"Admin@123\"\n}"
+              "raw": "{\n  \"identifier\": \"DEMO_ADMIN_001\",\n  \"password\": \"Admin@123\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/auth/health-officer/login",
+              "raw": "{{base_url}}/auth/staff/login",
               "host": ["{{base_url}}"],
-              "path": ["auth", "health-officer", "login"]
+              "path": ["auth", "staff", "login"]
             },
             "description": "**Access**: Public\n**Validation**: validateHealthOfficerLogin\n\nLogin as admin to receive JWT token with admin permissions (required for permanent deletion).\n\n**Request Body**:\n- `identifier` (string, required): Can be employeeId, email, or username\n- `password` (string, required): Admin password\n\n**Response** (200 OK):\n```json\n{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"healthOfficer\": {...},\n    \"token\": \"<jwt_token>\"\n  }\n}\n```\n\n**Token Payload**:\n```json\n{\n  \"id\": \"<admin_id>\",\n  \"userType\": \"healthOfficer\",\n  \"role\": \"Admin\",\n  \"employeeId\": \"DEMO_ADMIN_001\",\n  \"fullName\": \"Admin Demo User\"\n}\n```\n\n**Important**: Admin role is required for:\n- DELETE /results/:id/permanent (Permanent deletion)\n- Other system-wide administrative operations\n\n**Next Step**: Copy `data.token` and save as `{{admin_token}}`"
           },
@@ -142,7 +142,7 @@
                   "        console.log(\"✅ Admin token captured automatically\");",
                   "        ",
                   "        // Verify it's actually an Admin",
-                  "        if (response.data.healthOfficer && response.data.healthOfficer.role === 'Admin') {",
+                  "        if (response.data.user && response.data.user.role === 'Admin') {",
                   "            console.log(\"✅ Confirmed: User has Admin role\");",
                   "        } else {",
                   "            console.warn(\"⚠️ Warning: User does not have Admin role!\");",
@@ -728,7 +728,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"testResult\": {\n    \"_id\": \"{{result_id}}\"\n  },\n  \"patient\": {\n    \"_id\": \"{{patient_id}}\",\n    \"fullName\": \"Demo Patient\",\n    \"contactNumber\": \"+94764118021\",\n    \"email\": \"mafham2001@yahoo.com\"\n  },\n  \"testType\": {\n    \"_id\": \"{{blood_glucose_type_id}}\",\n    \"name\": \"Blood Glucose Test\"\n  },\n  \"healthCenter\": {\n    \"name\": \"Central Medical Laboratory\"\n  }\n}"
+              "raw": "{\n  \"testResult\": {\n    \"_id\": \"{{result_id}}\"\n  },\n  \"patient\": {\n    \"_id\": \"{{patient_id}}\",\n    \"fullName\": \"Demo Patient\",\n    \"contactNumber\": \"+94764118021\",\n    \"email\": \"{{patient_email}}\"\n  },\n  \"testType\": {\n    \"_id\": \"{{blood_glucose_type_id}}\",\n    \"name\": \"Blood Glucose Test\"\n  },\n  \"healthCenter\": {\n    \"name\": \"Central Medical Laboratory\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/notifications/send/result-ready",
@@ -761,13 +761,17 @@
             "method": "POST",
             "header": [
               {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
                 "key": "Authorization",
                 "value": "Bearer {{health_officer_token}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": ""
+              "raw": "{\n  \"daysThreshold\": 0,\n  \"maxReminders\": 2\n}"
             },
             "url": {
               "raw": "{{base_url}}/notifications/send/unviewed-reminder",
@@ -821,7 +825,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"daysThreshold\": 3,\n  \"maxReminders\": 2\n}"
+              "raw": "{\n  \"daysThreshold\": 0,\n  \"maxReminders\": 2\n}"
             },
             "url": {
               "raw": "{{base_url}}/notifications/send/hard-copy-reminder",
@@ -921,14 +925,15 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/notifications/patient/:patientId?type=result_ready&channel=whatsapp&status=sent&startDate=2026-01-01&endDate=2026-02-28",
+              "raw": "{{base_url}}/notifications/patient/:patientId?channel=whatsapp&status=sent",
               "host": ["{{base_url}}"],
               "path": ["notifications", "patient", ":patientId"],
               "query": [
                 {
                   "key": "type",
                   "value": "result_ready",
-                  "description": "Filter: result_ready | unviewed_result_reminder | routine_checkup_reminder | hard_copy_ready_for_pickup | hard_copy_collection_reminder"
+                  "description": "Filter: result_ready | unviewed_result_reminder | routine_checkup_reminder | hard_copy_ready_for_pickup | hard_copy_collection_reminder",
+                  "disabled": true
                 },
                 {
                   "key": "channel",
@@ -943,12 +948,14 @@
                 {
                   "key": "startDate",
                   "value": "2026-01-01",
-                  "description": "ISO8601 date"
+                  "description": "ISO8601 date",
+                  "disabled": true
                 },
                 {
                   "key": "endDate",
                   "value": "2026-02-28",
-                  "description": "ISO8601 date"
+                  "description": "ISO8601 date",
+                  "disabled": true
                 }
               ],
               "variable": [
@@ -968,9 +975,9 @@
                   "// Auto-capture the most recent notification ID from patient notification history",
                   "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
-                  "    if (response.notifications && response.notifications.length > 0) {",
-                  "        pm.collectionVariables.set('notification_id', response.notifications[0]._id);",
-                  "        console.log('✅ Notification ID captured:', response.notifications[0]._id);",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        pm.collectionVariables.set('notification_id', response.data[0]._id);",
+                  "        console.log('✅ Notification ID captured:', response.data[0]._id);",
                   "    } else {",
                   "        console.warn('⚠️ No notifications found for this patient.');",
                   "    }",
@@ -1041,9 +1048,9 @@
                   "// Auto-capture subscription ID after successful creation",
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
-                  "    if (response.subscription && response.subscription._id) {",
-                  "        pm.collectionVariables.set('subscription_id', response.subscription._id);",
-                  "        console.log('✅ Subscription ID captured:', response.subscription._id);",
+                  "    if (response.data && response.data._id) {",
+                  "        pm.collectionVariables.set('subscription_id', response.data._id);",
+                  "        console.log('✅ Subscription ID captured:', response.data._id);",
                   "    }",
                   "}"
                 ],
@@ -1258,6 +1265,12 @@
       "value": "",
       "type": "string",
       "description": "JWT token from admin login (role: Admin, auto-captured)"
+    },
+    {
+      "key": "patient_email",
+      "value": "mafham2001@yahoo.com",
+      "type": "string",
+      "description": "Demo patient email for notification requests — matches seed script email"
     }
   ]
 }

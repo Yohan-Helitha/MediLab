@@ -313,6 +313,9 @@ export const findUnviewedResults = async (
   const filteredResults = [];
 
   for (const result of unviewedResults) {
+    // Skip if patient was deleted (populate returns null for dangling refs)
+    if (!result.patientProfileId) continue;
+
     // Count how many unviewed reminders already sent for this result
     const reminderCount = await NotificationLog.countDocuments({
       testResultId: result._id,
@@ -426,7 +429,7 @@ export const sendRoutineCheckupReminder = async (data) => {
     email: null,
   };
 
-  const smsMessage = `Health Reminder: It's time for your routine ${testType.name} checkup. Last test: ${subscription.lastTestDate.toLocaleDateString()}. Book your appointment: ${config.appUrl} - MediLab`;
+  const smsMessage = `Health Reminder: It's time for your routine ${testType.name} checkup. Last test: ${subscription.lastTestDate.toLocaleDateString()}. Book your appointment: ${config.frontendUrl} - MediLab`;
 
   // Send WhatsApp + SMS if patient has phone number
   if (patient.contactNumber) {
@@ -594,7 +597,9 @@ export const findSubscriptionsByPatient = async (patientProfileId) => {
  * @returns {Promise<Object>} Subscription or null
  */
 export const findSubscriptionById = async (id) => {
-  return await ReminderSubscription.findById(id).populate("testTypeId");
+  return await ReminderSubscription.findById(id)
+    .populate("testTypeId")
+    .populate("patientProfileId", "full_name email contact_number");
 };
 
 /**

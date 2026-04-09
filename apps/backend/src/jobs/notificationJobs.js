@@ -23,9 +23,18 @@ export const sendDueReminders = async () => {
     // Send reminder for each subscription
     for (const subscription of dueSubscriptions) {
       try {
+        // Map populated patientProfileId (snake_case Mongoose doc) to camelCase for service
+        const patientDoc = subscription.patientProfileId;
+        const patient = {
+          _id: patientDoc._id,
+          fullName: patientDoc.full_name,
+          contactNumber: patientDoc.contact_number,
+          email: patientDoc.email,
+        };
+
         const results = await notificationService.sendRoutineCheckupReminder({
           subscription,
-          patient: subscription.patientProfileId,
+          patient,
           testType: subscription.testTypeId,
         });
 
@@ -136,12 +145,11 @@ export const sendUnviewedResultReminders = async () => {
  * This should be run daily
  */
 export const sendUncollectedHardCopyReminders = async () => {
-  console.log(
-    "🔔 Running scheduled job: Send uncollected hard copy reminders",
-  );
+  console.log("🔔 Running scheduled job: Send uncollected hard copy reminders");
 
   try {
-    const uncollectedItems = await notificationService.findUncollectedHardCopies(3, 2);
+    const uncollectedItems =
+      await notificationService.findUncollectedHardCopies(3, 2);
 
     console.log(
       `🔍 Found ${uncollectedItems.length} uncollected hard copies to remind`,

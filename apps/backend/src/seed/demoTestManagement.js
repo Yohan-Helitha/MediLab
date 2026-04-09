@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import connectDB from "../config/db.js";
 import Member from "../modules/patient/models/Member.js";
 import HealthOfficer from "../modules/auth/healthOfficer.model.js";
+import Auth from "../modules/auth/auth.model.js";
 import Lab from "../modules/lab/lab.model.js";
 import TestType from "../modules/test/testType.model.js";
 import Booking from "../modules/booking/booking.model.js";
@@ -21,6 +22,7 @@ const seedDemoData = async () => {
         employeeId: { $in: ["DEMO_TECH_001", "DEMO_ADMIN_001"] },
       }),
       Member.deleteMany({ member_id: "DEMO001" }),
+      Auth.deleteMany({ systemId: { $in: ["DEMO_TECH_001", "DEMO_ADMIN_001", "DEMO001"] } }),
       Lab.deleteMany({ name: "Central Medical Laboratory" }),
       TestType.deleteMany({ code: { $in: ["BGL001", "HGB001"] } }),
       Booking.deleteMany({ patientNameSnapshot: "Demo Patient" }),
@@ -41,6 +43,14 @@ const seedDemoData = async () => {
       passwordHash: hashedPasswordOfficer,
       isActive: true,
     });
+    await Auth.create({
+      email: "demo.officer@medilab.com",
+      passwordHash: hashedPasswordOfficer,
+      role: "Lab_Technician",
+      systemId: "DEMO_TECH_001",
+      profileId: healthOfficer._id,
+      onModel: "HealthOfficer",
+    });
 
     // 2. Create Admin User - Login: admin_demo / Admin@123
     console.log("[2/7] Creating admin user...");
@@ -56,6 +66,14 @@ const seedDemoData = async () => {
       username: "admin_demo",
       passwordHash: hashedPasswordAdmin,
       isActive: true,
+    });
+    await Auth.create({
+      email: "admin.demo@medilab.com",
+      passwordHash: hashedPasswordAdmin,
+      role: "Admin",
+      systemId: "DEMO_ADMIN_001",
+      profileId: adminUser._id,
+      onModel: "HealthOfficer",
     });
 
     // 3. Create Health Center (Lab)
@@ -91,12 +109,21 @@ const seedDemoData = async () => {
       full_name: "Demo Patient",
       address: "789 Patient Road, Colombo 03",
       contact_number: "+94764118021", // YOUR PHONE NUMBER
+      email: "mafham2001@yahoo.com", // YOUR EMAIL - for live email notification demo
       nic: "950000001V",
       password_hash: hashedPasswordPatient,
       date_of_birth: new Date("1995-08-20"),
       gender: "MALE",
       gn_division: "Colombo Central",
       district: "Colombo",
+    });
+    await Auth.create({
+      email: "mafham2001@yahoo.com",
+      passwordHash: hashedPasswordPatient,
+      role: "patient",
+      systemId: "DEMO001",
+      profileId: patient._id,
+      onModel: "Member",
     });
 
     // 5. Create Test Types (Blood Glucose + Hemoglobin)
@@ -149,7 +176,7 @@ const seedDemoData = async () => {
       timeSlot: "09:00-09:30",
       bookingType: "PRE_BOOKED",
       priorityLevel: "NORMAL",
-      status: "CONFIRMED",
+      status: "PENDING",
       paymentStatus: "PAID",
       paymentMethod: "CASH",
       allergyFlag: false,

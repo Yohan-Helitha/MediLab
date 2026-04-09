@@ -84,7 +84,7 @@ export const getTestResultById = async (req, res, next) => {
 
     // AUTHORIZATION: Patients can only view their own released results
     if (req.user.userType === "patient") {
-      if (result.patientProfileId.toString() !== req.user.id) {
+      if (result.patientProfileId.toString() !== req.user.profileId) {
         return res.status(403).json({
           success: false,
           message: "Access denied. You can only view your own test results.",
@@ -134,7 +134,7 @@ export const getPatientTestResults = async (req, res, next) => {
     const { patientId } = req.params;
 
     // AUTHORIZATION: Patients can only view their own results
-    if (req.user.userType === "patient" && req.user.id !== patientId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== patientId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You can only view your own test results.",
@@ -310,7 +310,7 @@ export const getStatusHistory = async (req, res, next) => {
 
     // AUTHORIZATION: Patients can only view their own results' history
     if (req.user.userType === "patient") {
-      if (result.patientProfileId.toString() !== req.user.id) {
+      if (result.patientProfileId.toString() !== req.user.profileId) {
         return res.status(403).json({
           success: false,
           message: "Access denied. You can only view your own test results.",
@@ -326,6 +326,29 @@ export const getStatusHistory = async (req, res, next) => {
       }
     }
 
+    // Synthesize hard copy lifecycle events from hardCopyCollection
+    const hardCopyHistory = [];
+    if (
+      result.hardCopyCollection?.isPrinted &&
+      result.hardCopyCollection.printedAt
+    ) {
+      hardCopyHistory.push({
+        event: "printed",
+        timestamp: result.hardCopyCollection.printedAt,
+        performedBy: result.hardCopyCollection.handedOverBy || null,
+      });
+    }
+    if (
+      result.hardCopyCollection?.isCollected &&
+      result.hardCopyCollection.collectedAt
+    ) {
+      hardCopyHistory.push({
+        event: "collected",
+        timestamp: result.hardCopyCollection.collectedAt,
+        performedBy: result.hardCopyCollection.handedOverBy || null,
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Status history retrieved successfully",
@@ -334,6 +357,8 @@ export const getStatusHistory = async (req, res, next) => {
         bookingId: result.bookingId,
         currentStatus: result.currentStatus,
         statusHistory: result.statusHistory,
+        hardCopyCollection: result.hardCopyCollection || null,
+        hardCopyHistory,
       },
     });
   } catch (error) {
@@ -366,7 +391,7 @@ export const markAsViewed = async (req, res, next) => {
     const { userId } = req.body;
 
     // AUTHORIZATION: Patients can only mark their own results as viewed
-    if (req.user.userType === "patient" && req.user.id !== userId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== userId) {
       return res.status(403).json({
         success: false,
         message:
@@ -379,7 +404,7 @@ export const markAsViewed = async (req, res, next) => {
     // Double-check ownership after fetching result
     if (
       req.user.userType === "patient" &&
-      result.patientProfileId.toString() !== req.user.id
+      result.patientProfileId.toString() !== req.user.profileId
     ) {
       return res.status(403).json({
         success: false,
@@ -421,7 +446,7 @@ export const getUnviewedResults = async (req, res, next) => {
     const { patientId } = req.params;
 
     // AUTHORIZATION: Patients can only view their own unviewed results
-    if (req.user.userType === "patient" && req.user.id !== patientId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== patientId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You can only view your own test results.",
