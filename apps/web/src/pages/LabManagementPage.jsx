@@ -10,6 +10,7 @@ function LabManagementPage() {
 	const [labs, setLabs] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
+	const [formError, setFormError] = useState(null);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -88,18 +89,22 @@ function LabManagementPage() {
 
 	const handleCreateLab = async (formData) => {
 		try {
+			setFormError(null);
 			const payload = buildPayloadFromForm(formData);
 			const created = await createLab(payload);
 			setLabs((prev) => [...prev, created]);
 			setIsLabModalOpen(false);
 		} catch (err) {
 			console.error("Failed to create lab", err);
-			alert(err.message || "Failed to create lab. Check console for details.");
+			setFormError(
+				err.message || "Failed to create lab. Check console for details."
+			);
 		}
 	};
 
 	const handleUpdateLab = async (labId, formData) => {
 		try {
+			setFormError(null);
 			const payload = buildPayloadFromForm(formData);
 			const updated = await updateLab(labId, payload);
 			setLabs((prev) => prev.map((lab) => (lab._id === updated._id ? updated : lab)));
@@ -107,7 +112,9 @@ function LabManagementPage() {
 			setEditingLab(null);
 		} catch (err) {
 			console.error("Failed to update lab", err);
-			alert(err.message || "Failed to update lab. Check console for details.");
+			setFormError(
+				err.message || "Failed to update lab. Check console for details."
+			);
 		}
 	};
 
@@ -227,9 +234,12 @@ function LabManagementPage() {
 				<LabForm
 					initialValues={buildInitialFormValues(editingLab)}
 					submitLabel={editingLab ? "Save Changes" : "Create Lab"}
+						// Inline error message shown above the form fields
+						errorMessage={formError}
 					onCancel={() => {
 						setIsLabModalOpen(false);
 						setEditingLab(null);
+							setFormError(null);
 					}}
 					onSubmit={(data) => {
 						if (editingLab) {
