@@ -14,7 +14,7 @@
     "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration.test.js",
     "test:performance": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=performance.test.js",
     "test:auth": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/modules/auth",
-    "test:patient": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/modules/patient",
+    "test:patient": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/modules/patient --runInBand",
     "test:all": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --detectOpenHandles"
   },
   "dependencies": {

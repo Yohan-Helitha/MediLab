@@ -22,7 +22,7 @@ import ReferralModel from '../../models/Referral.js';
 // Import app AFTER models
 import request from 'supertest';
 import app from '../../../../app.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 describe('Past Medical History Integration Tests', () => {
   let memberId, historyId, jwtToken, memberObjectId, householdId, householdObjectId;
@@ -114,14 +114,12 @@ describe('Past Medical History Integration Tests', () => {
         );
       }
       
-      // Close database connection gracefully
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.close();
-      }
+      // Close database connection gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }
-  }, 30000);
+  }, 45000);
 
   describe('Past Medical History CRUD Operations', () => {
     it('should create past medical history record', async () => {

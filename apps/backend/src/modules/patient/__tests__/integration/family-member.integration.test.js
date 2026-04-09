@@ -22,7 +22,7 @@ import ReferralModel from '../../models/Referral.js';
 // Import app AFTER models
 import request from 'supertest';
 import app from '../../../../app.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 describe('Family Member Module Integration Tests', () => {
   let memberId, memberObjectId, householdId, householdObjectId, familyMemberId, jwtToken;
@@ -68,24 +68,24 @@ describe('Family Member Module Integration Tests', () => {
     jwtToken = jwt.sign(payload, process.env.JWT_SECRET || 'your-secret-key-change-this-in-production', {
       expiresIn: '7d'
     });
-  }, 45000);
+  }, 60000);
 
   afterAll(async () => {
     try {
-      // Use comprehensive cleanup utility
-      await cleanupTestData(
-        { Member: MembersModel, Household: HouseholdsModel, FamilyMember: FamilyMemberModel, FamilyRelationship: FamilyRelationshipModel, Visit: VisitModel, Allergy: AllergiesModel, ChronicDisease: ChronicDiseaseModel, HealthDetails: HealthDetailsModel, Medication: MedicationModel, PastMedicalHistory: PastMedicalHistoryModel, EmergencyContact: EmergencyContactModel, Referral: ReferralModel },
-        { memberId, memberObjectId, householdId, householdObjectId }
-      );
-      
-      // Close database connection gracefully
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.close();
+      if (!skipTests) {
+        // Use comprehensive cleanup utility
+        await cleanupTestData(
+          { FamilyMember: FamilyMemberModel, Member: MembersModel, Household: HouseholdsModel, Allergy: AllergiesModel, ChronicDisease: ChronicDiseaseModel, HealthDetails: HealthDetailsModel, Medication: MedicationModel, EmergencyContact: EmergencyContactModel, PastMedicalHistory: PastMedicalHistoryModel, FamilyRelationship: FamilyRelationshipModel, Visit: VisitModel, Referral: ReferralModel },
+          { memberId, memberObjectId, householdId, householdObjectId }
+        );
       }
+      
+      // Close database connection gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }
-  }, 45000);
+  }, 60000);
 
   describe('Family Member CRUD Operations', () => {
     it('should create family member', async () => {

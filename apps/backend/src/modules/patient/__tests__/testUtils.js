@@ -11,8 +11,9 @@ import mongoose from 'mongoose';
 export function generateUniqueMemberId() {
   const year = new Date().getFullYear();
   const timestamp = Date.now();
-  // Use last 5 digits of timestamp to ensure uniqueness
-  const sequence = String(timestamp % 100000).padStart(5, '0');
+  // Combine timestamp with a random number to avoid collisions
+  const randomPart = Math.floor(Math.random() * 10000);
+  const sequence = String((timestamp + randomPart) % 100000).padStart(5, '0');
   return `MEM-ANU-PADGNDIV-${year}-${sequence}`;
 }
 
@@ -22,8 +23,9 @@ export function generateUniqueMemberId() {
  */
 export function generateUniqueHouseholdId() {
   const timestamp = Date.now();
-  // Use last 5 digits of timestamp to ensure uniqueness
-  const sequence = String(timestamp % 100000).padStart(5, '0');
+  // Combine timestamp with a random number
+  const randomPart = Math.floor(Math.random() * 10000);
+  const sequence = String((timestamp + randomPart) % 100000).padStart(5, '0');
   return `ANU-PADGNDIV-${sequence}`;
 }
 
@@ -76,15 +78,42 @@ export async function cleanupTestData(models, { memberId, memberObjectId, househ
     // Delete the member itself
     if (memberObjectId) {
       await Member?.deleteOne({ _id: memberObjectId });
+    } else if (memberId) {
+      await Member?.deleteOne({ member_id: memberId });
     }
 
     // Delete the household itself
     if (householdObjectId) {
       await Household?.deleteOne({ _id: householdObjectId });
+    } else if (householdId) {
+      await Household?.deleteOne({ household_id: householdId });
     }
   } catch (error) {
     console.warn('Test data cleanup error:', error.message);
   }
+}
+
+/**
+ * Close database connection gracefully and handle edge cases
+ */
+export async function closeDatabase() {
+  try {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+      // Wait a small amount after closing for Mongoose internal cleanup
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  } catch (error) {
+    console.warn('Error closing database connection:', error.message);
+  }
+}
+
+/**
+ * Simple delay for stabilizing async operations
+ * @param {number} ms - Milliseconds to wait
+ */
+export async function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
@@ -139,5 +168,7 @@ export default {
   generateUniqueHouseholdId,
   cleanupTestData,
   getUniqueHouseholdData,
-  defaultMemberData
+  defaultMemberData,
+  closeDatabase,
+  wait
 };

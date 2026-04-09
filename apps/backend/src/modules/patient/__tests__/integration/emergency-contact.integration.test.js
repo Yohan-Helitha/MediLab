@@ -22,7 +22,7 @@ import ReferralModel from '../../models/Referral.js';
 // Import app AFTER models
 import request from 'supertest';
 import app from '../../../../app.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 describe('Emergency Contact Module Integration Tests', () => {
   let memberId, memberObjectId, householdId, householdObjectId, contactId, jwtToken;
@@ -78,14 +78,12 @@ describe('Emergency Contact Module Integration Tests', () => {
         { memberId, memberObjectId, householdId, householdObjectId }
       );
       
-      // Close database connection gracefully
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.close();
-      }
+      // Close database connection gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }
-  }, 30000);
+  }, 45000);
 
   describe('Emergency Contact CRUD Operations', () => {
     it('should create emergency contact', async () => {

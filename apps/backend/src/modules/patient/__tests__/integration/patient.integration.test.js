@@ -23,7 +23,7 @@ import VisitModel from '../../models/Visit.js';
 import ReferralModel from '../../models/Referral.js';
 import HouseholdsModel from '../../models/Household.js';
 import { connectDB } from '../../../../config/db.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 // Generate a valid test JWT token
 const generateTestToken = () => {
@@ -321,7 +321,7 @@ describe('Patient API Integration Tests', () => {
         password_hash: 'TestPassword@123',
         gn_division: 'Test GN Division',
         district: 'Test District',
-        date_of_birth: '1990-01-01',
+        date_of_birth: '2025-01-01',
         gender: 'Male'
       };
 
@@ -646,13 +646,11 @@ describe('Patient API Integration Tests', () => {
       }
       await Member.deleteMany({});
       
-      // Close all mongoose connections
-      if (mongoose.connection.readyState !== 0) {
-        await mongoose.connection.close();
-      }
+      // Close all mongoose connections gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Error in afterAll cleanup:', error.message);
     }
-  });
+  }, 45000);
 });
 

@@ -22,7 +22,7 @@ import ReferralModel from '../../models/Referral.js';
 // Import app AFTER models
 import request from 'supertest';
 import app from '../../../../app.js';
-import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData } from '../testUtils.js';
+import { generateUniqueMemberId, generateUniqueHouseholdId, cleanupTestData, getUniqueHouseholdData, defaultMemberData, closeDatabase } from '../testUtils.js';
 
 describe('Family Relationship Module Integration Tests', () => {
   let memberId, memberObjectId, householdId, householdObjectId, familyMember1Id, familyMember2Id, relationshipId, jwtToken;
@@ -116,16 +116,16 @@ describe('Family Relationship Module Integration Tests', () => {
 
   afterAll(async () => {
     try {
-      // Use comprehensive cleanup utility
-      await cleanupTestData(
-        { FamilyRelationship: FamilyRelationshipModel, FamilyMember: FamilyMemberModel, Member: MembersModel, Household: HouseholdsModel, Allergy: AllergiesModel, ChronicDisease: ChronicDiseaseModel, HealthDetails: HealthDetailsModel, Medication: MedicationModel, EmergencyContact: EmergencyContactModel, PastMedicalHistory: PastMedicalHistoryModel, Visit: VisitModel, Referral: ReferralModel },
-        { memberId, memberObjectId, householdId, householdObjectId }
-      );
-      
-      // Close database connection gracefully
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.close();
+      if (!skipTests) {
+        // Use comprehensive cleanup utility
+        await cleanupTestData(
+          { FamilyRelationship: FamilyRelationshipModel, Member: MembersModel, Household: HouseholdsModel, Allergy: AllergiesModel, ChronicDisease: ChronicDiseaseModel, HealthDetails: HealthDetailsModel, Medication: MedicationModel, EmergencyContact: EmergencyContactModel, PastMedicalHistory: PastMedicalHistoryModel, FamilyMember: FamilyMemberModel, Visit: VisitModel, Referral: ReferralModel },
+          { memberId, memberObjectId, householdId, householdObjectId }
+        );
       }
+      
+      // Close database connection gracefully using utility
+      await closeDatabase();
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }
