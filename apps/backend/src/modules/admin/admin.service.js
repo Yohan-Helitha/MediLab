@@ -208,3 +208,16 @@ export const getAdminOverview = async ({ windowHours = 24, limit = 3 } = {}) => 
     generatedAt: new Date().toISOString(),
   };
 };
+
+export const listHealthOfficers = async ({ role } = {}) => {
+  const query = { isActive: true };
+  if (role && role !== 'All') {
+    query.role = role;
+  }
+
+  return HealthOfficer.find(query)
+    .select('fullName gender contactNumber email role')
+    .sort({ role: 1, fullName: 1 })
+    .lean()
+    .exec();
+};

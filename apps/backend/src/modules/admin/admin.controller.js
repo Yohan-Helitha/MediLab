@@ -1,4 +1,4 @@
-import { getAdminOverview } from './admin.service.js';
+import { getAdminOverview, listHealthOfficers } from './admin.service.js';
 
 export const getAdminOverviewController = async (req, res, next) => {
   try {
@@ -7,6 +7,16 @@ export const getAdminOverviewController = async (req, res, next) => {
 
     const data = await getAdminOverview({ windowHours, limit });
     res.json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listHealthOfficersController = async (req, res, next) => {
+  try {
+    const role = req.query.role;
+    const items = await listHealthOfficers({ role });
+    res.status(200).json({ items });
   } catch (err) {
     next(err);
   }
