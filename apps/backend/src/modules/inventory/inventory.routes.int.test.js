@@ -90,7 +90,7 @@ describeIfDb("Inventory routes integration", () => {
 
 	// Create equipment and initial stock + requirement
 	const equipment = await Equipment.create({
-		name: "Integration Syringe 5ml",
+		name: `Integration Syringe 5ml ${uniqueSuffix}`,
 		type: "CONSUMABLE",
 		description: "Syringe used for integration inventory tests",
 		createdBy: adminId,
@@ -104,13 +104,6 @@ describeIfDb("Inventory routes integration", () => {
 		reservedQuantity: 0,
 		minimumThreshold: 5,
 	});
-
-	await TestEquipmentRequirement.create({
-		testTypeId: testType._id,
-		equipmentId: equipment._id,
-		quantityPerTest: 1,
-		isActive: true,
-	});
 	});
 
 	afterAll(async () => {
@@ -121,12 +114,8 @@ describeIfDb("Inventory routes integration", () => {
 		}
 	});
 
-	it("should reject reserve without authentication", async () => {
-		const res = await request(app).post("/api/inventory/reserve").send({
-			testTypeId,
-			healthCenterId: labId,
-		});
-
+	it("should reject inventory stock listing without authentication", async () => {
+		const res = await request(app).get("/api/inventory/stock");
 		expect(res.status).toBe(401);
 	});
 
@@ -157,7 +146,9 @@ describeIfDb("Inventory routes integration", () => {
 
 		expect(res.status).toBe(201);
 		expect(res.body.requirement.testTypeId).toBe(testTypeId);
-		expect(res.body.requirement.equipmentId).toBe(equipmentId);
+		const returnedEquipmentId =
+			res.body.requirement?.equipmentId?._id ?? res.body.requirement?.equipmentId;
+		expect(String(returnedEquipmentId)).toBe(equipmentId);
 
 		const listRes = await request(app)
 			.get(`/api/inventory/requirements?testTypeId=${testTypeId}`)

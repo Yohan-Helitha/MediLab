@@ -146,21 +146,19 @@ describeIfDb("Finance routes integration", () => {
         notes: "Paid at counter",
       });
 
-      it("does not include booking in unpaid CASH list after payment is recorded", async () => {
-        const res = await request(app)
-          .get("/api/finance/unpaid-bookings?paymentMethod=CASH")
-          .set("Authorization", `Bearer ${adminToken}`);
-
-        expect(res.status).toBe(200);
-        expect(res.body.items.some((row) => String(row.bookingId) === bookingId)).toBe(
-          false,
-        );
-      });
-
     expect(res.status).toBe(201);
     expect(res.body.transaction.paymentMethod).toBe("CASH");
     expect(res.body.transaction.paymentStatus).toBe("PAID");
     expect(res.body.booking.paymentStatus).toBe("PAID");
+  });
+
+  it("does not include booking in unpaid CASH list after payment is recorded", async () => {
+    const res = await request(app)
+      .get("/api/finance/unpaid-bookings?paymentMethod=CASH")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items.some((row) => String(row.bookingId) === bookingId)).toBe(false);
   });
 
   it("returns finance summary including cash revenue", async () => {
