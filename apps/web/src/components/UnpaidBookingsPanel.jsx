@@ -7,6 +7,13 @@ function UnpaidBookingsPanel({ refreshKey = 0, onMarkPaid }) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState("");
 
+	const formatCurrency = (value) =>
+		new Intl.NumberFormat("en-LK", {
+			style: "currency",
+			currency: "LKR",
+			maximumFractionDigits: 0,
+		}).format(value);
+
 	useEffect(() => {
 		let isMounted = true;
 		setIsLoading(true);
@@ -28,6 +35,7 @@ function UnpaidBookingsPanel({ refreshKey = 0, onMarkPaid }) {
 						patientName: row.patientName || "-",
 						testName: row.testName || "-",
 						centerName: row.centerName || "-",
+						amount: Number.isFinite(Number(row.price)) ? Number(row.price) : null,
 						date: dateString,
 						paymentMethod: row.paymentMethod || "CASH",
 					};
@@ -76,12 +84,12 @@ function UnpaidBookingsPanel({ refreshKey = 0, onMarkPaid }) {
 
 			<div className="hidden border-b border-slate-100 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:block">
 				<div className="grid grid-cols-12 gap-3">
-					<div className="col-span-3">Booking ID</div>
-					<div className="col-span-2">Patient</div>
+					<div className="col-span-3">Patient</div>
+					<div className="col-span-3">Lab</div>
 					<div className="col-span-2">Test</div>
-					<div className="col-span-2">Center</div>
+					<div className="col-span-2">Price</div>
 					<div className="col-span-1">Date</div>
-					<div className="col-span-2 text-right">Action</div>
+					<div className="col-span-1 text-right">Action</div>
 				</div>
 			</div>
 
@@ -102,13 +110,13 @@ function UnpaidBookingsPanel({ refreshKey = 0, onMarkPaid }) {
 						<div key={row.bookingId} className="py-3 text-sm text-slate-700">
 							<div className="grid grid-cols-2 gap-3 md:grid-cols-12 md:gap-3">
 								<div className="md:col-span-3">
-									<div className="font-medium text-slate-900">
-										{String(row.bookingId)}
-									</div>
-								</div>
-								<div className="md:col-span-2">
 									<div className="text-sm text-slate-800">
 										{row.patientName}
+									</div>
+								</div>
+								<div className="md:col-span-3">
+									<div className="text-xs text-slate-600">
+										{row.centerName}
 									</div>
 								</div>
 								<div className="md:col-span-2">
@@ -117,14 +125,18 @@ function UnpaidBookingsPanel({ refreshKey = 0, onMarkPaid }) {
 									</div>
 								</div>
 								<div className="md:col-span-2">
-									<div className="text-xs text-slate-600">
-										{row.centerName}
-									</div>
+									{row.amount == null ? (
+										<div className="text-xs text-slate-500">-</div>
+									) : (
+										<div className="text-sm font-medium text-slate-900">
+											{formatCurrency(row.amount)}
+										</div>
+									)}
 								</div>
 								<div className="md:col-span-1">
 									<div className="text-xs text-slate-500">{row.date}</div>
 								</div>
-								<div className="md:col-span-2 md:text-right">
+								<div className="md:col-span-1 md:text-right">
 									<button
 										type="button"
 										className="inline-flex whitespace-nowrap rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700"

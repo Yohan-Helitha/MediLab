@@ -58,10 +58,30 @@ function BookingCreatePage() {
 		paymentMethod: "ONLINE",
 	});
 
+	const isWalkIn = formData.bookingType === "WALK_IN";
+
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [translatedNames, setTranslatedNames] = useState({});
 	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
+
+	const selectedOperatingHours = useMemo(() => {
+		const hours = lab?.operatingHours;
+		if (!Array.isArray(hours) || hours.length === 0) return null;
+		if (!formData.bookingDate) return hours[0] || null;
+		const d = new Date(formData.bookingDate);
+		if (Number.isNaN(d.getTime())) return hours[0] || null;
+		const weekday = d.toLocaleDateString("en-US", { weekday: "long" });
+		const byDay = hours.find(
+			(h) =>
+				typeof h?.day === "string" &&
+				h.day.trim().toLowerCase() === weekday.toLowerCase(),
+		);
+		return byDay || hours[0] || null;
+	}, [lab?.operatingHours, formData.bookingDate]);
+
+	const openTime = selectedOperatingHours?.openTime || "";
+	const closeTime = selectedOperatingHours?.closeTime || "";
 
 	useEffect(() => {
 		// If user opened this page directly, force them back to labs.
@@ -115,8 +135,20 @@ function BookingCreatePage() {
 		setFormData((prev) => ({ ...prev, [name]: value }));
 	};
 
-	const handleSubmit = async (e) => {
-		e.preventDefault();
+	const validateTimeSlot = (value) => {
+		if (!value) return true;
+		if (!openTime || !closeTime) return true;
+		return value >= openTime && value <= closeTime;
+	};
+
+	useEffect(() => {
+		if (isWalkIn && formData.paymentMethod !== "CASH") {
+			setFormData((prev) => ({ ...prev, paymentMethod: "CASH" }));
+		}
+	}, [isWalkIn, formData.paymentMethod]);
+
+	const submit = async ({ continueToPayment, e } = {}) => {
+		if (e && typeof e.preventDefault === "function") e.preventDefault();
 		setError("");
 
 		if (!patientProfileId) {
@@ -131,6 +163,10 @@ function BookingCreatePage() {
 			setError(t("booking.create.error.noDate"));
 			return;
 		}
+		if (formData.timeSlot && !validateTimeSlot(formData.timeSlot)) {
+			setError("Selected time is outside lab opening hours.");
+			return;
+		}
 
 		setLoading(true);
 		try {
@@ -142,7 +178,7 @@ function BookingCreatePage() {
 				timeSlot: formData.timeSlot || undefined,
 				bookingType: formData.bookingType,
 				priorityLevel: formData.priorityLevel,
-				paymentMethod: formData.paymentMethod,
+				paymentMethod: isWalkIn ? "CASH" : formData.paymentMethod,
 			};
 
 			const created = await createBooking(bookingPayload);
@@ -157,6 +193,8 @@ function BookingCreatePage() {
 					type: "success",
 					text: t("booking.create.toast.createdRedirecting"),
 				});
+			// Proceed to PayHere ONLY when the user chose the payment flow.
+			if (continueToPayment && !isWalkIn && formData.paymentMethod === "ONLINE") {
 				const checkout = await createPayHereCheckout({ bookingId });
 				if (!checkout?.checkoutUrl || !checkout?.fields) {
 					throw new Error(t("booking.create.error.payherePayload"));
@@ -169,7 +207,7 @@ function BookingCreatePage() {
 				type: "success",
 				text: t("booking.create.toast.createdCash"),
 			});
-			navigate("/dashboard");
+			navigate("/booking");
 		} catch (err) {
 			setError(err?.message || t("booking.create.error.generic"));
 			setToastMessage({
@@ -180,6 +218,9 @@ function BookingCreatePage() {
 			setLoading(false);
 		}
 	};
+
+	const handleSubmit = (e) => submit({ continueToPayment: true, e });
+	const handleSave = () => submit({ continueToPayment: false });
 
 	const patientName = patientProfile?.full_name || "";
 	const patientPhone = patientProfile?.contact_number || "";
@@ -284,10 +325,25 @@ function BookingCreatePage() {
 							<div>
 								<label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{t("booking.create.label.timeSlotOptional")}</label>
 								<input
-									type="text"
+									type="time"
 									value={formData.timeSlot}
-									onChange={(e) => setField("timeSlot", e.target.value)}
-									placeholder={t("booking.create.placeholder.timeSlot")}
+									min={openTime || undefined}
+									max={closeTime || undefined}
+									step={900}
+									onChange={(e) => {
+										const next = e.target.value;
+										if (!next) {
+											setError("");
+											setField("timeSlot", "");
+											return;
+										}
+										if (!validateTimeSlot(next)) {
+											setError("Selected time is outside lab opening hours.");
+											return;
+										}
+										setError("");
+										setField("timeSlot", next);
+									}}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 								/>
 							</div>
@@ -311,7 +367,8 @@ function BookingCreatePage() {
 								<select
 									value={formData.paymentMethod}
 									onChange={(e) => setField("paymentMethod", e.target.value)}
-									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+									disabled={isWalkIn}
+									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm disabled:bg-slate-50 disabled:opacity-70"
 								>
 									<option value="ONLINE">{t("booking.create.option.payment.online")}</option>
 									<option value="CASH">{t("booking.create.option.payment.cash")}</option>
@@ -339,6 +396,17 @@ function BookingCreatePage() {
 							className="rounded-full bg-slate-100 px-6 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200"
 						>
 							{t("booking.create.button.back")}
+						</button>
+
+						<div className="flex-1" />
+
+						<button
+							type="button"
+							disabled={loading}
+							onClick={handleSave}
+							className="rounded-full bg-teal-600 px-6 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+						>
+							{loading ? "Processing..." : "Save Booking"}
 						</button>
 					</div>
 				</form>

@@ -14,6 +14,7 @@ function AdminFinanceDashboard() {
 	const [activeTab, setActiveTab] = useState("ALL");
 	const [isRecordingCash, setIsRecordingCash] = useState(false);
 	const [cashBookingId, setCashBookingId] = useState("");
+	const [cashBookingMeta, setCashBookingMeta] = useState(null);
 	const [cashAmount, setCashAmount] = useState("");
 	const [cashNotes, setCashNotes] = useState("");
 	const [isSubmittingCash, setIsSubmittingCash] = useState(false);
@@ -36,6 +37,7 @@ function AdminFinanceDashboard() {
 			return {
 				id: row.bookingId || row.transactionId,
 				patientName: row.patientName || "-",
+				labName: row.centerName || "-",
 				testName: row.testName || "-",
 				amount: row.amount ?? 0,
 				method: row.paymentMethod || "-",
@@ -109,9 +111,21 @@ function AdminFinanceDashboard() {
 		return String(pendingPaymentsCount);
 	}, [isLoading, pendingPaymentsCount, summary]);
 
-	const handleOpenCashModal = (bookingId = "") => {
-		setCashBookingId(bookingId ? String(bookingId) : "");
-		setCashAmount("");
+	const handleOpenCashModal = (row = null) => {
+		const bookingId = row?.bookingId ? String(row.bookingId) : "";
+		const amount = Number.isFinite(Number(row?.amount)) ? Number(row.amount) : null;
+		setCashBookingId(bookingId);
+		setCashBookingMeta(
+			row
+				? {
+					patientName: row.patientName || "-",
+					labName: row.centerName || "-",
+					testName: row.testName || "-",
+					amount,
+				}
+				: null,
+		);
+		setCashAmount(row && amount != null ? String(amount) : "");
 		setCashNotes("");
 		setIsRecordingCash(true);
 	};
@@ -255,7 +269,7 @@ function AdminFinanceDashboard() {
 			{activeMainTab === "UNPAID" ? (
 				<UnpaidBookingsPanel
 					refreshKey={unpaidRefreshKey}
-					onMarkPaid={(row) => handleOpenCashModal(row.bookingId)}
+					onMarkPaid={(row) => handleOpenCashModal(row)}
 				/>
 			) : (
 				<section className="rounded-xl bg-white p-4 shadow-sm">
@@ -271,8 +285,8 @@ function AdminFinanceDashboard() {
 				{/* Table header */}
 				<div className="hidden border-b border-slate-100 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:block">
 					<div className="grid grid-cols-12 gap-4">
-						<div className="col-span-2">Booking ID</div>
 						<div className="col-span-2">Patient Name</div>
+						<div className="col-span-2">Lab Name</div>
 						<div className="col-span-2">Test Name</div>
 						<div className="col-span-2">Amount</div>
 						<div className="col-span-2">Payment Method</div>
@@ -320,21 +334,25 @@ function AdminFinanceDashboard() {
 			>
 				<form onSubmit={handleSubmitCashPayment} className="space-y-4">
 					<p className="text-sm text-slate-700">
-						Record a cash payment for a booking (marks booking payment status
-						 as PAID).
+						Mark an unpaid CASH booking as PAID.
 					</p>
-					<div>
-						<label className="block text-xs font-medium text-slate-600">
-							Booking ID
-						</label>
-						<input
-							type="text"
-							className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-							value={cashBookingId}
-							onChange={(e) => setCashBookingId(e.target.value)}
-							placeholder="e.g. 65f2..."
-						/>
-					</div>
+					{!cashBookingId.trim() ? (
+						<div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+							Select a booking from the Unpaid list to mark as paid.
+						</div>
+					) : (
+						<div className="grid grid-cols-1 gap-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+							<div>
+								<span className="font-semibold">Patient:</span> {cashBookingMeta?.patientName}
+							</div>
+							<div>
+								<span className="font-semibold">Lab:</span> {cashBookingMeta?.labName}
+							</div>
+							<div>
+								<span className="font-semibold">Test:</span> {cashBookingMeta?.testName}
+							</div>
+						</div>
+					)}
 					<div>
 						<label className="block text-xs font-medium text-slate-600">
 							Amount (LKR)
@@ -373,7 +391,7 @@ function AdminFinanceDashboard() {
 						<button
 							type="submit"
 							className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
-							disabled={isSubmittingCash}
+							disabled={isSubmittingCash || !cashBookingId.trim()}
 						>
 							{isSubmittingCash ? "Recording..." : "Confirm Payment"}
 						</button>
@@ -436,13 +454,13 @@ function PaymentRow({ payment, formatCurrency }) {
 		<div className="py-3 text-sm text-slate-700">
 			<div className="grid grid-cols-2 gap-3 md:grid-cols-12 md:gap-4">
 				<div className="md:col-span-2">
-					<div className="font-medium text-slate-900">
-						{payment.id}
+					<div className="text-sm text-slate-800">
+						{payment.patientName}
 					</div>
 				</div>
 				<div className="md:col-span-2">
 					<div className="text-sm text-slate-800">
-						{payment.patientName}
+						{payment.labName}
 					</div>
 				</div>
 				<div className="md:col-span-2">

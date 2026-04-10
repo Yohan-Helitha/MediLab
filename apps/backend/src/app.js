@@ -13,6 +13,7 @@ import bookingRoutes from "./modules/booking/booking.routes.js";
 import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 import equipmentRoutes from "./modules/inventory/equipment.routes.js";
 import financeRoutes from "./modules/finance/finance.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
 
 // Payment gateway routes (PayHere)
 import payHereRoutes from "./modules/payment/payhere.routes.js";
@@ -52,12 +53,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Core middleware
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 app.use(morgan(config.isDev ? "dev" : "combined"));
-
-// Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Feature routes
@@ -100,6 +104,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/finance", financeRoutes);
+app.use("/api/admin", adminRoutes);
 
 // PayHere (checkout + notify)
 app.use("/api/payments/payhere", payHereRoutes);

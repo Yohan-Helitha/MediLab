@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
+import { toast } from "react-hot-toast";
+import { getSafeErrorMessage } from "../../utils/errorHandler";
 import { 
     updateMemberProfile, 
     createHealthDetails, 
@@ -19,6 +21,7 @@ import {
     fetchHealthDetails,
     fetchPastMedicalHistories
 } from "../../api/patientApi";
+import { generateHealthProfilePDF } from "../../utils/pdfGenerator";
 
 const HealthProfilePage = () => {
     const { user, login, loading: authLoading } = useAuth();
@@ -78,7 +81,6 @@ const HealthProfilePage = () => {
     const [allergyStates, setAllergyStates] = useState({
         "Food": false,
         "Drug": false,
-        "Insect/Sting": false,
         "Dust/Pollen": false,
         "Latex/Plaster": false,
         "Other": false
@@ -173,8 +175,17 @@ const HealthProfilePage = () => {
         dosage: "",
         reason: "",
         prescribed_by: "",
-        start_date: ""
+        start_date: "",
+        prescription_photo: null
     });
+    const [prescriptionPhotoPreview, setPrescriptionPhotoPreview] = useState(null);
+    const [medicationErrors, setMedicationErrors] = useState({});
+    
+    // Session-level arrays to store added medications, allergies, and chronic diseases
+    // Combined with profile data in downloadHealthProfilePDF
+    const [sessionMedications, setSessionMedications] = useState([]);
+    const [sessionAllergies, setSessionAllergies] = useState([]);
+    const [sessionChronicDiseases, setSessionChronicDiseases] = useState([]);
 
     const [pastHistory, setPastHistory] = useState({
         surgeries: false,
@@ -190,7 +201,7 @@ const HealthProfilePage = () => {
     const [familyHistory, setFamilyHistory] = useState({
         diabetes: false,
         heart_disease: false,
-        genetic_disorders: "",
+        genetic_disorders: [""],
         no_known_history: true
     });
 
@@ -418,7 +429,9 @@ const HealthProfilePage = () => {
             setFamilyHistory({
                 diabetes: profile?.health_info?.family_diabetes ?? profile?.family_history?.diabetes ?? profile?.diabetes ?? false,
                 heart_disease: profile?.health_info?.family_heart_disease ?? profile?.family_history?.heart_disease ?? profile?.heart_disease ?? false,
-                genetic_disorders: profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders ?? "",
+                genetic_disorders: Array.isArray(profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders)
+                    ? (profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders)
+                    : (profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders ? [profile?.health_info?.family_genetic_disorders ?? profile?.family_history?.genetic_disorders ?? profile?.genetic_disorders] : [""]),
                 no_known_history: profile?.health_info?.family_no_history ?? profile?.family_history?.no_known_history ?? profile?.no_known_history ?? true
             });
 
@@ -464,8 +477,8 @@ const HealthProfilePage = () => {
             chemical_exposure: lifestyle.chemical_exposure ? "yes" : "no",
             family_diabetes: familyHistory.diabetes,
             family_heart_disease: familyHistory.heart_disease,
-            family_genetic_disorders: familyHistory.genetic_disorders,
-            family_no_history: familyHistory.family_no_history,
+            family_genetic_disorders: familyHistory.genetic_disorders.filter(d => d.trim() !== ""),
+            family_no_history: familyHistory.no_known_history,
             additional_notes: freeTextNotes,
             voice_notes: voiceNotes.map(n => ({ id: n.id, speaker: n.speaker, date: n.date, url: n.url })),
             lifestyle_history: lifestyleHistory
@@ -478,7 +491,7 @@ const HealthProfilePage = () => {
             surgery_location: pastHistory.surgery_location,
             hospital_admissions: pastHistory.has_admissions ? pastHistory.hospital_admissions : "",
             serious_injuries: pastHistory.has_serious_injuries ? pastHistory.serious_injuries : "",
-            genetic_disorders: familyHistory.genetic_disorders,
+            genetic_disorders: familyHistory.genetic_disorders.filter(d => d.trim() !== ""),
             blood_transfusion_history: pastHistory.blood_transfusion,
             tuberculosis_history: pastHistory.tuberculosis
         };
@@ -515,7 +528,8 @@ const HealthProfilePage = () => {
             
             setMessage({ type: "success", text: "Medical profile saved successfully across all modules!" });
         } catch (err) {
-            setMessage({ type: "error", text: err.message || "An error occurred during multi-module save." });
+            console.error("Error saving medical profile:", err);
+            setMessage({ type: "error", text: getSafeErrorMessage(err, "general") });
         } finally {
             setLoading(false);
         }
@@ -645,11 +659,29 @@ const HealthProfilePage = () => {
     const handleMedicationSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setMedicationErrors({});
         try {
-            const payload = {
-                member_id: profile.member_id || profile.systemId,
-                ...medicationData
-            };
+            // Use FormData if there's a prescription photo file, otherwise use plain object
+            let payload;
+            if (medicationData.prescription_photo instanceof File) {
+                payload = new FormData();
+                payload.append('member_id', profile.member_id || profile.systemId);
+                payload.append('medicine_name', medicationData.medicine_name);
+                payload.append('dosage', medicationData.dosage);
+                payload.append('reason', medicationData.reason);
+                payload.append('prescribed_by', medicationData.prescribed_by);
+                payload.append('start_date', medicationData.start_date);
+                payload.append('prescription_photo', medicationData.prescription_photo);
+            } else {
+                payload = {
+                    member_id: profile.member_id || profile.systemId,
+                    medicine_name: medicationData.medicine_name,
+                    dosage: medicationData.dosage,
+                    reason: medicationData.reason,
+                    prescribed_by: medicationData.prescribed_by,
+                    start_date: medicationData.start_date
+                };
+            }
             
             let res;
             if (editingMedicationId) {
@@ -661,12 +693,22 @@ const HealthProfilePage = () => {
             if (res.success) {
                 const refreshed = await updateMemberProfile(profile._id, {});
                 login({ ...refreshed.data, userType: profile.userType || "patient" }, localStorage.getItem("token"));
-                setMedicationData({ medicine_name: "", dosage: "", reason: "", prescribed_by: "", start_date: "" });
+                setMedicationData({ medicine_name: "", dosage: "", reason: "", prescribed_by: "", start_date: "", prescription_photo: null });
+                setPrescriptionPhotoPreview(null);
                 setEditingMedicationId(null);
+                setMedicationErrors({});
                 setMessage({ type: "success", text: editingMedicationId ? "Medication updated successfully." : "Medication added successfully." });
             }
         } catch (err) {
-            setMessage({ type: "error", text: editingMedicationId ? "Failed to update medication." : "Failed to add medication." });
+            if (err.errors) {
+                const fieldErrors = {};
+                err.errors.forEach(e => {
+                    fieldErrors[e.path || e.param] = e.msg;
+                });
+                setMedicationErrors(fieldErrors);
+            } else {
+                setMessage({ type: "error", text: editingMedicationId ? "Failed to update medication." : "Failed to add medication." });
+            }
         } finally {
             setLoading(false);
         }
@@ -675,14 +717,34 @@ const HealthProfilePage = () => {
     const handleEditMedication = (med) => {
         setEditingMedicationId(med._id);
         // Format date to YYYY-MM-DD for input[type="date"]
-        const dateStr = med.start_date ? new Date(med.start_date).toISOString().split('T')[0] : "";
+        let dateStr = "";
+        if (med.start_date) {
+            if (typeof med.start_date === 'string' && med.start_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                dateStr = med.start_date;
+            } else {
+                try {
+                    dateStr = new Date(med.start_date).toISOString().split('T')[0];
+                } catch (e) {
+                    dateStr = "";
+                }
+            }
+        }
         setMedicationData({
             medicine_name: med.medicine_name,
             dosage: med.dosage,
             reason: med.reason,
             prescribed_by: med.prescribed_by,
-            start_date: dateStr
+            start_date: dateStr,
+            prescription_photo: null  // Reset file, user can upload a new one if needed
         });
+        // Show prescription preview if it exists
+        if (med.prescription_photo) {
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+            const photoPath = med.prescription_photo.startsWith('/') ? med.prescription_photo : `/${med.prescription_photo}`;
+            setPrescriptionPhotoPreview(med.prescription_photo.startsWith('http') ? med.prescription_photo : `${baseUrl}${photoPath}`);
+        } else {
+            setPrescriptionPhotoPreview(null);
+        }
         // Scroll to the form
         const element = document.getElementById("medication-form-section");
         if (element) {
@@ -753,6 +815,90 @@ const HealthProfilePage = () => {
             }
         } catch (err) {
             setMessage({ type: "error", text: err.message || t("healthProfile.alert.genericError") });
+            console.error("Error updating profile:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadHealthProfilePDF = async () => {
+        try {
+            setLoading(true);
+            // Create a complete profile object with all data including photo and health metrics
+            const completeProfile = {
+                ...profile,
+                ...healthData, // Merge health metrics (height, weight, blood_group, etc.)
+                photo: photoPreview || profile?.photo // Use photoPreview if available (data URL), otherwise use profile photo
+            };
+            
+            // Combine profile medications with session medications
+            const profileMeds = (profile?.medications && Array.isArray(profile.medications) && profile.medications.length > 0)
+                ? profile.medications 
+                : [];
+            const allMedications = [...profileMeds, ...sessionMedications];
+            
+            // Combine profile allergies with session allergies
+            const profileAllergies = (profile?.allergies && Array.isArray(profile.allergies) && profile.allergies.length > 0)
+                ? profile.allergies 
+                : [];
+            const allAllergies = [...profileAllergies, ...sessionAllergies];
+            
+            // Combine profile chronic diseases with session chronic diseases
+            const profileChronicDiseases = (profile?.chronic_diseases && Array.isArray(profile.chronic_diseases) && profile.chronic_diseases.length > 0)
+                ? profile.chronic_diseases 
+                : [];
+            const allChronicDiseases = [...profileChronicDiseases, ...sessionChronicDiseases];
+            
+            // Use state variables for patient history data - these come from form inputs
+            const completeFamilyHistory = familyHistory && Object.keys(familyHistory).some(key => familyHistory[key]) ? familyHistory : null;
+            const completePastHistory = pastHistory && Object.keys(pastHistory).some(key => pastHistory[key]) ? pastHistory : null;
+            
+            // Use lifestyle history array (all saved entries) instead of single form state
+            const allLifestyleHistory = lifestyleHistory && lifestyleHistory.length > 0 ? lifestyleHistory : [];
+            
+            // Debug: Log what we're sending to the PDF
+            console.log("PDF Data Summary:", {
+                medications: {
+                    fromProfile: profileMeds.length,
+                    fromSession: sessionMedications.length,
+                    total: allMedications.length,
+                    data: allMedications
+                },
+                allergies: {
+                    fromProfile: profileAllergies.length,
+                    fromSession: sessionAllergies.length,
+                    total: allAllergies.length,
+                    data: allAllergies
+                },
+                chronicDiseases: {
+                    fromProfile: profileChronicDiseases.length,
+                    fromSession: sessionChronicDiseases.length,
+                    total: allChronicDiseases.length,
+                    data: allChronicDiseases
+                },
+                lifestyleHistory: allLifestyleHistory.length,
+                lifestyleData: allLifestyleHistory,
+                hasFamilyHistory: !!completeFamilyHistory,
+                familyHistoryData: completeFamilyHistory,
+                hasPastHistory: !!completePastHistory,
+                pastHistoryData: completePastHistory
+            });
+            
+            await generateHealthProfilePDF(
+                completeProfile,
+                allAllergies,
+                allChronicDiseases,
+                allMedications,
+                completePastHistory,
+                completeFamilyHistory,
+                allLifestyleHistory,
+                freeTextNotes, // Additional text notes
+                voiceNotes // Additional voice notes
+            );
+            toast.success("Health profile downloaded successfully!");
+        } catch (err) {
+            console.error("Error downloading health profile:", err);
+            setMessage({ type: "error", text: "Failed to download health profile" });
         } finally {
             setLoading(false);
         }
@@ -766,6 +912,22 @@ const HealthProfilePage = () => {
                     <div className="bg-teal-700 px-8 py-6 text-white">
                         <h1 className="text-2xl font-bold">{t("healthProfile.title")}</h1>
                         <p className="text-teal-100 mt-1">{t("healthProfile.subtitle")}</p>
+                    <div className="bg-teal-700 px-8 py-6 text-white flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold">Health Profile</h1>
+                            <p className="text-teal-100 mt-1">Manage your personal and medical information</p>
+                        </div>
+                        <button
+                            onClick={downloadHealthProfilePDF}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-6 py-3 bg-white text-teal-700 font-semibold rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
+                            title="Download your complete health profile as PDF"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            Download PDF
+                        </button>
                     </div>
 
                     {/* Tabs */}
@@ -1170,7 +1332,6 @@ const HealthProfilePage = () => {
                                                     {[
                                                         { id: "Food", label: "Food Allergy" },
                                                         { id: "Drug", label: "Drug Allergy" },
-                                                        { id: "Insect/Sting", label: "Insect/Sting" },
                                                         { id: "Dust/Pollen", label: "Dust/Pollen" },
                                                         { id: "Latex/Plaster", label: "Latex/Plaster" },
                                                         { id: "Other", label: "Other" }
@@ -1744,10 +1905,77 @@ const HealthProfilePage = () => {
                                                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Start date</label>
                                                     <input 
                                                         type="date"
-                                                        value={medicationData.start_date ? new Date(medicationData.start_date).toISOString().split('T')[0] : ""}
-                                                        onChange={(e) => setMedicationData({...medicationData, start_date: e.target.value})}
-                                                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none"
+                                                        value={medicationData.start_date ? (
+                                                            typeof medicationData.start_date === 'string' && medicationData.start_date.match(/^\d{4}-\d{2}-\d{2}$/) 
+                                                                ? medicationData.start_date 
+                                                                : new Date(medicationData.start_date).toISOString().split('T')[0]
+                                                        ) : ""}
+                                                        onChange={(e) => {
+                                                            setMedicationData({...medicationData, start_date: e.target.value});
+                                                            if (medicationErrors.start_date) {
+                                                                setMedicationErrors(prev => ({ ...prev, start_date: null }));
+                                                            }
+                                                        }}
+                                                        className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-1 outline-none ${
+                                                            medicationErrors.start_date ? "border-red-500 focus:ring-red-500" : "border-slate-300 focus:ring-teal-500"
+                                                        }`}
                                                     />
+                                                    {medicationErrors.start_date && (
+                                                        <p className="mt-1 text-[10px] font-bold text-red-600 uppercase tracking-tight">
+                                                            {medicationErrors.start_date}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Prescription Photo/PDF (Optional)</label>
+                                                    <div className="flex items-center gap-3">
+                                                        {prescriptionPhotoPreview && (
+                                                            <div className="h-16 w-16 rounded-lg bg-slate-100 border border-teal-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                                {prescriptionPhotoPreview.toLowerCase().endsWith('.pdf') ? (
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                                                                    </svg>
+                                                                ) : (
+                                                                    <img src={prescriptionPhotoPreview} alt="Prescription" className="h-full w-full object-cover"/>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <label className="cursor-pointer text-sm font-bold text-teal-700 bg-teal-50 px-4 py-2 rounded-lg hover:bg-teal-100 transition-all border border-teal-200 inline-block">
+                                                            Choose File
+                                                            <input 
+                                                                type="file" 
+                                                                hidden
+                                                                accept="image/*,.pdf"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (file) {
+                                                                        setMedicationData({...medicationData, prescription_photo: file});
+                                                                        if (file.type.startsWith('image/')) {
+                                                                            const reader = new FileReader();
+                                                                            reader.onloadend = () => {
+                                                                                setPrescriptionPhotoPreview(reader.result);
+                                                                            };
+                                                                            reader.readAsDataURL(file);
+                                                                        } else {
+                                                                            setPrescriptionPhotoPreview(file.name);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                        {prescriptionPhotoPreview && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setMedicationData({...medicationData, prescription_photo: null});
+                                                                    setPrescriptionPhotoPreview(null);
+                                                                }}
+                                                                className="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="flex space-x-2">
@@ -1803,9 +2031,29 @@ const HealthProfilePage = () => {
                                                         <h4 className="text-lg font-bold text-teal-700 mb-3 pr-20">{med.medicine_name}</h4>
                                                         <div className="grid grid-cols-2 gap-y-3 text-sm">
                                                             <div><span className="text-slate-400 text-[10px] font-bold uppercase block">Dosage</span> <span className="font-semibold text-slate-700">{med.dosage}</span></div>
-                                                            <div><span className="text-slate-400 text-[10px] font-bold uppercase block">Start Date</span> <span className="font-semibold text-slate-700">{med.start_date ? new Date(med.start_date).toISOString().split('T')[0] : "N/A"}</span></div>
+                                                            <div><span className="text-slate-400 text-[10px] font-bold uppercase block">Start Date</span> <span className="font-semibold text-slate-700">{med.start_date ? (
+                                                                typeof med.start_date === 'string' && med.start_date.match(/^\d{4}-\d{2}-\d{2}$/)
+                                                                    ? med.start_date
+                                                                    : new Date(med.start_date).toISOString().split('T')[0]
+                                                            ) : "N/A"}</span></div>
                                                             <div className="col-span-2"><span className="text-slate-400 text-[10px] font-bold uppercase block">Reason</span> <span className="text-slate-700">{med.reason}</span></div>
                                                             <div className="col-span-2"><span className="text-slate-400 text-[10px] font-bold uppercase block">Prescribed By</span> <span className="text-slate-600 italic">Dr. {med.prescribed_by}</span></div>
+                                                            {med.prescription_photo && (
+                                                                <div className="col-span-2 border-t border-slate-100 pt-3 mt-2">
+                                                                    <span className="text-slate-400 text-[10px] font-bold uppercase block mb-2">Prescription</span>
+                                                                    <a 
+                                                                        href={med.prescription_photo.startsWith('http') ? med.prescription_photo : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/${med.prescription_photo}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-semibold text-sm"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"/>
+                                                                        </svg>
+                                                                        View Prescription
+                                                                    </a>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -1872,7 +2120,7 @@ const HealthProfilePage = () => {
                                                                                 newLocs[idx] = e.target.value;
                                                                                 setPastHistory({...pastHistory, surgery_location: newLocs});
                                                                             }}
-                                                                            placeholder={idx === 0 ? "e.g. General Hospital Colombo" : "Enter additional hospital..."}
+                                                                            placeholder={idx === 0 ? "e.g. Hand" : "Enter another surgery..."}
                                                                             className="w-full rounded-lg border border-teal-500/30 bg-teal-50/10 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none pr-8"
                                                                         />
                                                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-teal-600/40 font-bold group-focus-within:hidden">
@@ -1993,11 +2241,14 @@ const HealthProfilePage = () => {
                                                     <input 
                                                         type="checkbox" 
                                                         checked={familyHistory.diabetes}
-                                                        onChange={(e) => setFamilyHistory({
-                                                            ...familyHistory, 
-                                                            diabetes: e.target.checked,
-                                                            no_known_history: e.target.checked ? false : familyHistory.no_known_history
-                                                        })}
+                                                        onChange={(e) => {
+                                                            const isChecked = e.target.checked;
+                                                            setFamilyHistory({
+                                                                ...familyHistory, 
+                                                                diabetes: isChecked,
+                                                                no_known_history: isChecked ? false : familyHistory.no_known_history
+                                                            });
+                                                        }}
                                                         className="w-5 h-5 text-teal-600 rounded"
                                                     />
                                                 </div>
@@ -2006,29 +2257,74 @@ const HealthProfilePage = () => {
                                                     <input 
                                                         type="checkbox" 
                                                         checked={familyHistory.heart_disease}
-                                                        onChange={(e) => setFamilyHistory({
-                                                            ...familyHistory, 
-                                                            heart_disease: e.target.checked,
-                                                            no_known_history: e.target.checked ? false : familyHistory.no_known_history
-                                                        })}
+                                                        onChange={(e) => {
+                                                            const isChecked = e.target.checked;
+                                                            setFamilyHistory({
+                                                                ...familyHistory, 
+                                                                heart_disease: isChecked,
+                                                                no_known_history: isChecked ? false : familyHistory.no_known_history
+                                                            });
+                                                        }}
                                                         className="w-5 h-5 text-teal-600 rounded"
                                                     />
                                                 </div>
-                                                <div className="col-span-1 md:col-span-2 space-y-1">
+                                                <div className="col-span-1 md:col-span-2 space-y-3">
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Genetic Disorders</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={familyHistory.genetic_disorders}
-                                                        onChange={(e) => {
-                                                            const hasContent = e.target.value.trim() !== "";
-                                                            setFamilyHistory({
-                                                                ...familyHistory, 
-                                                                genetic_disorders: e.target.value,
-                                                                no_known_history: hasContent ? false : familyHistory.no_known_history
-                                                            });
-                                                        }}
-                                                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none"
-                                                    />
+                                                    {familyHistory.genetic_disorders.map((disorder, index) => (
+                                                        <div key={index} className="flex gap-2">
+                                                            <input 
+                                                                type="text" 
+                                                                value={disorder}
+                                                                placeholder={index === 0 ? "e.g. Dyslipidemia, Thalassemia..." : "Add another disorder..."}
+                                                                onChange={(e) => {
+                                                                    const newList = [...familyHistory.genetic_disorders];
+                                                                    newList[index] = e.target.value;
+                                                                    const hasContent = newList.some(item => item.trim() !== "");
+                                                                    setFamilyHistory({
+                                                                        ...familyHistory, 
+                                                                        genetic_disorders: newList,
+                                                                        no_known_history: hasContent ? false : familyHistory.no_known_history
+                                                                    });
+                                                                }}
+                                                                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none"
+                                                            />
+                                                            <div className="flex gap-1">
+                                                                {familyHistory.genetic_disorders.length > 1 && (
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const newList = familyHistory.genetic_disorders.filter((_, i) => i !== index);
+                                                                            setFamilyHistory({
+                                                                                ...familyHistory,
+                                                                                genetic_disorders: newList
+                                                                            });
+                                                                        }}
+                                                                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border border-rose-100"
+                                                                        title="Remove"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+                                                                {index === familyHistory.genetic_disorders.length - 1 && (
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => setFamilyHistory({
+                                                                            ...familyHistory,
+                                                                            genetic_disorders: [...familyHistory.genetic_disorders, ""]
+                                                                        })}
+                                                                        className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors border border-teal-100"
+                                                                        title="Add More"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                                 <div className="col-span-1 md:col-span-2 flex items-center gap-3">
                                                     <input 
@@ -2040,7 +2336,7 @@ const HealthProfilePage = () => {
                                                                 setFamilyHistory({
                                                                     diabetes: false,
                                                                     heart_disease: false,
-                                                                    genetic_disorders: "",
+                                                                    genetic_disorders: [""],
                                                                     no_known_history: true
                                                                 });
                                                             } else {

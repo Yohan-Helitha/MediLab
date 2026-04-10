@@ -26,23 +26,32 @@ function AIDoctorChatPage() {
 
   // Chatbot State
   const [chatMessage, setChatMessage] = useState("");
-  const [chatHistory, setChatHistory] = useState(() => {
-    // Persistent Chat: Load from localStorage on initialization
-    const savedChat = localStorage.getItem("mediLabChatHistory");
-    return savedChat ? JSON.parse(savedChat) : [];
-  });
+  const [chatHistory, setChatHistory] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef(null);
   const isInitialMount = useRef(true);
 
-  // Always scroll to top on mount (page refresh)
+  // User-specific storage key
+  const storageKey = user?._id || user?.id || user?.systemId 
+    ? `mediLabChatHistory_${user._id || user.id || user.systemId}`
+    : "mediLabChatHistory_guest";
+
+  // Persistent Chat: Load from localStorage on mount or when user changes
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+    const savedChat = localStorage.getItem(storageKey);
+    if (savedChat) {
+      setChatHistory(JSON.parse(savedChat));
+    } else {
+      setChatHistory([]);
+    }
+    isInitialMount.current = true; // Reset initial mount flag on user change
+  }, [storageKey]);
 
   // Sync chat history to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem("mediLabChatHistory", JSON.stringify(chatHistory));
+    if (chatHistory.length > 0 || localStorage.getItem(storageKey)) {
+      localStorage.setItem(storageKey, JSON.stringify(chatHistory));
+    }
     
     // Prevent scrolling to bottom on the very first load
     if (isInitialMount.current) {
@@ -53,7 +62,7 @@ function AIDoctorChatPage() {
     if (chatHistory.length > 0) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chatHistory]);
+  }, [chatHistory, storageKey]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -136,7 +145,7 @@ function AIDoctorChatPage() {
                        onClick={() => {
                          if(confirm(t("aiDoctor.clearConfirm"))) {
                            setChatHistory([]);
-                           localStorage.removeItem("mediLabChatHistory");
+                           localStorage.removeItem(storageKey);
                          }
                        }}
                        className="text-[10px] font-bold text-rose-400 hover:text-rose-600 uppercase tracking-widest transition-colors flex items-center gap-1"

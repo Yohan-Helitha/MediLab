@@ -20,7 +20,9 @@ import AdminFinanceDashboard from "../pages/AdminFinanceDashboard";
 import AdminInventoryDashboard from "../pages/AdminInventoryDashboard";
 import AdminEquipmentCatalog from "../pages/AdminEquipmentCatalog";
 import AdminTestEquipmentRequirements from "../pages/AdminTestEquipmentRequirements";
+import AdminUsers from "../pages/AdminUsers";
 import BookingCreatePage from "../pages/BookingCreatePage";
+import BookingUpdatePage from "../pages/BookingUpdatePage";
 import PayHereReturnPage from "../pages/PayHereReturnPage";
 import AccountPage from "../pages/patient/AccountPage";
 import AIDoctorChatPage from "../pages/patient/AIDoctorChatPage";
@@ -46,10 +48,15 @@ const AppRoutes = () => {
 			.toLowerCase()
 			.replace(/\s+/g, "_");
 
-	const userRole = normalize(user?.role || user?.profile?.role);
+	// Prefer profile.role when present (e.g., HealthOfficer profile role can be Admin)
+	const userRole = normalize(user?.profile?.role || user?.role);
 
 	const isAdminUser = () => {
 		return userRole === "admin";
+	};
+
+	const isLabTechnicianUser = () => {
+		return userRole === "lab_technician";
 	};
 
 	const isPatientUser = () => {
@@ -60,7 +67,8 @@ const AppRoutes = () => {
 	const getPostAuthRedirect = () => {
 		if (!user) return "/";
 		if (isAdminUser()) return "/admin/overview";
-		if (isPatientUser()) return "/dashboard";
+		if (isLabTechnicianUser()) return "/staff/lab-dashboard";
+		if (isPatientUser()) return "/";
 		return "/staff/dashboard";
 	};
 
@@ -147,6 +155,10 @@ const AppRoutes = () => {
 					path="/staff/dashboard"
 					element={<DashboardLayout activePage="labs"><LabManagementPage /></DashboardLayout>}
 				/>
+				<Route
+					path="/staff/lab-dashboard"
+					element={<DashboardLayout activePage="labs"><div className="p-8">Lab Technician dashboard coming soon</div></DashboardLayout>}
+				/>
 				<Route path="/staff/tests" element={<DashboardLayout activePage="tests"><TestManagementPage /></DashboardLayout>} />
 				<Route path="/staff/availability" element={<DashboardLayout activePage="availability"><TestAvailabilityPage /></DashboardLayout>} />
 				<Route path="/staff/instructions" element={<DashboardLayout activePage="instructions"><TestInstructionsPage /></DashboardLayout>} />
@@ -199,7 +211,7 @@ const AppRoutes = () => {
 					path="/admin/users"
 					element={
 						<AdminDashboardLayout title="Users" onLogout={logout}>
-							<div className="text-sm text-slate-600">Users management coming soon.</div>
+							<AdminUsers />
 						</AdminDashboardLayout>
 					}
 				/>
@@ -208,6 +220,7 @@ const AppRoutes = () => {
 			{/* Protected Patient Routes */}
 			<Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
 				<Route path="/bookings/new" element={<BookingCreatePage />} />
+				<Route path="/bookings/:id/edit" element={<BookingUpdatePage />} />
 				<Route path="/account" element={<AccountPage />} />
 				<Route path="/health-profile" element={<HealthProfilePage />} />
 				<Route path="/health-reports" element={<HealthReportsPage />} />

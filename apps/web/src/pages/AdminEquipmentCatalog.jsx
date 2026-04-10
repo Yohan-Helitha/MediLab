@@ -114,11 +114,11 @@ function AdminEquipmentCatalog() {
 
 				<div className="hidden border-b border-slate-100 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:block">
 					<div className="grid grid-cols-12 gap-4">
-						<div className="col-span-5">Name</div>
+						<div className="col-span-4">Name</div>
 						<div className="col-span-2">Type</div>
 						<div className="col-span-3">Description</div>
 						<div className="col-span-1">Status</div>
-						<div className="col-span-1 text-right">Actions</div>
+						<div className="col-span-2 text-right">Actions</div>
 					</div>
 				</div>
 
@@ -174,7 +174,7 @@ function EquipmentRow({ item, onEdit, onSoftDelete }) {
 	return (
 		<div className="py-3 text-sm text-slate-700">
 			<div className="grid grid-cols-2 gap-3 md:grid-cols-12 md:gap-4">
-				<div className="md:col-span-5">
+				<div className="md:col-span-4">
 					<div className="font-medium text-slate-900">{item.name}</div>
 				</div>
 				<div className="md:col-span-2">
@@ -188,21 +188,23 @@ function EquipmentRow({ item, onEdit, onSoftDelete }) {
 					</p>
 				</div>
 				<div className="md:col-span-1 flex items-center">
-					<span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClasses}`}>
+					<span
+						className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClasses}`}
+					>
 						{statusLabel}
 					</span>
 				</div>
-				<div className="md:col-span-1 flex items-center justify-end gap-2">
+				<div className="md:col-span-2 flex flex-wrap items-center justify-end gap-2">
 					<button
 						type="button"
-						className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+						className="whitespace-nowrap rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
 						onClick={onEdit}
 					>
 						Edit
 					</button>
 					<button
 						type="button"
-						className="rounded-md border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50"
+						className="whitespace-nowrap rounded-md border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50"
 						onClick={onSoftDelete}
 					>
 						Disable

@@ -38,7 +38,7 @@ const ProtectedRoute = ({ allowedRoles = [], redirectTo = "/login" }) => {
 	}
 
 	if (!user) {
-		return <Navigate to={redirectTo} state={{ from: location }} replace />;
+		return <Navigate to="/" replace />;
 	}
 
 	if (allowed.length > 0 && !allowed.includes(userRole) && !allowed.includes(userType)) {

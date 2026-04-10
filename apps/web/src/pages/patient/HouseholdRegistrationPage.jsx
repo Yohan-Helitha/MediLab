@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
+import { getSafeErrorMessage } from "../../utils/errorHandler";
+import { generateHouseholdPDF } from "../../utils/pdfGenerator";
 import { 
     createHousehold,
     updateHousehold,
@@ -107,19 +109,20 @@ const HouseholdRegistrationPage = () => {
                         }
                     });
 
-                    // Update members from the fetched household if they exist
-                    if (house.members_list && Array.isArray(house.members_list)) {
-                        setMembers(house.members_list.map(m => ({
-                            family_member_id: m.family_member_id, // PRESERVE ID
-                            full_name: m.full_name,
-                            gender: m.gender,
-                            date_of_birth: m.date_of_birth ? new Date(m.date_of_birth).toISOString().split('T')[0] : "",
-                            relationship: m.isHead ? "Head" : (m.relationship || ""),
-                            isHead: m.isHead || false
-                        })));
-                    }
-                }
-            } catch (err) {
+                            if (house.members_list && Array.isArray(house.members_list)) {
+                                setMembers(house.members_list.map(m => ({
+                                    family_member_id: m.family_member_id, // PRESERVE ID
+                                    full_name: m.full_name,
+                                    gender: m.gender,
+                                    date_of_birth: m.date_of_birth ? new Date(m.date_of_birth).toISOString().split('T')[0] : "",
+                                    relationship: m.isHead ? "Head" : (m.relationship || ""),
+                                    isHead: m.isHead || false,
+                                    spouse_name: m.spouse_name || "",
+                                    parent_name: m.parent_name || ""
+                                })));
+                            }
+                        }
+                    } catch (err) {
                 console.error("Error fetching existing household:", err);
             }
         };
@@ -153,7 +156,15 @@ const HouseholdRegistrationPage = () => {
     };
 
     const addMember = () => {
-        setMembers([...members, { full_name: "", gender: "Male", date_of_birth: "", relationship: "son", isHead: false }]);
+        setMembers([...members, { 
+            full_name: "", 
+            gender: "Male", 
+            date_of_birth: "", 
+            relationship: "son", 
+            isHead: false, 
+            spouse_name: "",
+            parent_name: "" // Added parent_name field
+        }]);
     };
 
     const removeMember = (index) => {
@@ -207,12 +218,24 @@ const HouseholdRegistrationPage = () => {
         const currentUserId = user?.systemId || user?.member_id || user?.employeeId;
         
         try {
+            // Auto-populate parent_name for in-law relationships using spouse_name
+            const processedMembers = members.map(member => {
+                if ((member.relationship?.toLowerCase().includes('son-in-law') || 
+                     member.relationship?.toLowerCase().includes('daughter-in-law') ||
+                     member.relationship?.toLowerCase().includes('grandson-in-law') ||
+                     member.relationship?.toLowerCase().includes('granddaughter-in-law')) && 
+                    member.spouse_name && !member.parent_name) {
+                    return { ...member, parent_name: member.spouse_name };
+                }
+                return member;
+            });
+
             // Include health data in registration if it's a new household to satisfy "all fields required"
             const payload = {
                 ...regData,
                 ...healthData,
                 submitted_by: currentUserId, // Automatically include user's member_id/systemId as submitted_by
-                members_list: members // Send members to create them alongside household
+                members_list: processedMembers // Send processed members to create them alongside household
             };
 
             // Remove empty household_id so backend doesn't try to validate the format
@@ -254,7 +277,9 @@ const HouseholdRegistrationPage = () => {
                         gender: m.gender,
                         date_of_birth: m.date_of_birth ? new Date(m.date_of_birth).toISOString().split('T')[0] : "",
                         relationship: m.isHead ? "Head" : (m.relationship || ""),
-                        isHead: m.isHead || false
+                        isHead: m.isHead || false,
+                        spouse_name: m.spouse_name || "",
+                        parent_name: m.parent_name || ""
                     })));
                 }
 
@@ -271,7 +296,9 @@ const HouseholdRegistrationPage = () => {
                 if (res.errors && Array.isArray(res.errors)) {
                     displayMsg = res.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
                 } else if (res.message) {
-                    displayMsg = res.message;
+                    displayMsg = getSafeErrorMessage(new Error(res.message), "household");
+                } else {
+                    displayMsg = getSafeErrorMessage(new Error("Operation failed"), "household");
                 }
                 
                 setMessage({ type: "error", text: displayMsg });
@@ -281,7 +308,7 @@ const HouseholdRegistrationPage = () => {
             console.error("Registration catch error:", err);
             
             // Extract message from standard error object or custom response
-            let displayMsg = err.message || "Server error occurred";
+            let displayMsg = "An error occurred during registration";
             
             // If the error object has a structured 'errors' array inside its context/response
             if (err.errors && Array.isArray(err.errors)) {
@@ -289,7 +316,9 @@ const HouseholdRegistrationPage = () => {
             } else if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
                 displayMsg = err.response.data.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
             } else if (err.response?.data?.message) {
-                displayMsg = err.response.data.message;
+                displayMsg = getSafeErrorMessage(new Error(err.response.data.message), "household");
+            } else {
+                displayMsg = getSafeErrorMessage(err, "household");
             }
             
             setMessage({ type: "error", text: displayMsg });
@@ -332,14 +361,48 @@ const HouseholdRegistrationPage = () => {
             if (res.success) {
                 setCurrentHousehold(res.data);
                 setMessage({ type: "success", text: "Health information updated successfully!" });
-                // Auto-navigate to home page after a short delay
-                setTimeout(() => navigate("/"), 1500);
+                // Stay on the same page - don't navigate
             } else {
-                setMessage({ type: "error", text: res.message || "Update failed" });
+                console.error("Health update failed:", res);
+                setMessage({ type: "error", text: getSafeErrorMessage(new Error(res.message || "Update failed"), "household") });
             }
         } catch (err) {
             console.error("Health Update catch error:", err);
-            setMessage({ type: "error", text: err.response?.data?.message || err.message || "Server error occurred" });
+            setMessage({ type: "error", text: getSafeErrorMessage(err, "household") });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadHouseholdPDF = async () => {
+        try {
+            setLoading(true);
+            
+            // Prepare health info from healthData
+            const householdHealthInfo = {
+                water_source: healthData.water_source,
+                well_water_tested: healthData.well_water_tested,
+                ckdu_exposure_area: healthData.ckdu_exposure_area,
+                dengue_risk: healthData.dengue_risk,
+                sanitation_type: healthData.sanitation_type,
+                waste_disposal: healthData.waste_disposal,
+                pesticide_exposure: healthData.pesticide_exposure,
+                chronic_diseases: healthData.chronic_diseases
+            };
+            
+            console.log("Household PDF Data:", {
+                registrationData: regData,
+                members: members,
+                health: householdHealthInfo
+            });
+            
+            await generateHouseholdPDF(
+                regData,
+                members,
+                householdHealthInfo
+            );
+        } catch (err) {
+            console.error("Error downloading household record:", err);
         } finally {
             setLoading(false);
         }
@@ -381,11 +444,22 @@ const HouseholdRegistrationPage = () => {
 
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     {/* Header */}
-                    <div className="bg-teal-700 px-8 py-6 text-white relative overflow-hidden">
+                    <div className="bg-teal-700 px-8 py-6 text-white flex items-center justify-between relative overflow-hidden">
                         <div className="relative z-10">
                             <h1 className="text-2xl font-bold text-white">{t("household.title")}</h1>
                             <p className="text-teal-100 mt-1">{t("household.subtitle")}</p>
                         </div>
+                        <button
+                            onClick={downloadHouseholdPDF}
+                            disabled={loading || !currentHousehold?._id}
+                            className="flex items-center gap-2 px-6 py-3 bg-white text-teal-700 font-semibold rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
+                            title="Download your complete household record as PDF"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            Download PDF
+                        </button>
                         <div className="absolute top-0 right-0 p-8 opacity-10">
                             <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" /></svg>
                         </div>
@@ -513,7 +587,7 @@ const HouseholdRegistrationPage = () => {
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t("household.form.householdNumber")}</label>
+                                                <label className="block text-sm font-semibold text-slate-700 mb-2">Household Number</label>
                                                 <div className="relative group">
                                                     <input
                                                         type="text"
@@ -525,6 +599,13 @@ const HouseholdRegistrationPage = () => {
                                                     />
                                                     {!regData.household_id && (
                                                         <div className="absolute right-3 top-3.5 px-2 py-0.5 bg-teal-50 text-teal-600 text-[10px] font-bold uppercase rounded-md tracking-tighter">{t("household.form.autoGen")}</div>
+                                                        readOnly
+                                                        disabled
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-slate-100/70 font-mono text-sm cursor-not-allowed text-slate-500"
+                                                        placeholder="Auto-generated upon registration"
+                                                    />
+                                                    {!regData.household_id && (
+                                                        <div className="absolute right-3 top-3.5 px-2 py-0.5 bg-slate-200 text-slate-500 text-[10px] font-bold uppercase rounded-md tracking-tighter">Auto-Gen</div>
                                                     )}
                                                 </div>
                                             </div>
@@ -615,58 +696,132 @@ const HouseholdRegistrationPage = () => {
 
                                     <div className="space-y-4">
                                         {members.map((member, index) => (
-                                            <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-5 bg-slate-50/50 border border-slate-200 rounded-2xl relative group hover:border-teal-300 hover:bg-white transition-all">
-                                                <div className="md:col-span-2">
-                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Full Name</label>
-                                                    <input 
-                                                        disabled={member.isHead}
-                                                        type="text" 
-                                                        value={member.full_name} 
-                                                        onChange={(e) => handleMemberChange(index, 'full_name', e.target.value)}
-                                                        className={`w-full px-4 py-2 rounded-xl border ${member.isHead ? 'bg-slate-100 italic' : 'bg-white'} border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium`}
-                                                        placeholder="Full Name"
-                                                    />
+                                            <div key={index} className="p-6 bg-slate-50/50 border border-slate-200 rounded-2xl relative group hover:border-teal-300 hover:bg-white transition-all space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Full Name</label>
+                                                        <input 
+                                                            disabled={member.isHead}
+                                                            type="text" 
+                                                            value={member.full_name} 
+                                                            onChange={(e) => handleMemberChange(index, 'full_name', e.target.value)}
+                                                            className={`w-full px-4 py-2.5 rounded-xl border ${member.isHead ? 'bg-slate-100 italic' : 'bg-white'} border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium`}
+                                                            placeholder="Full Name"
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Gender</label>
+                                                            <select 
+                                                                value={member.gender} 
+                                                                onChange={(e) => handleMemberChange(index, 'gender', e.target.value)}
+                                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium"
+                                                            >
+                                                                <option value="Male">Male</option>
+                                                                <option value="Female">Female</option>
+                                                                <option value="Other">Other</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Date of Birth</label>
+                                                            <input 
+                                                                type="date" 
+                                                                value={member.date_of_birth} 
+                                                                onChange={(e) => handleMemberChange(index, 'date_of_birth', e.target.value)}
+                                                                max={new Date().toISOString().split("T")[0]}
+                                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Gender</label>
-                                                    <select 
-                                                        value={member.gender} 
-                                                        onChange={(e) => handleMemberChange(index, 'gender', e.target.value)}
-                                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium"
-                                                    >
-                                                        <option value="Male">Male</option>
-                                                        <option value="Female">Female</option>
-                                                        <option value="Other">Other</option>
-                                                    </select>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Relationship</label>
+                                                        <select 
+                                                            disabled={member.isHead}
+                                                            value={member.relationship} 
+                                                            onChange={(e) => handleMemberChange(index, 'relationship', e.target.value)}
+                                                            className={`w-full px-4 py-2.5 rounded-xl border ${member.isHead ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'} border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium`}
+                                                        >
+                                                            {member.isHead ? (
+                                                                <option value="Head">Head</option>
+                                                            ) : (
+                                                                <>
+                                                                    <option value="">Select Relationship</option>
+                                                                    <option value="husband">Husband</option>
+                                                                    <option value="wife">Wife</option>
+                                                                    <option value="son">Son</option>
+                                                                    <option value="daughter">Daughter</option>
+                                                                    <option value="mother">Mother</option>
+                                                                    <option value="father">Father</option>
+                                                                    <option value="mother-in-law">Mother-in-law</option>
+                                                                    <option value="father-in-law">Father-in-law</option>
+                                                                    <option value="daughter-in-law">Daughter-in-law</option>
+                                                                    <option value="son-in-law">Son-in-law</option>
+                                                                    <option value="aunt">Aunt</option>
+                                                                    <option value="uncle">Uncle</option>
+                                                                    <option value="niece">Niece</option>
+                                                                    <option value="nephew">Nephew</option>
+                                                                    <option value="grandson">Grandson</option>
+                                                                    <option value="granddaughter">Granddaughter</option>
+                                                                    <option value="grandson-in-law">Grandson-in-law</option>
+                                                                    <option value="granddaughter-in-law">Granddaughter-in-law</option>
+                                                                    <option value="great-grandchild">Great-grandchild</option>
+                                                                    <option value="guardian">Guardian</option>
+                                                                </>
+                                                            )}
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    {/* Spouse Selection for In-Laws */}
+                                                    {(member.relationship?.toLowerCase().includes('son-in-law') || 
+                                                      member.relationship?.toLowerCase().includes('daughter-in-law') ||
+                                                      member.relationship?.toLowerCase().includes('grandson-in-law') ||
+                                                      member.relationship?.toLowerCase().includes('granddaughter-in-law')) && (
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Spouse (Family Member)</label>
+                                                            <select
+                                                                value={member.spouse_name || ""}
+                                                                onChange={(e) => handleMemberChange(index, 'spouse_name', e.target.value)}
+                                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium"
+                                                            >
+                                                                <option value="">Select Spouse</option>
+                                                                {members
+                                                                    .filter((m, i) => i !== index)
+                                                                    .map((m, i) => (
+                                                                        <option key={i} value={m.full_name}>{m.full_name || `Member ${i + 1}`}</option>
+                                                                    ))
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Parent Selection for Grandchildren and Great-grandchildren */}
+                                                    {((member.relationship?.toLowerCase().includes('grandson') && !member.relationship?.toLowerCase().includes('in-law')) ||
+                                                      (member.relationship?.toLowerCase().includes('granddaughter') && !member.relationship?.toLowerCase().includes('in-law')) ||
+                                                      member.relationship?.toLowerCase().includes('great-grandchild') ||
+                                                      member.relationship?.toLowerCase().includes('niece') ||
+                                                      member.relationship?.toLowerCase().includes('nephew')) && (
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Parent (Resident Member)</label>
+                                                            <select
+                                                                value={member.parent_name || ""}
+                                                                onChange={(e) => handleMemberChange(index, 'parent_name', e.target.value)}
+                                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium"
+                                                            >
+                                                                <option value="">Select Parent</option>
+                                                                {members
+                                                                    .filter((m, i) => i !== index)
+                                                                    .map((m, i) => (
+                                                                        <option key={i} value={m.full_name}>{m.full_name || `Member ${i + 1}`}</option>
+                                                                    ))
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Date of Birth</label>
-                                                    <input 
-                                                        type="date" 
-                                                        value={member.date_of_birth} 
-                                                        onChange={(e) => handleMemberChange(index, 'date_of_birth', e.target.value)}
-                                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium"
-                                                    />
-                                                </div>
-                                                <div className="md:col-span-1 min-w-[140px]">
-                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Relationship</label>
-                                                    <select 
-                                                        value={member.relationship} 
-                                                        onChange={(e) => handleMemberChange(index, 'relationship', e.target.value)}
-                                                        disabled={member.isHead}
-                                                        className={`w-full px-4 py-2 rounded-xl border ${member.isHead ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'} border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm font-medium appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10`}
-                                                    >
-                                                        {member.isHead && <option value="Head">Head</option>}
-                                                        <option value="husband">Husband</option>
-                                                        <option value="wife">Wife</option>
-                                                        <option value="father">Father</option>
-                                                        <option value="mother">Mother</option>
-                                                        <option value="son">Son</option>
-                                                        <option value="daughter">Daughter</option>
-                                                        <option value="brother">Brother</option>
-                                                        <option value="sister">Sister</option>
-                                                    </select>
-                                                </div>
+
                                                 {!member.isHead && (
                                                     <button 
                                                         type="button"
@@ -691,6 +846,7 @@ const HouseholdRegistrationPage = () => {
                                             <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
                                         ) : null}
                                         {loading ? t("household.button.processing") : t("household.button.register")}
+                                        {loading ? "Processing..." : (currentHousehold?._id ? "Update" : "Register")}
                                     </button>
                                 </div>
                             </form>

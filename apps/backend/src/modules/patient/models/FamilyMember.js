@@ -29,6 +29,14 @@ const familyMemberSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  spouse_name: {
+    type: String,
+    default: ""
+  },
+  parent_name: {
+    type: String,
+    default: ""
+  },
   diseases: {
     type: [String],
     default: []

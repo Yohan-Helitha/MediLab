@@ -17,11 +17,14 @@ const familyRelationshipSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: [
-      'husband', 'wife', 'father', 'mother', 
-      'son', 'daughter', 'brother', 'sister',
-      'grandfather', 'grandmother', 'grandson', 'granddaughter'
+      'husband', 'wife', 'spouse', 'father', 'mother', 'parent',
+      'son', 'daughter', 'child', 'brother', 'sister', 'sibling',
+      'grandfather', 'grandmother', 'grandparent', 'grandson', 'granddaughter', 'grandchild',
+      'mother-in-law', 'father-in-law', 'son-in-law', 'daughter-in-law', 'child-in-law',
+      'grandson-in-law', 'granddaughter-in-law',
+      'aunt', 'uncle', 'niece', 'nephew', 'great-grandchild', 'guardian', 'other'
     ],
-    message: 'Invalid relationship type. Must be one of: husband, wife, father, mother, son, daughter, brother, sister, grandfather, grandmother, grandson, granddaughter'
+    message: 'Invalid relationship type. Must be one of valid family relationship values.'
   }
 }, {
   timestamps: true

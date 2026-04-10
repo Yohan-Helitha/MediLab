@@ -26,9 +26,8 @@ export const validatePastMedicalHistoryCreate = [
   
   body("genetic_disorders")
     .optional()
-    .trim()
-    .isLength({ max: 500 })
-    .withMessage("Genetic disorders must be less than 500 characters"),
+    .isArray()
+    .withMessage("Genetic disorders must be an array of strings"),
   
   body("blood_transfusion_history")
     .optional()
@@ -68,9 +67,8 @@ export const validatePastMedicalHistoryUpdate = [
   
   body("genetic_disorders")
     .optional()
-    .trim()
-    .isLength({ max: 500 })
-    .withMessage("Genetic disorders must be less than 500 characters"),
+    .isArray()
+    .withMessage("Genetic disorders must be an array of strings"),
   
   body("blood_transfusion_history")
     .optional()

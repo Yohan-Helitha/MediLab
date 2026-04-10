@@ -43,6 +43,34 @@ class FamilyRelationshipService {
       return 'grandparent';
     }
 
+    if (type === 'mother-in-law') {
+      if (targetGender === 'Male') return 'son-in-law';
+      if (targetGender === 'Female') return 'daughter-in-law';
+      return 'child-in-law';
+    }
+
+    if (type === 'father-in-law') {
+      if (targetGender === 'Male') return 'son-in-law';
+      if (targetGender === 'Female') return 'daughter-in-law';
+      return 'child-in-law';
+    }
+
+    if (type === 'son-in-law' || type === 'daughter-in-law' || type === 'child-in-law') {
+      if (targetGender === 'Male') return 'father-in-law';
+      if (targetGender === 'Female') return 'mother-in-law';
+      return 'parent-in-law';
+    }
+
+    if (type === 'aunt' || type === 'uncle') {
+        if (targetGender === 'Male') return 'nephew';
+        if (targetGender === 'Female') return 'niece';
+        return 'nibling';
+    }
+
+    if (type === 'guardian') {
+        return 'ward';
+    }
+
     return type;
   }
 
@@ -109,6 +137,31 @@ class FamilyRelationshipService {
         pages: Math.ceil(total / limit)
       }
     };
+  }
+
+  async createRelationshipByNames(householdId, member1Name, member2Name, relationshipType) {
+    const member1 = await FamilyMember.findOne({ household_id: householdId, full_name: member1Name });
+    const member2 = await FamilyMember.findOne({ household_id: householdId, full_name: member2Name });
+
+    if (!member1 || !member2) {
+      return null;
+    }
+
+    // Check if relationship already exists
+    const existing = await FamilyRelationship.findOne({
+      $or: [
+        { family_member1_id: member1.family_member_id, family_member2_id: member2.family_member_id },
+        { family_member1_id: member2.family_member_id, family_member2_id: member1.family_member_id }
+      ]
+    });
+
+    if (existing) return existing;
+
+    return await this.createFamilyRelationship({
+      family_member1_id: member1.family_member_id,
+      family_member2_id: member2.family_member_id,
+      relationship_type: relationshipType
+    });
   }
 
   async getFamilyRelationshipById(id) {

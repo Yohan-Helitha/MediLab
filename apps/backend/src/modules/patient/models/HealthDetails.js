@@ -57,9 +57,7 @@ const healthDetailsSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  family_genetic_disorders: {
-    type: String
-  },
+  family_genetic_disorders: [String],
   family_no_history: {
     type: Boolean,
     default: true

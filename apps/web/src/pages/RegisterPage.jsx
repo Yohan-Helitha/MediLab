@@ -189,10 +189,18 @@ onChange={handleChange}
 className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-sm"
 placeholder="••••••••"
 />
+<div className="mt-1.5 flex items-start gap-1 ml-1">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-slate-400 mt-0.5">
+    <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" />
+  </svg>
+  <p className="text-[10px] text-slate-500 font-medium leading-tight">
+    Minimum 8 characters with at least one uppercase, lowercase, number, and special character (@, #, or _)
+  </p>
+</div>
 </div>
 <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
 <p className="text-[10px] text-teal-600 font-medium leading-relaxed">
-{t("register.termsText")}
+By clicking register, you agree to MediLab's patient terms of service and privacy policy.
 </p>
 </div>
 </div>
@@ -222,7 +230,7 @@ className="flex-1 max-w-[100px] rounded-xl border border-slate-200 bg-white px-4
 <button
 type="submit"
 disabled={loading}
-className={`group relative flex justify-center rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-teal-500/25 hover:bg-teal-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all disabled:opacity-50 disabled:translate-y-0 ${step === 1 ? "w-48" : "flex-1 max-w-[180px]"}`}
+className={`group relative flex justify-center items-center rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-teal-500/25 hover:bg-teal-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all disabled:opacity-50 disabled:translate-y-0 whitespace-nowrap min-w-fit ${step === 1 ? "w-48" : "flex-1 max-w-[220px]"}`}
 >
 {loading ? (
 <span className="flex items-center gap-2">

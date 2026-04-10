@@ -16,8 +16,8 @@ export const validateFamilyRelationshipCreate = [
   body("relationship_type")
     .notEmpty()
     .withMessage("Relationship type is required")
-    .isIn(['husband', 'wife', 'father', 'mother', 'son', 'daughter', 'brother', 'sister', 'grandfather', 'grandmother', 'grandson', 'granddaughter'])
-    .withMessage("Invalid relationship type. Must be one of: husband, wife, father, mother, son, daughter, brother, sister, grandfather, grandmother, grandson, granddaughter")
+    .isIn(['husband', 'wife', 'spouse', 'father', 'mother', 'parent', 'son', 'daughter', 'child', 'brother', 'sister', 'sibling', 'grandfather', 'grandmother', 'grandparent', 'grandson', 'granddaughter', 'grandchild', 'great-grandchild', 'mother-in-law', 'father-in-law', 'son-in-law', 'daughter-in-law', 'child-in-law', 'grandson-in-law', 'granddaughter-in-law', 'aunt', 'uncle', 'niece', 'nephew', 'guardian', 'other'])
+    .withMessage("Invalid relationship type")
 ];
 
 export const validateFamilyRelationshipUpdate = [
@@ -35,8 +35,8 @@ export const validateFamilyRelationshipUpdate = [
   
   body("relationship_type")
     .optional()
-    .isIn(['husband', 'wife', 'father', 'mother', 'son', 'daughter', 'brother', 'sister', 'grandfather', 'grandmother', 'grandson', 'granddaughter'])
-    .withMessage("Invalid relationship type. Must be one of: husband, wife, father, mother, son, daughter, brother, sister, grandfather, grandmother, grandson, granddaughter")
+    .isIn(['husband', 'wife', 'spouse', 'father', 'mother', 'parent', 'son', 'daughter', 'child', 'brother', 'sister', 'sibling', 'grandfather', 'grandmother', 'grandparent', 'grandson', 'granddaughter', 'grandchild', 'great-grandchild', 'mother-in-law', 'father-in-law', 'son-in-law', 'daughter-in-law', 'child-in-law', 'grandson-in-law', 'granddaughter-in-law', 'aunt', 'uncle', 'niece', 'nephew', 'guardian', 'other'])
+    .withMessage("Invalid relationship type")
 ];
 
 export const validateFamilyRelationshipId = [

@@ -1,0 +1,135 @@
+# Artillery.io Load Testing Configuration - Auth API
+# @author Lakni (IT23772922)
+#
+# Usage: artillery run artillery-auth.yml
+# This tests the Auth module APIs under various load scenarios
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    # Warm up phase
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    # Ramp up phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Ramp up"
+    # Peak load phase
+    - duration: 120
+      arrivalRate: 25
+      name: "Peak load"
+    # Cool down phase
+    - duration: 30
+      arrivalRate: 5
+      name: "Cool down"
+
+  # Generate unique data for each request
+  variables:
+    - email
+    - password
+    - full_name
+    - phone
+
+  processor: "./artillery-processor.js"
+
+  # Connection settings
+  http:
+    timeout: 10
+    max: 50
+
+  # Reporting
+  output:
+    - "./reports/artillery-auth-results.json"
+
+scenarios:
+  # Scenario 1: User Registration Load Test
+  - name: "Registration Load"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "{{ email }}"
+            password: "TestPassword123!"
+            full_name: "{{ full_name }}"
+            phone: "{{ phone }}"
+            role: "Patient"
+          expect:
+            - statusCode: [201, 400, 409]
+          capture:
+            json: "$.token"
+            as: "authToken"
+
+  # Scenario 2: User Login Load Test
+  - name: "Login Load"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "{{ email }}"
+            password: "TestPassword123!"
+            full_name: "{{ full_name }}"
+            phone: "{{ phone }}"
+            role: "Patient"
+          capture:
+            json: "$.user.email"
+            as: "loginEmail"
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ loginEmail }}"
+            password: "TestPassword123!"
+          expect:
+            - statusCode: [200, 401]
+          capture:
+            json: "$.token"
+            as: "authToken"
+
+  # Scenario 3: Token Verification Load Test
+  - name: "Token Verification Load"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "{{ email }}"
+            password: "TestPassword123!"
+            full_name: "{{ full_name }}"
+            phone: "{{ phone }}"
+            role: "Patient"
+          capture:
+            json: "$.token"
+            as: "authToken"
+      - get:
+          url: "/api/auth/me"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: [200, 401]
+
+  # Scenario 4: Password Change Load Test
+  - name: "Password Change Load"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "{{ email }}"
+            password: "TestPassword123!"
+            full_name: "{{ full_name }}"
+            phone: "{{ phone }}"
+            role: "Patient"
+          capture:
+            json: "$.token"
+            as: "authToken"
+      - post:
+          url: "/api/auth/change-password"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            currentPassword: "TestPassword123!"
+            newPassword: "NewPassword123!"
+          expect:
+            - statusCode: [200, 401, 400]

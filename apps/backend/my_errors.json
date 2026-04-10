@@ -1,0 +1,57 @@
+[
+  {
+    "title": "should pass valid emergency contact data",
+    "fullTitle": "Emergency Contact Validation Tests -> validateEmergencyContactCreate",
+    "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n    at Object.<anonymous> (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\__tests__\\unit\\validation\\validator.unit.test.js:341:30)"
+  },
+  {
+    "title": "should pass valid family member data",
+    "fullTitle": "Family Member Validation Tests -> validateFamilyMemberCreate",
+    "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n    at Object.<anonymous> (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\__tests__\\unit\\validation\\validator.unit.test.js:390:30)"
+  },
+  {
+    "title": "should validate gender values",
+    "fullTitle": "Family Member Validation Tests -> validateFamilyMemberCreate",
+    "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n    at Object.<anonymous> (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\__tests__\\unit\\validation\\validator.unit.test.js:408:32)"
+  },
+  {
+    "title": "should pass valid household data",
+    "fullTitle": "Household Validation Tests -> validateHouseholdCreate",
+    "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n    at Object.<anonymous> (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\__tests__\\unit\\validation\\validator.unit.test.js:428:30)"
+  },
+  {
+    "title": "should pass valid medication data",
+    "fullTitle": "Medication Validation Tests -> validateMedicationCreate",
+    "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n    at Object.<anonymous> (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\__tests__\\unit\\validation\\validator.unit.test.js:463:30)"
+  },
+  {
+    "title": "should pass valid visit data",
+    "fullTitle": "Visit Validation Tests -> validateVisitCreate",
+    "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n    at Object.<anonymous> (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\__tests__\\unit\\validation\\validator.unit.test.js:494:30)"
+  },
+  {
+    "title": "should validate visit_type values",
+    "fullTitle": "Visit Validation Tests -> validateVisitCreate",
+    "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n    at Object.<anonymous> (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\__tests__\\unit\\validation\\validator.unit.test.js:513:32)"
+  },
+  {
+    "title": "should pass valid member data",
+    "fullTitle": "Member Validation Tests -> validateMemberCreate",
+    "message": "TypeError: Cannot read properties of undefined (reading 'toLowerCase')\n    at Sanitization.sanitizer (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\validations\\memberValidation.js:116:37)\n    at runCustomSanitizer (D:\\SLIIT\\Year 03\\Semester 1"
+  },
+  {
+    "title": "should fail with invalid email format",
+    "fullTitle": "Member Validation Tests -> validateMemberCreate",
+    "message": "TypeError: Cannot read properties of undefined (reading 'toLowerCase')\n    at Sanitization.sanitizer (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\validations\\memberValidation.js:116:37)\n    at runCustomSanitizer (D:\\SLIIT\\Year 03\\Semester 1"
+  },
+  {
+    "title": "should fail with weak password",
+    "fullTitle": "Member Validation Tests -> validateMemberCreate",
+    "message": "TypeError: Cannot read properties of undefined (reading 'toLowerCase')\n    at Sanitization.sanitizer (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\validations\\memberValidation.js:116:37)\n    at runCustomSanitizer (D:\\SLIIT\\Year 03\\Semester 1"
+  },
+  {
+    "title": "should fail with invalid contact number",
+    "fullTitle": "Member Validation Tests -> validateMemberCreate",
+    "message": "TypeError: Cannot read properties of undefined (reading 'toLowerCase')\n    at Sanitization.sanitizer (D:\\SLIIT\\Year 03\\Semester 1\\AF\\Assignment\\Project\\MediLab-main\\MediLab\\apps\\backend\\src\\modules\\patient\\validations\\memberValidation.js:116:37)\n    at runCustomSanitizer (D:\\SLIIT\\Year 03\\Semester 1"
+  }
+]
