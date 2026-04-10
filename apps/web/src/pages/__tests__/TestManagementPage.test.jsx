@@ -76,11 +76,13 @@ describe("TestManagementPage", () => {
     const fullBloodAfter = await screen.findAllByText("Full Blood Count");
     expect(fullBloodAfter.length).toBeGreaterThan(0);
 
-    // And the number of "Chest X-Ray" rows should decrease
+    // And the number of "Chest X-Ray" rows should decrease (often to zero)
     await waitFor(() => {
-      expect(screen.getAllByText("Chest X-Ray").length).toBeLessThan(
+      expect(screen.queryAllByText("Chest X-Ray").length).toBeLessThan(
         chestXrayBefore.length,
       );
     });
+
+    expect(screen.queryAllByText("Chest X-Ray").length).toBe(0);
   });
 });

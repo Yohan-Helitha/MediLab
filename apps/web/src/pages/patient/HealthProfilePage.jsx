@@ -814,8 +814,11 @@ const HealthProfilePage = () => {
                 setMessage({ type: "error", text: errorMsg });
             }
         } catch (err) {
-            setMessage({ type: "error", text: err.message || t("healthProfile.alert.genericError") });
             console.error("Error updating profile:", err);
+            setMessage({
+                type: "error",
+                text: getSafeErrorMessage(err, "general") || t("healthProfile.alert.genericError"),
+            });
         } finally {
             setLoading(false);
         }
@@ -909,13 +912,10 @@ const HealthProfilePage = () => {
             <div className="max-w-4xl mx-auto py-8">
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     {/* Header */}
-                    <div className="bg-teal-700 px-8 py-6 text-white">
-                        <h1 className="text-2xl font-bold">{t("healthProfile.title")}</h1>
-                        <p className="text-teal-100 mt-1">{t("healthProfile.subtitle")}</p>
                     <div className="bg-teal-700 px-8 py-6 text-white flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold">Health Profile</h1>
-                            <p className="text-teal-100 mt-1">Manage your personal and medical information</p>
+                            <h1 className="text-2xl font-bold">{t("healthProfile.title")}</h1>
+                            <p className="text-teal-100 mt-1">{t("healthProfile.subtitle")}</p>
                         </div>
                         <button
                             onClick={downloadHealthProfilePDF}

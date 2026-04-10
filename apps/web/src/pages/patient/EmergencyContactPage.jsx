@@ -357,11 +357,11 @@ const EmergencyContactPage = () => {
         )}
 
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-teal-700 px-10 py-8 text-white">
+          <div className="bg-teal-700 px-10 py-8 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold">Emergency Contacts</h1>
-                <p className="text-teal-100 mt-1">Manage your trusted contacts for medical emergencies and authorization</p>
+                <h1 className="text-2xl font-bold">{t("navbar.familyCare.emergencyContact")}</h1>
+                <p className="text-teal-100 mt-1">{t("emergency.subtitle")}</p>
               </div>
               <button
                 onClick={downloadEmergencyContactPDF}
@@ -369,7 +369,7 @@ const EmergencyContactPage = () => {
                 className="flex items-center gap-2 px-6 py-3 bg-white text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
-                Download PDF
+                {t("emergency.downloadPdf")}
               </button>
             </div>
           </div>
