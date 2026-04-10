@@ -55,6 +55,12 @@ router.post(
 
 // Get notification logs (Patient can view own, Health Officer can view all)
 router.get(
+  "/",
+  authenticate,
+  isHealthOfficer,
+  notificationController.getAllNotifications,
+);
+router.get(
   "/patient/:patientId",
   authenticate,
   validation.patientIdParamValidation,

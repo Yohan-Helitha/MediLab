@@ -132,6 +132,29 @@ export const sendUnviewedResultReminder = async (req, res, next) => {
 };
 
 /**
+ * Get all notification logs (staff only)
+ * GET /api/notifications?limit=50&status=&type=&channel=
+ */
+export const getAllNotifications = async (req, res, next) => {
+  try {
+    const filters = {
+      status: req.query.status,
+      type: req.query.type,
+      channel: req.query.channel,
+    };
+    const limit = req.query.limit || 50;
+    const notifications = await notificationService.findAllNotifications(filters, limit);
+    res.status(200).json({
+      success: true,
+      count: notifications.length,
+      data: notifications,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get notification history for a patient
  * GET /api/notifications/patient/:patientId?type=&channel=&status=&startDate=&endDate=
  */

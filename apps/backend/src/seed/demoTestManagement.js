@@ -7,6 +7,30 @@ import Auth from "../modules/auth/auth.model.js";
 import Lab from "../modules/lab/lab.model.js";
 import TestType from "../modules/test/testType.model.js";
 import Booking from "../modules/booking/booking.model.js";
+// Import all remaining models so Mongoose registers them before we wipe
+import TestResult from "../modules/result/testResult.model.js";
+import "../modules/result/discriminators/xray.result.js";
+import NotificationLog from "../modules/notification/notificationLog.model.js";
+import ReminderSubscription from "../modules/notification/reminderSubscription.model.js";
+import InventoryStock from "../modules/inventory/inventoryStock.model.js";
+import StockTransaction from "../modules/inventory/stockTransaction.model.js";
+import Equipment from "../modules/inventory/equipment.model.js";
+import TestEquipmentRequirement from "../modules/inventory/testEquipmentRequirement.model.js";
+import FinanceTransaction from "../modules/finance/financeTransaction.model.js";
+import LabTest from "../modules/lab/labTest.model.js";
+import TestInstruction from "../modules/lab/testInstruction.model.js";
+import Translation from "../modules/translation/translation.model.js";
+import Household from "../modules/patient/models/Household.js";
+import FamilyMember from "../modules/patient/models/FamilyMember.js";
+import FamilyRelationship from "../modules/patient/models/FamilyRelationship.js";
+import HealthDetails from "../modules/patient/models/HealthDetails.js";
+import PastMedicalHistory from "../modules/patient/models/PastMedicalHistory.js";
+import ChronicDisease from "../modules/patient/models/ChronicDisease.js";
+import Medication from "../modules/patient/models/Medication.js";
+import Allergy from "../modules/patient/models/Allergy.js";
+import EmergencyContact from "../modules/patient/models/EmergencyContact.js";
+import Visit from "../modules/patient/models/Visit.js";
+import Referral from "../modules/patient/models/Referral.js";
 
 const seedDemoData = async () => {
   try {
@@ -15,18 +39,21 @@ const seedDemoData = async () => {
       "\n🌱 Starting demo data seeding for Test Management Evaluation...\n",
     );
 
-    // Clear existing demo data
-    console.log("[0/7] Clearing existing demo data...");
-    await Promise.all([
-      HealthOfficer.deleteMany({
-        employeeId: { $in: ["DEMO_TECH_001", "DEMO_ADMIN_001"] },
-      }),
-      Member.deleteMany({ member_id: "DEMO001" }),
-      Auth.deleteMany({ systemId: { $in: ["DEMO_TECH_001", "DEMO_ADMIN_001", "DEMO001"] } }),
-      Lab.deleteMany({ name: "Central Medical Laboratory" }),
-      TestType.deleteMany({ code: { $in: ["BGL001", "HGB001"] } }),
-      Booking.deleteMany({ patientNameSnapshot: "Demo Patient" }),
-    ]);
+    // Clear ALL collections
+    console.log("[0/7] Clearing all collections...");
+    const allModels = [
+      Auth, HealthOfficer,
+      Member, Household, FamilyMember, FamilyRelationship,
+      HealthDetails, PastMedicalHistory, ChronicDisease, Medication, Allergy,
+      EmergencyContact, Visit, Referral,
+      Lab, LabTest, TestInstruction, TestType, TestEquipmentRequirement,
+      Booking, TestResult,
+      NotificationLog, ReminderSubscription,
+      InventoryStock, StockTransaction, Equipment,
+      FinanceTransaction, Translation,
+    ];
+    await Promise.all(allModels.map((Model) => Model.deleteMany({})));
+    console.log(`   Cleared ${allModels.length} collections.\n`);
 
     // 1. Create Health Officer (Lab Technician) - Login: demo_officer / Demo@123
     console.log("[1/7] Creating health officer (Lab Technician)...");
@@ -126,8 +153,8 @@ const seedDemoData = async () => {
       onModel: "Member",
     });
 
-    // 5. Create Test Types (Blood Glucose + Hemoglobin)
-    console.log("[5/7] Creating test types...");
+    // 5. Create Test Types (Blood Glucose + Hemoglobin + X-Ray)
+    console.log("[5/8] Creating test types...");
     const bloodGlucoseType = await TestType.create({
       name: "Blood Glucose Test",
       code: "BGL001",
@@ -162,8 +189,22 @@ const seedDemoData = async () => {
       reportTemplate: "templates/hemoglobin-report",
     });
 
-    // 6. Create Confirmed Booking (ready for result submission)
-    console.log("[6/7] Creating booking...");
+    const xrayType = await TestType.create({
+      name: "Chest X-Ray",
+      code: "XRY001",
+      category: "Imaging",
+      description: "Chest radiograph for cardiopulmonary assessment",
+      entryMethod: "upload",
+      discriminatorType: "XRay",
+      isRoutineMonitoringRecommended: false,
+      specificParameters: {
+        bodyPart: "Chest",
+        defaultViews: ["PA", "Lateral"],
+      },
+    });
+
+    // 6. Create Confirmed Bookings (ready for result submission)
+    console.log("[6/8] Creating bookings...");
     const booking = await Booking.create({
       patientProfileId: patient._id,
       patientNameSnapshot: patient.full_name,
@@ -184,8 +225,28 @@ const seedDemoData = async () => {
       createdBy: healthOfficer._id,
     });
 
+    const xrayBooking = await Booking.create({
+      patientProfileId: patient._id,
+      patientNameSnapshot: patient.full_name,
+      patientPhoneSnapshot: patient.contact_number,
+      healthCenterId: healthCenter._id,
+      diagnosticTestId: xrayType._id,
+      testNameSnapshot: xrayType.name,
+      centerNameSnapshot: healthCenter.name,
+      bookingDate: new Date("2026-02-28T10:00:00.000Z"),
+      timeSlot: "10:00-10:30",
+      bookingType: "PRE_BOOKED",
+      priorityLevel: "NORMAL",
+      status: "PENDING",
+      paymentStatus: "PAID",
+      paymentMethod: "CASH",
+      allergyFlag: false,
+      chronicConditionFlag: false,
+      createdBy: healthOfficer._id,
+    });
+
     // 7. Display IDs for Postman Collection Variables
-    console.log("[7/7] Demo data seeded successfully!\n");
+    console.log("[8/8] Demo data seeded successfully!\n");
     console.log("═══════════════════════════════════════════════════════");
     console.log("📋 COPY THESE IDs TO POSTMAN COLLECTION VARIABLES");
     console.log("═══════════════════════════════════════════════════════\n");
@@ -208,7 +269,9 @@ const seedDemoData = async () => {
     console.log(`health_center_id=${healthCenter._id}`);
     console.log(`blood_glucose_type_id=${bloodGlucoseType._id}`);
     console.log(`hemoglobin_type_id=${hemoglobinType._id}`);
-    console.log(`booking_id=${booking._id}\n`);
+    console.log(`xray_type_id=${xrayType._id}`);
+    console.log(`booking_id=${booking._id}`);
+    console.log(`xray_booking_id=${xrayBooking._id}\n`);
 
     console.log("📱 Contact Info (for live notification testing):");
     console.log(`   Phone: ${patient.contact_number}`);
@@ -216,11 +279,13 @@ const seedDemoData = async () => {
 
     console.log("═══════════════════════════════════════════════════════\n");
     console.log("✅ Next Steps:");
-    console.log("   1. Copy all 7 ObjectIDs above");
+    console.log("   1. Copy all ObjectIDs above");
     console.log("   2. Postman → Collection → Variables tab → Paste ObjectIDs");
     console.log("   3. Start backend server: npm start (if not running)");
     console.log("   4. Test endpoints starting with Login requests\n");
     console.log("💡 Tips:");
+    console.log("   • booking_id         → Blood Glucose (form-based, submit numeric values)");
+    console.log("   • xray_booking_id    → Chest X-Ray  (upload-based, attach image files)");
     console.log("   • Login as admin_demo to test permanent deletion");
     console.log("   • Login as demo_officer for regular operations");
     console.log("   • Tokens captured automatically in Variables tab\n");

@@ -86,6 +86,13 @@ router.get(
   resultController.downloadTestResultPDF,
 );
 
+// Download individual uploaded file (Patient own released + Health Officer) — must come before /:id
+router.get(
+  "/:id/file/:fileIndex",
+  authenticate,
+  resultController.downloadUploadedFile,
+);
+
 // Status history route - must come before generic /:id (Patient own released + Health Officer)
 router.get(
   "/:id/status-history",

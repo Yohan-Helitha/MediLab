@@ -1,9 +1,10 @@
+import axios from "axios";
 import { validationResult } from "express-validator";
 import * as resultService from "./result.service.js";
 import TestType from "../test/testType.model.js";
-import { uploadToCloudinary } from "../../utils/cloudinaryUpload.js";
+import { uploadToCloudinary, getSignedDownloadUrl } from "../../utils/cloudinaryUpload.js";
 import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
-import { sendHardCopyReadyNotification } from "../notification/notification.service.js";
+import { sendHardCopyReadyNotification, sendResultReadyNotification } from "../notification/notification.service.js";
 import TestResult from "./testResult.model.js";
 
 // Test Result Controller
@@ -94,15 +95,10 @@ export const uploadResultFile = async (req, res, next) => {
       });
     }
 
-    const resourceType =
-      req.file.mimetype === "application/pdf" ? "raw" : "image";
-
-    // For PDFs, include .pdf in publicId so Cloudinary serves with Content-Type: application/pdf
-    const uploadOptions = { folder: "medilab/results", resourceType };
-    if (req.file.mimetype === "application/pdf") {
-      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      uploadOptions.publicId = `result-${uniqueSuffix}.pdf`;
-    }
+    // Always upload as resource_type "image" — Cloudinary supports PDFs natively
+    // under the image CDN and serves them without access restrictions.
+    // resource_type "raw" causes CDN-level 401s that cannot be bypassed.
+    const uploadOptions = { folder: "medilab/results", resourceType: "image" };
 
     const { url } = await uploadToCloudinary(req.file.buffer, uploadOptions);
 
@@ -209,7 +205,7 @@ export const getTestResultById = async (req, res, next) => {
 
     // AUTHORIZATION: Patients can only view their own released results
     if (req.user.userType === "patient") {
-      if (result.patientProfileId.toString() !== req.user.profileId) {
+      if (result.patientProfileId._id.toString() !== req.user.profileId) {
         return res.status(403).json({
           success: false,
           message: "Access denied. You can only view your own test results.",
@@ -354,6 +350,30 @@ export const updateTestResultStatus = async (req, res, next) => {
       status,
       changedBy,
     );
+
+    // Auto-fire result-ready notification when status changes to released
+    if (status === "released") {
+      const patient = result.patientProfileId;
+      const testType = result.testTypeId;
+      const healthCenter = result.healthCenterId;
+
+      if (patient && testType && healthCenter) {
+        // Fire-and-forget — do not block the response on notification failures
+        sendResultReadyNotification({
+          testResult: { _id: result._id, releasedAt: result.releasedAt },
+          patient: {
+            _id: patient._id,
+            fullName: patient.full_name || "Patient",
+            contactNumber: patient.contact_number,
+            email: patient.email,
+          },
+          testType: { name: testType.name },
+          healthCenter: { name: healthCenter.name },
+        }).catch((err) =>
+          console.error("[notification] result-ready send failed:", err.message),
+        );
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -529,7 +549,7 @@ export const markAsViewed = async (req, res, next) => {
     // Double-check ownership after fetching result
     if (
       req.user.userType === "patient" &&
-      result.patientProfileId.toString() !== req.user.profileId
+      result.patientProfileId._id?.toString() !== req.user.profileId
     ) {
       return res.status(403).json({
         success: false,
@@ -798,7 +818,7 @@ export const downloadTestResultPDF = async (req, res, next) => {
 
     // AUTHORIZATION: Patients can only download their own released results
     if (req.user.userType === "patient") {
-      if (result.patientProfileId.toString() !== req.user.id) {
+      if (result.patientProfileId._id.toString() !== req.user.profileId) {
         return res.status(403).json({
           success: false,
           message:
@@ -847,6 +867,76 @@ export const downloadTestResultPDF = async (req, res, next) => {
         message: error.message,
       });
     }
+    next(error);
+  }
+};
+
+/**
+ * Download a specific uploaded file from a test result (proxied through backend)
+ * GET /api/results/:id/file/:fileIndex
+ */
+export const downloadUploadedFile = async (req, res, next) => {
+  try {
+    const { id, fileIndex } = req.params;
+    const idx = parseInt(fileIndex, 10);
+    if (isNaN(idx) || idx < 0) {
+      return res.status(400).json({ success: false, message: "Invalid file index." });
+    }
+
+    const result = await resultService.findTestResultById(id);
+    if (!result) {
+      return res.status(404).json({ success: false, message: "Test result not found." });
+    }
+
+    // AUTHORIZATION: Patients can only access their own released results
+    if (req.user.userType === "patient") {
+      if (result.patientProfileId._id.toString() !== req.user.profileId) {
+        return res.status(403).json({ success: false, message: "Access denied." });
+      }
+      if (result.currentStatus !== "released") {
+        return res.status(403).json({ success: false, message: "This result has not been released yet." });
+      }
+    }
+
+    const files = result.uploadedFiles || [];
+    if (idx >= files.length) {
+      return res.status(404).json({ success: false, message: "File not found at this index." });
+    }
+
+    const file = files[idx];
+
+    // Cloudinary restricts PDF delivery even on the image CDN by default.
+    // Generating a signed URL embeds an HMAC signature that Cloudinary
+    // validates at the edge — this bypasses delivery restrictions for
+    // all file types including PDFs. Falls back to the raw URL for images
+    // that are served publicly without restrictions.
+    const fetchUrl = getSignedDownloadUrl(file.filePath) || file.filePath;
+    console.log(`[downloadUploadedFile] idx=${idx} mimeType=${file.mimeType} fetchUrl=${fetchUrl}`);
+
+    let cloudRes;
+    try {
+      cloudRes = await axios.get(fetchUrl, { responseType: "stream" });
+    } catch (fetchErr) {
+      const cloudStatus = fetchErr.response?.status ?? "no-response";
+      console.error(
+        `[downloadUploadedFile] Cloudinary fetch FAILED. HTTP=${cloudStatus} err="${fetchErr.message}" url="${fetchUrl}"`,
+      );
+      return res.status(502).json({
+        success: false,
+        message: "Unable to retrieve file from storage.",
+      });
+    }
+
+    res.setHeader("Content-Type", file.mimeType || "application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${file.fileName || `file-${idx}`}"`,
+    );
+    if (cloudRes.headers["content-length"]) {
+      res.setHeader("Content-Length", cloudRes.headers["content-length"]);
+    }
+    cloudRes.data.pipe(res);
+  } catch (error) {
     next(error);
   }
 };

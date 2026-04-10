@@ -34,6 +34,7 @@ import HealthReportsPage from "../pages/patient/HealthReportsPage";
 import HouseholdRegistrationPage from "../pages/patient/HouseholdRegistrationPage";
 import SymptomCheckerPage from "../pages/patient/SymptomCheckerPage";
 import VisitReferralPage from "../pages/patient/VisitReferralPage";
+import TestResultsPage from "../pages/staff/TestResultsPage";
 
 const POST_AUTH_REDIRECT_KEY = "medilab.postAuthRedirect";
 
@@ -162,6 +163,7 @@ const AppRoutes = () => {
 				<Route path="/staff/tests" element={<DashboardLayout activePage="tests"><TestManagementPage /></DashboardLayout>} />
 				<Route path="/staff/availability" element={<DashboardLayout activePage="availability"><TestAvailabilityPage /></DashboardLayout>} />
 				<Route path="/staff/instructions" element={<DashboardLayout activePage="instructions"><TestInstructionsPage /></DashboardLayout>} />
+				<Route path="/staff/results" element={<DashboardLayout activePage="results"><TestResultsPage /></DashboardLayout>} />
 			</Route>
 
 			{/* Protected Admin Routes */}

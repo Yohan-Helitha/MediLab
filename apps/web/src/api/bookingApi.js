@@ -43,3 +43,10 @@ export function softDeleteBooking(bookingId) {
 		}
 	);
 }
+
+export function getBookingById(bookingId) {
+	if (!bookingId) {
+		throw new Error("bookingId is required");
+	}
+	return apiRequest(`/api/bookings/${bookingId}`);
+}

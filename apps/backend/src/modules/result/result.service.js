@@ -61,7 +61,7 @@ export const createTestResult = async (discriminatorType, resultData) => {
 export const findTestResultById = async (id) => {
   const result = await TestResult.findOne({ _id: id, isDeleted: false })
     .populate("patientProfileId", "full_name contact_number")
-    .populate("testTypeId", "name code category discriminatorType")
+    .populate("testTypeId", "name code category discriminatorType isRoutineMonitoringRecommended recommendedFrequency")
     .populate("healthCenterId", "name location")
     .populate("bookingId")
     .populate("enteredBy", "fullName")
@@ -111,7 +111,7 @@ export const findResultsByPatient = async (patientProfileId, filters = {}) => {
   const skip = (page - 1) * limit;
 
   const results = await TestResult.find(query)
-    .populate("testTypeId", "name code category")
+    .populate("testTypeId", "name code category isRoutineMonitoringRecommended recommendedFrequency")
     .populate("healthCenterId", "name")
     .sort({ releasedAt: -1 })
     .limit(limit)
@@ -154,7 +154,7 @@ export const updateResultStatus = async (id, status, changedBy) => {
   const result = await TestResult.findOne({ _id: id, isDeleted: false })
     .populate(
       "patientProfileId",
-      "full_name date_of_birth gender contact_number",
+      "full_name date_of_birth gender contact_number email",
     )
     .populate("testTypeId", "name code")
     .populate(
@@ -338,7 +338,10 @@ export const findResultsByHealthCenter = async (
     query.testTypeId = filters.testTypeId;
   }
 
-  if (filters.startDate || filters.endDate) {
+  // For pending results releasedAt is null — applying date range against releasedAt
+  // would always exclude them, so date filters only apply to released results.
+  const isPendingFilter = filters.status === "pending";
+  if (!isPendingFilter && (filters.startDate || filters.endDate)) {
     query.releasedAt = {};
     if (filters.startDate) {
       query.releasedAt.$gte = new Date(filters.startDate);
@@ -353,11 +356,14 @@ export const findResultsByHealthCenter = async (
   const page = parseInt(filters.page) || 1;
   const skip = (page - 1) * limit;
 
+  // Pending results have no releasedAt — sort by createdAt so they appear first
+  const sortField = isPendingFilter ? { createdAt: -1 } : { releasedAt: -1 };
+
   const results = await TestResult.find(query)
     .populate("patientProfileId", "full_name")
     .populate("testTypeId", "name code category")
     .populate("enteredBy", "fullName")
-    .sort({ releasedAt: -1 })
+    .sort(sortField)
     .limit(limit)
     .skip(skip);
 

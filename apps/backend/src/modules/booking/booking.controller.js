@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import {
     createBooking,
     getBookings as getBookingsService,
+    getBookingById as getBookingByIdService,
     updateBooking,
     softDeleteBooking,
     hardDeleteBooking
@@ -142,6 +143,31 @@ export const getBookingByStatus = async (req, res) => {
 
     } catch (error) {
         console.error('Error fetching booking by status:', error);
+        return res.status(400).json({
+            message: error.message
+        });
+    }
+
+}
+
+export const getBookingById = async (req, res) => {
+
+    try {
+        const booking = await getBookingByIdService(req.params.id);
+
+        if (!booking) {
+            return res.status(404).json({
+                message: 'Booking not found'
+            });
+        }
+
+        res.json({
+            message: 'Booking fetched successfully',
+            booking
+        });
+
+    } catch (error) {
+        console.error('Error fetching booking by ID:', error);
         return res.status(400).json({
             message: error.message
         });

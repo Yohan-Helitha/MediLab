@@ -74,6 +74,20 @@ export const findNotificationById = async (id) => {
 };
 
 /**
+ * Find all notification logs across all patients (staff view)
+ * @param {Object} filters - Optional filters (status, type, channel)
+ * @param {number} limit - Maximum records to return
+ * @returns {Promise<Array>} Array of notification logs
+ */
+export const findAllNotifications = async (filters = {}, limit = 50) => {
+  const query = {};
+  if (filters.status) query.status = filters.status;
+  if (filters.type) query.type = filters.type;
+  if (filters.channel) query.channel = filters.channel;
+  return await NotificationLog.find(query).sort({ sentAt: -1 }).limit(parseInt(limit) || 50);
+};
+
+/**
  * Find all failed notifications for retry
  * @param {number} limit - Maximum number of failed notifications to return
  * @returns {Promise<Array>} Array of failed notification logs

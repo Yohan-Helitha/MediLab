@@ -38,11 +38,12 @@ export const uploadToCloudinary = (buffer, options = {}) => {
 };
 
 /**
- * Generate a time-limited signed download URL via Cloudinary's API endpoint.
- * Uses api.cloudinary.com (not res.cloudinary.com), so account-level delivery
- * restrictions do not apply — authentication is via HMAC signature.
+ * Generate a private API download URL for a stored Cloudinary file.
+ * Uses api.cloudinary.com (NOT res.cloudinary.com), authenticated via
+ * API key + HMAC signature, so CDN-level delivery restrictions on PDFs
+ * and other restricted types are completely bypassed.
  * @param {string} storedUrl - The secure_url stored in the database
- * @returns {string|null} Signed download URL valid for 1 hour
+ * @returns {string|null} Authenticated API download URL valid for 1 hour, or null
  */
 export const getSignedDownloadUrl = (storedUrl) => {
   if (!storedUrl || !storedUrl.includes("res.cloudinary.com")) return null;
@@ -59,18 +60,32 @@ export const getSignedDownloadUrl = (storedUrl) => {
 
   if (!resourceType || !afterUpload) return null;
 
-  // Remove version prefix (v1234567890/)
+  // Remove optional version prefix (v1234567890/)
   afterUpload = afterUpload.replace(/^v\d+\//, "");
 
-  // Split extension from publicId — private_download_url takes them separately
+  // For image/video: split extension so it can be passed as `format`
+  // For raw: publicId includes the extension
   const lastDot = afterUpload.lastIndexOf(".");
-  const format = lastDot !== -1 ? afterUpload.slice(lastDot + 1) : "";
-  const publicId = lastDot !== -1 ? afterUpload.slice(0, lastDot) : afterUpload;
+  const format = (resourceType !== "raw" && lastDot !== -1)
+    ? afterUpload.slice(lastDot + 1)
+    : "";
+  const publicId = (resourceType !== "raw" && lastDot !== -1)
+    ? afterUpload.slice(0, lastDot)
+    : afterUpload;
 
-  return cloudinary.utils.private_download_url(publicId, format, {
-    resource_type: resourceType,
-    expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour
-  });
+  try {
+    // private_download_url generates https://api.cloudinary.com/v1_1/.../download?...
+    // This uses API credentials, not CDN delivery, so all restrictions are bypassed.
+    const url = cloudinary.utils.private_download_url(publicId, format, {
+      resource_type: resourceType,
+      type: "upload",
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+    });
+    return url;
+  } catch (err) {
+    console.error("[cloudinary] private_download_url error:", err.message);
+    return null;
+  }
 };
 
 /**

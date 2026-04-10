@@ -7,7 +7,7 @@ const notificationLogSchema = new Schema(
     // Patient reference
     patientProfileId: {
       type: Schema.Types.ObjectId,
-      ref: "PatientProfile",
+      ref: "Member",
       required: true,
       index: true,
     },
