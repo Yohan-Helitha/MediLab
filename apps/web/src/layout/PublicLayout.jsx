@@ -57,7 +57,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const routerNavigate = useNavigate();
-  const [language, setLanguage] = useState(i18n.language || "en");
+  const currentLanguage = i18n.language || "en";
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isUserOpen, setIsUserOpen] = useState(false);
   const userMenuRef = React.useRef(null);
@@ -79,7 +79,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle auto-close user menu after 2 seconds
+  // Keep local language state in sync with i18next, even if changed elsewhere
   useEffect(() => {
     if (isUserOpen) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -158,7 +158,6 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
   };
 
   const handleSelectLanguage = (code) => {
-    setLanguage(code);
     i18n.changeLanguage(code);
     setIsLangOpen(false);
     if (onLanguageChange) onLanguageChange(code);
@@ -235,27 +234,27 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
           {user ? (
             <nav className="hidden lg:flex flex-1 justify-center gap-8 text-[13px] font-semibold text-slate-600">
               <NavDropdown
-                title="Health Profile"
+                title={t("navbar.healthProfile")}
                 items={[
-                  { label: "User Health Profile", to: "/health-profile" },
-                  { label: "User Health Reports", to: "/health-reports" },
+                  { label: t("navbar.healthProfile.userProfile"), to: "/health-profile" },
+                  { label: t("navbar.healthProfile.userReports"), to: "/health-reports" },
                 ]}
               />
 
               <NavDropdown
-                title="Appointments"
+                title={t("navbar.appointments")}
                 items={[
-                  { label: "Book an Appointment", to: "/booking" },
-                  { label: "Visits & Referrals", to: "/visits-referrals" },
+                  { label: t("navbar.appointments.book"), to: "/booking" },
+                  { label: t("navbar.appointments.visitsReferrals"), to: "/visits-referrals" },
                 ]}
               />
 
               <NavDropdown
-                title="Family & Care"
+                title={t("navbar.familyCare")}
                 items={[
-                  { label: "Household Management", to: "/household-registration" },
-                  { label: "Family Tree", to: "/family-tree" },
-                  { label: "Emergency Contact", to: "/emergency-contact" },
+                  { label: t("navbar.familyCare.household"), to: "/household-registration" },
+                  { label: t("navbar.familyCare.familyTree"), to: "/family-tree" },
+                  { label: t("navbar.familyCare.emergencyContact"), to: "/emergency-contact" },
                 ]}
               />
 
@@ -263,21 +262,21 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                 to="/health-centers"
                 className="hover:text-teal-700 transition-colors whitespace-nowrap py-2"
               >
-                Health Centers
+                {t("navbar.healthCenters")}
               </Link>
 
               <Link
                 to="/symptom-checker"
                 className="hover:text-teal-700 transition-colors whitespace-nowrap py-2"
               >
-                AI Health Check
+                {t("navbar.aiHealthCheck")}
               </Link>
 
               <Link
                 to="/ai-doctor"
                 className="hover:text-teal-700 transition-colors whitespace-nowrap py-2"
               >
-                AI Doctor Chat
+                {t("navbar.aiDoctorChat")}
               </Link>
             </nav>
           ) : (
@@ -293,7 +292,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                 to="/health-centers"
                 className="hidden md:block text-sm font-medium text-slate-600 hover:text-teal-600 transition-colors mr-1"
               >
-                Health Centers
+                {t("navbar.healthCenters")}
               </Link>
             )}
 
@@ -326,7 +325,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                 className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
               >
                 <HiGlobeAlt className="h-4 w-4 text-teal-600" />
-                <span>{languageLabels[language] || "English"}</span>
+                <span>{languageLabels[currentLanguage] || "English"}</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4 text-slate-500"

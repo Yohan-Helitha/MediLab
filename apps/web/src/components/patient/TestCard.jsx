@@ -1,5 +1,6 @@
 import React from "react";
 import { HiBeaker } from "react-icons/hi2";
+import { useTranslation } from "react-i18next";
 
 function TestCard({
   test,
@@ -8,16 +9,22 @@ function TestCard({
   postInstructions = [],
   onBookTest,
 }) {
+  const { t } = useTranslation();
+
   const price = test.price ? Number(test.price).toFixed(2) : "-";
-  const time = test.estimatedResultTimeHours
-    ? `${test.estimatedResultTimeHours} hours`
+  const hours = test.estimatedResultTimeHours;
+  const timeLabel = typeof hours === "number" && hours > 0
+    ? t("labs.test.estimatedTime", { hours })
     : "";
 
   const normalizedStatus = availabilityStatus || "";
   const isUnavailable =
     normalizedStatus && normalizedStatus !== "AVAILABLE";
-  const statusLabel =
-    normalizedStatus === "AVAILABLE" ? "Available" : normalizedStatus || "";
+  const statusLabel = normalizedStatus
+    ? normalizedStatus === "AVAILABLE"
+      ? t("labs.test.status.available")
+      : t("labs.test.status.unavailable")
+    : "";
   const statusClasses = isUnavailable
     ? "bg-red-50 text-red-600"
     : "bg-emerald-50 text-emerald-700";
@@ -63,9 +70,9 @@ function TestCard({
       )}
 
       {/* Footer: result time */}
-      {time && (
+      {timeLabel && (
         <div className="mt-3 text-xs text-slate-400">
-          Estimated result time: {time}
+          {timeLabel}
         </div>
       )}
 
@@ -75,7 +82,7 @@ function TestCard({
           {preInstructions.length > 0 && (
             <div>
               <div className="font-semibold text-slate-800 mb-1">
-                Before the test
+                {t("labs.test.instructions.before")}
               </div>
               <ul className="list-disc pl-5 space-y-0.5">
                 {preInstructions.map((item, idx) => (
@@ -87,7 +94,7 @@ function TestCard({
           {postInstructions.length > 0 && (
             <div>
               <div className="font-semibold text-slate-800 mb-1">
-                After the test
+                {t("labs.test.instructions.after")}
               </div>
               <ul className="list-disc pl-5 space-y-0.5">
                 {postInstructions.map((item, idx) => (
@@ -110,7 +117,7 @@ function TestCard({
                 : "bg-teal-600 text-white hover:bg-teal-700"
             }`}
           >
-            Book Test
+            {t("labs.actions.bookTest")}
           </button>
         </div>
       )}

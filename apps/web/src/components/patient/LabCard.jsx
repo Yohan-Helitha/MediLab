@@ -1,8 +1,19 @@
 import React from "react";
 import { HiBuildingOffice2 } from "react-icons/hi2";
 import { formatHours } from "../../utils/format";
+import { useTranslation } from "react-i18next";
 
 function LabCard({ lab, onView }) {
+  const { t } = useTranslation();
+
+  const rawStatus = (lab.operationalStatus || "").toUpperCase();
+  let statusLabel = rawStatus;
+  if (rawStatus === "OPEN") {
+    statusLabel = t("labs.status.open");
+  } else if (rawStatus === "CLOSED") {
+    statusLabel = t("labs.status.closed");
+  }
+
   return (
     <div className="rounded-2xl bg-white p-3 shadow-md border border-slate-200 hover:scale-[1.02] hover:shadow-lg hover:border-teal-500/50 hover:bg-slate-50/50 transition-all duration-300">
       {/* Top: icon + name + location */}
@@ -17,64 +28,66 @@ function LabCard({ lab, onView }) {
         </div>
       </div>
 
-      {/* Middle: contact + status + hours */}
-      <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-slate-500">
-        <div className="flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 text-slate-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0121 19.72V23a2 2 0 01-2 2h-1C9.82 25 3 18.18 3 10V5z"
-            />
-          </svg>
-          <span>{lab.phoneNumber || "-"}</span>
+      {/* Middle: contact + hours stacked, status on right */}
+      <div className="mt-4 flex items-start justify-between text-sm text-slate-500">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498A1 1 0 0121 19.72V23a2 2 0 01-2 2h-1C9.82 25 3 18.18 3 10V5z"
+              />
+            </svg>
+            <span className="whitespace-nowrap">{lab.phoneNumber || "-"}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="whitespace-nowrap">
+              {lab.operatingHours && lab.operatingHours.length
+                ? formatHours(lab.operatingHours)
+                : t("labs.card.label.hoursNotSet")}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 text-slate-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>
-            {lab.operatingHours && lab.operatingHours.length
-              ? formatHours(lab.operatingHours)
-              : "Hours not set"}
-          </span>
-        </div>
-
-        <div className="ml-auto text-xs font-semibold text-emerald-600">
-          {lab.operationalStatus || ""}
+        <div className="text-xs font-semibold text-emerald-600 mt-1">
+          {statusLabel}
         </div>
       </div>
 
       {/* Bottom: status + action */}
       <div className="mt-4 flex items-center justify-between">
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 text-xs">
-          {lab.isActive ? "Active" : "Inactive"}
+          {lab.isActive ? t("labs.status.active") : t("labs.status.inactive")}
         </span>
         <button
           type="button"
           onClick={() => onView(lab)}
           className="text-sm font-medium text-teal-600 hover:text-teal-700"
         >
-          View Details 
+          {t("labs.actions.viewDetails")} 
           <span aria-hidden="true">→</span>
         </button>
       </div>

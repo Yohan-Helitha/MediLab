@@ -2,7 +2,18 @@ import React, { useEffect, useState } from "react";
 import { HiBeaker, HiPencilSquare, HiTrash } from "react-icons/hi2";
 import Modal from "../components/Modal";
 import TestForm from "../components/TestForm";
+import ToastMessage from "../components/ToastMessage";
 import { fetchTests, createTest, updateTest, deleteTest } from "../api/testApi";
+
+function getTestFormErrorMessage(error) {
+	if (error && Array.isArray(error.errors) && error.errors.length > 0) {
+		return error.errors.map((e) => e.msg).join("; ");
+	}
+	return (
+		(error && error.message) ||
+		"Failed to save test. Please check the form and try again."
+	);
+}
 
 function TestManagementPage() {
 	const [tests, setTests] = useState([]);
@@ -10,6 +21,8 @@ function TestManagementPage() {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [editingTest, setEditingTest] = useState(null);
 	const [search, setSearch] = useState("");
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
+	const [formError, setFormError] = useState(null);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -59,26 +72,29 @@ function TestManagementPage() {
 
 	const handleCreateTest = async (formData) => {
 		try {
+			setFormError(null);
 			const payload = buildPayloadFromForm(formData);
 			const created = await createTest(payload);
 			setTests((prev) => [...prev, created]);
 			setIsModalOpen(false);
 		} catch (err) {
 			console.error("Failed to create test", err);
-			alert(err.message || "Failed to create test. Check console for details.");
+			setFormError(getTestFormErrorMessage(err));
 		}
 	};
 
 	const handleUpdateTest = async (id, formData) => {
 		try {
+			setFormError(null);
 			const payload = buildPayloadFromForm(formData);
 			const updated = await updateTest(id, payload);
 			setTests((prev) => prev.map((t) => (t._id === updated._id ? updated : t)));
 			setIsModalOpen(false);
 			setEditingTest(null);
+			setToastMessage({ type: "success", text: "Test updated successfully." });
 		} catch (err) {
 			console.error("Failed to update test", err);
-			alert(err.message || "Failed to update test. Check console for details.");
+			setFormError(getTestFormErrorMessage(err));
 		}
 	};
 
@@ -89,6 +105,7 @@ function TestManagementPage() {
 		try {
 			await deleteTest(id);
 			setTests((prev) => prev.filter((t) => t._id !== id));
+			setToastMessage({ type: "success", text: "Test deleted successfully." });
 		} catch (err) {
 			console.error("Failed to delete test", err);
 			alert(err.message || "Failed to delete test. Check console for details.");
@@ -107,6 +124,11 @@ function TestManagementPage() {
 
 	return (
 		<div className="space-y-6">
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<header className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-slate-900">
@@ -181,6 +203,7 @@ function TestManagementPage() {
 				<TestForm
 					initialValues={buildInitialFormValues(editingTest)}
 					submitLabel={editingTest ? "Save Changes" : "Create Test"}
+					errorMessage={formError}
 					onCancel={() => {
 						setIsModalOpen(false);
 						setEditingTest(null);

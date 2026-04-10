@@ -44,8 +44,8 @@ export const validateLab = [
     .optional()
     .isString()
     .withMessage('phoneNumber must be a string')
-    .isLength({ max: 40 })
-    .withMessage('phoneNumber must be at most 40 characters'),
+    .matches(/^\d{10}$/)
+    .withMessage('phoneNumber must be exactly 10 digits'),
   body('email')
     .optional()
     .isEmail()

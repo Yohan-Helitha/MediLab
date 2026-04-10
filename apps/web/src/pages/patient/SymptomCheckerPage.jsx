@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from "react";
 import PublicLayout from "../../layout/PublicLayout";
 import { consultationApi } from "../../api/consultationApi";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from 'react-markdown';
 import { toast } from "react-hot-toast";
 import { getSafeErrorMessage } from "../../utils/errorHandler";
 
 function SymptomCheckerPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Symptom Checker State
   const [symptoms, setSymptoms] = useState("");
@@ -28,13 +30,17 @@ function SymptomCheckerPage() {
       const response = await consultationApi.analyzeSymptoms(symptoms);
       const data = response.data || response;
       setResult({
-        diagnosis: data.diagnosis || "Preliminary Analysis Complete",
-        recommendations: data.recommendation || data.message || "Please consult a doctor for a formal diagnosis.",
-        disclaimer: "This AI-generated analysis is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment."
+        diagnosis: data.diagnosis || t("aiHealth.result.defaultTitle"),
+        recommendations: data.recommendation || data.message || t("aiHealth.result.defaultRecommendation"),
+        disclaimer: t("aiHealth.result.disclaimerText"),
       });
     } catch (error) {
       console.error("AI Analysis Error:", error);
-      toast.error(getSafeErrorMessage(error, "symptom-analysis"));
+      const message =
+        getSafeErrorMessage(error, "symptom-analysis") ||
+        t("aiHealth.error.generic");
+      alert(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -63,15 +69,15 @@ function SymptomCheckerPage() {
                     </svg>
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-teal-100 italic">
-                    AI CLINICAL DIAGNOSTICS
+                    {t("aiHealth.badge")}
                   </span>
                 </div>
                 
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                  AI Health Check
+                  {t("navbar.aiHealthCheck")}
                 </h1>
                 <p className="text-teal-50/70 text-xs font-medium max-w-xl leading-relaxed mt-1 italic">
-                  Analyze clinical patterns to provide preliminary insights and health recommendations.
+                  {t("aiHealth.subtitle")}
                 </p>
               </div>
             </div>
@@ -83,14 +89,14 @@ function SymptomCheckerPage() {
                       <form onSubmit={handleSymptomCheck} className="space-y-8">
                           <div className="space-y-4">
                             <div className="flex items-center justify-between ml-1">
-                                <label className="text-[13px] font-bold text-slate-400 uppercase">Symptom Description</label>
-                                <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md">AI POWERED INTAKE</span>
+                                <label className="text-[13px] font-bold text-slate-400 uppercase">{t("aiHealth.symptomLabel")}</label>
+                                <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md">{t("aiHealth.intakeBadge")}</span>
                             </div>
                             <textarea
                               value={symptoms}
                               onChange={(e) => setSymptoms(e.target.value)}
                               className="w-full h-56 rounded-2xl border-2 border-slate-100 bg-slate-50/50 p-6 text-slate-700 text-sm font-medium focus:border-teal-500/30 focus:bg-white focus:ring-4 focus:ring-teal-500/5 outline-none transition-all duration-300 resize-none placeholder:text-slate-300"
-                              placeholder="Describe how you are feeling in detail..."
+                              placeholder={t("aiHealth.symptomPlaceholder")}
                               required
                             />
                           </div>
@@ -100,7 +106,7 @@ function SymptomCheckerPage() {
                               disabled={loading}
                               className="flex-1 bg-teal-700 text-white font-bold py-4 rounded-2xl hover:bg-teal-800 transition-all shadow-xl shadow-teal-900/10 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 text-sm uppercase tracking-[0.09em]"
                             >
-                                {loading ? "Analyzing Data..." : "Run Analysis"}
+                                {loading ? t("aiHealth.button.analyzing") : t("aiHealth.button.run")}
                             </button>
                             {(symptoms || result) && (
                                 <button
@@ -114,7 +120,7 @@ function SymptomCheckerPage() {
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                   </svg>
-                                  Reset
+                                  {t("aiHealth.button.reset")}
                                 </button>
                             )}
                           </div>
@@ -123,17 +129,17 @@ function SymptomCheckerPage() {
                 </div>
                 {result && (
                   <div className="mt-10 p-8 rounded-3xl bg-slate-50 border border-slate-100 animate-in slide-in-from-bottom-2 duration-500">
-                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center gap-2 mb-4">
                           <div className="w-2 h-2 rounded-full bg-teal-600" />
-                          <span className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">PROBABLE DIAGNOSIS PATHWAY</span>
+                          <span className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">{t("aiHealth.result.heading")}</span>
                       </div>
                       <h2 className="text-3xl font-bold text-slate-900 mb-6 uppercase">{result.diagnosis}</h2>
                       <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm italic text-slate-600 font-bold mb-6">
                           "{result.recommendations}"
                       </div>
-                      <div className="text-[10px] text-rose-500 font-bold italic uppercase flex items-center gap-2">
+                        <div className="text-[10px] text-rose-500 font-bold italic uppercase flex items-center gap-2">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" strokeWidth="2.5" /></svg>
-                          Medical Disclaimer: {result.disclaimer}
+                          {t("aiHealth.result.disclaimerLabel")} {result.disclaimer}
                       </div>
                   </div>
                 )}
@@ -144,15 +150,15 @@ function SymptomCheckerPage() {
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[14px] font-bold text-slate-400 uppercase">AES-256 Encrypted</span>
+                  <span className="text-[14px] font-bold text-slate-400 uppercase">{t("ai.common.security.aes")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[14px] font-bold text-slate-400 uppercase">HIPAA Compliant</span>
+                  <span className="text-[14px] font-bold text-slate-400 uppercase">{t("ai.common.security.hipaa")}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[14px] font-bold text-slate-300 uppercase ">MediLab Intelligence Engine v4.2.0</span>
+                <span className="text-[14px] font-bold text-slate-300 uppercase ">{t("ai.common.security.engineLabel")}</span>
               </div>
             </div>
 

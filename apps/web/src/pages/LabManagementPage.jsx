@@ -2,7 +2,25 @@ import React, { useEffect, useState } from "react";
 import { HiPencilSquare, HiTrash } from "react-icons/hi2";
 import Modal from "../components/Modal";
 import LabForm from "../components/LabForm";
+import ToastMessage from "../components/ToastMessage";
 import { fetchLabs, createLab, updateLab, deleteLab } from "../api/labApi";
+
+function getLabFormErrorMessage(error) {
+	// Prefer specific validation messages from the backend when available
+	if (error && Array.isArray(error.errors) && error.errors.length > 0) {
+		const phoneError = error.errors.find((e) => e.param === "phoneNumber");
+		if (phoneError) {
+			// Use a user-friendly message for contact number validation
+			return "Contact number must have exactly 10 digits.";
+		}
+		// Fallback: join all validation messages
+		return error.errors.map((e) => e.msg).join("; ");
+	}
+	return (
+		(error && error.message) ||
+		"Failed to save lab. Please check the form and try again."
+	);
+}
 
 function LabManagementPage() {
 	const [isLabModalOpen, setIsLabModalOpen] = useState(false);
@@ -10,6 +28,8 @@ function LabManagementPage() {
 	const [labs, setLabs] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
+	const [formError, setFormError] = useState(null);
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	useEffect(() => {
 		let isMounted = true;
@@ -88,26 +108,30 @@ function LabManagementPage() {
 
 	const handleCreateLab = async (formData) => {
 		try {
+			setFormError(null);
 			const payload = buildPayloadFromForm(formData);
 			const created = await createLab(payload);
 			setLabs((prev) => [...prev, created]);
 			setIsLabModalOpen(false);
+			setToastMessage({ type: "success", text: "Lab created successfully." });
 		} catch (err) {
 			console.error("Failed to create lab", err);
-			alert(err.message || "Failed to create lab. Check console for details.");
+			setFormError(getLabFormErrorMessage(err));
 		}
 	};
 
 	const handleUpdateLab = async (labId, formData) => {
 		try {
+			setFormError(null);
 			const payload = buildPayloadFromForm(formData);
 			const updated = await updateLab(labId, payload);
 			setLabs((prev) => prev.map((lab) => (lab._id === updated._id ? updated : lab)));
 			setIsLabModalOpen(false);
 			setEditingLab(null);
+			setToastMessage({ type: "success", text: "Lab updated successfully." });
 		} catch (err) {
 			console.error("Failed to update lab", err);
-			alert(err.message || "Failed to update lab. Check console for details.");
+			setFormError(getLabFormErrorMessage(err));
 		}
 	};
 
@@ -118,6 +142,7 @@ function LabManagementPage() {
 		try {
 			await deleteLab(labId);
 			setLabs((prev) => prev.filter((lab) => lab._id !== labId));
+			setToastMessage({ type: "success", text: "Lab deleted successfully." });
 		} catch (err) {
 			console.error("Failed to delete lab", err);
 			alert(err.message || "Failed to delete lab. Check console for details.");
@@ -135,6 +160,11 @@ function LabManagementPage() {
 	// Simple static layout matching the Lab Management screenshot
 	return (
 		<div className="space-y-6">
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<header className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-slate-900">
@@ -227,9 +257,12 @@ function LabManagementPage() {
 				<LabForm
 					initialValues={buildInitialFormValues(editingLab)}
 					submitLabel={editingLab ? "Save Changes" : "Create Lab"}
+						// Inline error message shown above the form fields
+						errorMessage={formError}
 					onCancel={() => {
 						setIsLabModalOpen(false);
 						setEditingLab(null);
+							setFormError(null);
 					}}
 					onSubmit={(data) => {
 						if (editingLab) {

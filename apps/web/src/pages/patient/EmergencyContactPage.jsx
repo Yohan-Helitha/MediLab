@@ -25,6 +25,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
 import { toast } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { getSafeErrorMessage } from "../../utils/errorHandler";
 import { generateEmergencyContactPDF } from "../../utils/pdfGenerator";
 
@@ -32,6 +33,7 @@ const FORM_SECTIONS = ["basic", "location", "availability", "permissions"];
 
 const EmergencyContactPage = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("list");
   const [formSection, setFormSection] = useState("basic");
   const [contacts, setContacts] = useState([]);
@@ -355,11 +357,11 @@ const EmergencyContactPage = () => {
         )}
 
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-teal-700 px-10 py-8 text-white">
+          <div className="bg-teal-700 px-10 py-8 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold">Emergency Contacts</h1>
-                <p className="text-teal-100 mt-1">Manage your trusted contacts for medical emergencies and authorization</p>
+                <h1 className="text-2xl font-bold">{t("navbar.familyCare.emergencyContact")}</h1>
+                <p className="text-teal-100 mt-1">{t("emergency.subtitle")}</p>
               </div>
               <button
                 onClick={downloadEmergencyContactPDF}
@@ -367,7 +369,7 @@ const EmergencyContactPage = () => {
                 className="flex items-center gap-2 px-6 py-3 bg-white text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
-                Download PDF
+                {t("emergency.downloadPdf")}
               </button>
             </div>
           </div>
@@ -382,7 +384,7 @@ const EmergencyContactPage = () => {
                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
               }`}
             >
-              Existing Contacts
+              {t("emergency.tab.list")}
             </button>
             <button
               type="button"
@@ -393,7 +395,7 @@ const EmergencyContactPage = () => {
                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
               }`}
             >
-              {isEditing ? "Edit Contact" : "Add New Contact"}
+              {isEditing ? t("emergency.tab.edit") : t("emergency.tab.add")}
             </button>
           </div>
 
@@ -403,10 +405,10 @@ const EmergencyContactPage = () => {
                 {/* Vertical Sub-Tabs */}
                 <div className="w-full md:w-64 flex flex-col gap-1">
                   {[
-                    { id: "basic", label: "Basic Contact Information" },
-                    { id: "location", label: "Contact Location" },
-                    { id: "availability", label: "Availability Details" },
-                    { id: "permissions", label: "Permission & Authorization" }
+                    { id: "basic", label: t("emergency.form.step.basic") },
+                    { id: "location", label: t("emergency.form.step.location") },
+                    { id: "availability", label: t("emergency.form.step.availability") },
+                    { id: "permissions", label: t("emergency.form.step.permissions") }
                   ].map((tab, index) => {
                     const currentIndex = FORM_SECTIONS.indexOf(formSection);
                     const tabIndex = FORM_SECTIONS.indexOf(tab.id);
@@ -444,9 +446,9 @@ const EmergencyContactPage = () => {
                   <div className="mt-8 p-5 bg-teal-50 rounded-xl border border-teal-100">
                     <div className="flex items-center gap-2 text-teal-700 mb-2 font-bold text-xs uppercase tracking-wider">
                       <Info className="w-3.5 h-3.5" />
-                      Quick Tip
+                      {t("emergency.quickTip.title")}
                     </div>
-                    <p className="text-[11px] text-teal-600/80 leading-relaxed font-medium">Please ensure the primary contact is available 24/7 for urgent medical updates.</p>
+                    <p className="text-[11px] text-teal-600/80 leading-relaxed font-medium">{t("emergency.quickTip.body")}</p>
                   </div>
                 </div>
 
@@ -456,43 +458,43 @@ const EmergencyContactPage = () => {
                     <div className="flex-1">
                       {formSection === "basic" && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                          <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">Basic Contact Information</h3>
+                          <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">{t("emergency.form.step.basic")}</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="md:col-span-2">
-                              <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name</label>
-                              <input type="text" name="full_name" value={formData.full_name} onChange={handleInputChange} onKeyDown={handleKeyDown} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all" placeholder="Enter contact full name" />
+                              <label className="block text-sm font-semibold text-slate-700 mb-2">{t("healthProfile.form.fullName")}</label>
+                              <input type="text" name="full_name" value={formData.full_name} onChange={handleInputChange} onKeyDown={handleKeyDown} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all" placeholder={t("emergency.form.fullNamePlaceholder")} />
                             </div>
                             <div>
-                              <label className="block text-sm font-semibold text-slate-700 mb-2">Relationship to Patient</label>
+                              <label className="block text-sm font-semibold text-slate-700 mb-2">{t("emergency.form.relationshipLabel")}</label>
                               <select name="relationship" value={formData.relationship} onChange={handleInputChange} onKeyDown={handleKeyDown} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all">
-                                <option value="">Select Relationship</option>
-                                <option value="MOTHER">Mother</option>
-                                <option value="FATHER">Father</option>
-                                <option value="SPOUSE">Spouse</option>
-                                <option value="SON">Son</option>
-                                <option value="DAUGHTER">Daughter</option>
-                                <option value="GUARDIAN">Guardian</option>
-                                <option value="NEIGHBOR">Neighbor</option>
-                                <option value="OTHER">Other</option>
+                                <option value="">{t("emergency.form.relationship.select")}</option>
+                                <option value="MOTHER">{t("emergency.form.relationship.mother")}</option>
+                                <option value="FATHER">{t("emergency.form.relationship.father")}</option>
+                                <option value="SPOUSE">{t("emergency.form.relationship.spouse")}</option>
+                                <option value="SON">{t("emergency.form.relationship.son")}</option>
+                                <option value="DAUGHTER">{t("emergency.form.relationship.daughter")}</option>
+                                <option value="GUARDIAN">{t("emergency.form.relationship.guardian")}</option>
+                                <option value="NEIGHBOR">{t("emergency.form.relationship.neighbor")}</option>
+                                <option value="OTHER">{t("emergency.form.relationship.other")}</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-semibold text-slate-700 mb-2">Priority Level</label>
+                              <label className="block text-sm font-semibold text-slate-700 mb-2">{t("emergency.form.priorityLabel")}</label>
                               <div className="flex gap-3">
                                 {["PRIMARY", "SECONDARY"].map((p) => (
                                   <label key={p} className="flex-1 cursor-pointer">
                                     <input type="radio" name="contact_priority" value={p} checked={formData.contact_priority === p} onChange={handleInputChange} className="sr-only peer" />
-                                    <div className="text-center py-2.5 rounded-lg border border-slate-200 peer-checked:bg-teal-50 peer-checked:border-teal-500 peer-checked:text-teal-700 font-bold text-xs transition-all">{p}</div>
+                                    <div className="text-center py-2.5 rounded-lg border border-slate-200 peer-checked:bg-teal-50 peer-checked:border-teal-500 peer-checked:text-teal-700 font-bold text-xs transition-all">{t(`emergency.form.priority.${p.toLowerCase()}`)}</div>
                                   </label>
                                 ))}
                               </div>
                             </div>
                             <div>
-                              <label className="block text-sm font-semibold text-slate-700 mb-2">Primary Phone</label>
+                              <label className="block text-sm font-semibold text-slate-700 mb-2">{t("emergency.form.primaryPhoneLabel")}</label>
                               <input type="tel" name="primary_phone" value={formData.primary_phone} onChange={handleInputChange} onKeyDown={handleKeyDown} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all" placeholder="07XXXXXXXX" />
                             </div>
                             <div>
-                              <label className="block text-sm font-semibold text-slate-700 mb-2">Secondary Phone</label>
+                              <label className="block text-sm font-semibold text-slate-700 mb-2">{t("emergency.form.secondaryPhoneLabel")}</label>
                               <input type="tel" name="secondary_phone" value={formData.secondary_phone} onChange={handleInputChange} onKeyDown={handleKeyDown} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all" placeholder="01XXXXXXXX" />
                             </div>
                           </div>
@@ -501,15 +503,15 @@ const EmergencyContactPage = () => {
 
                       {formSection === "location" && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                          <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">Contact Location</h3>
+                          <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">{t("emergency.form.step.location")}</h3>
                           <div className="space-y-6">
                              <div>
-                              <label className="block text-sm font-semibold text-slate-700 mb-2">Detailed Address</label>
-                              <textarea name="address" value={formData.address} onChange={handleInputChange} onKeyDown={handleKeyDown} rows="3" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all resize-none" placeholder="Enter residential address"></textarea>
+                              <label className="block text-sm font-semibold text-slate-700 mb-2">{t("emergency.form.addressLabel")}</label>
+                              <textarea name="address" value={formData.address} onChange={handleInputChange} onKeyDown={handleKeyDown} rows="3" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all resize-none" placeholder={t("emergency.form.addressPlaceholder")}></textarea>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">GN Division</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t("healthProfile.form.gnDivision")}</label>
                                 <input 
                                   type="text"
                                   name="gn_division" 
@@ -517,12 +519,12 @@ const EmergencyContactPage = () => {
                                   onChange={handleInputChange} 
                                   onKeyDown={handleKeyDown}
                                   className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all"
-                                  placeholder="Enter GN Division"
+                                  placeholder={t("emergency.form.gnDivisionPlaceholder")}
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Landmarks</label>
-                                <input type="text" name="landmarks" value={formData.landmarks} onChange={handleInputChange} onKeyDown={handleKeyDown} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all" placeholder="e.g. Near Kalutara Temple" />
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t("emergency.form.landmarksLabel")}</label>
+                                <input type="text" name="landmarks" value={formData.landmarks} onChange={handleInputChange} onKeyDown={handleKeyDown} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-1 focus:ring-teal-500 outline-none transition-all" placeholder={t("emergency.form.landmarksPlaceholder")} />
                               </div>
                             </div>
                           </div>
@@ -531,13 +533,13 @@ const EmergencyContactPage = () => {
 
                       {formSection === "availability" && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                          <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">Availability Details</h3>
+                          <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">{t("emergency.form.step.availability")}</h3>
                           <div className="space-y-8">
                             <div className="p-5 bg-slate-50 rounded-xl border border-slate-200">
                               <label className="flex items-center justify-between cursor-pointer">
                                 <div>
-                                  <span className="block font-bold text-slate-800 text-sm">Available 24/7</span>
-                                  <span className="text-[11px] text-slate-500">Authorized contact can be reached at any hour</span>
+                                  <span className="block font-bold text-slate-800 text-sm">{t("emergency.form.available24Title")}</span>
+                                  <span className="text-[11px] text-slate-500">{t("emergency.form.available24Desc")}</span>
                                 </div>
                                 <div className="relative inline-flex items-center cursor-pointer">
                                   <input type="checkbox" name="available_24_7" checked={formData.available_24_7} onChange={handleInputChange} className="sr-only peer" />
@@ -546,12 +548,12 @@ const EmergencyContactPage = () => {
                               </label>
                             </div>
                             <div>
-                              <label className="block text-sm font-semibold text-slate-700 mb-4 uppercase tracking-wider text-[11px]">Best time to contact</label>
+                              <label className="block text-sm font-semibold text-slate-700 mb-4 uppercase tracking-wider text-[11px]">{t("emergency.form.bestTimeLabel")}</label>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 {["MORNING", "AFTERNOON", "NIGHT"].map((time) => (
                                   <label key={time} className="cursor-pointer">
                                     <input type="radio" name="best_time_to_contact" value={time} checked={formData.best_time_to_contact === time} onChange={handleInputChange} className="sr-only peer" />
-                                    <div className="text-center py-3.5 rounded-xl border border-slate-200 peer-checked:bg-teal-50 peer-checked:border-teal-500 peer-checked:text-teal-700 text-xs font-bold transition-all uppercase tracking-widest">{time}</div>
+                                    <div className="text-center py-3.5 rounded-xl border border-slate-200 peer-checked:bg-teal-50 peer-checked:border-teal-500 peer-checked:text-teal-700 text-xs font-bold transition-all uppercase tracking-widest">{t(`emergency.form.bestTime.${time.toLowerCase()}`)}</div>
                                   </label>
                                 ))}
                               </div>
@@ -562,12 +564,12 @@ const EmergencyContactPage = () => {
 
                       {formSection === "permissions" && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                          <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">Permission & Authorization</h3>
+                          <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">{t("emergency.form.step.permissions")}</h3>
                           <div className="space-y-4">
                             {[
-                              { name: "receive_medical_results", label: "Receive medical results?", desc: "Authorized to see lab results and clinical history" },
-                              { name: "decision_permission", label: "Make decisions if patient unconscious?", desc: "Legal authority to make medical choices" },
-                              { name: "collect_reports_permission", label: "Collect reports/medicines?", desc: "Authorized to pick up physical logs and medicine" }
+                              { name: "receive_medical_results", label: t("emergency.form.permissions.receiveResults.label"), desc: t("emergency.form.permissions.receiveResults.desc") },
+                              { name: "decision_permission", label: t("emergency.form.permissions.decision.label"), desc: t("emergency.form.permissions.decision.desc") },
+                              { name: "collect_reports_permission", label: t("emergency.form.permissions.collect.label"), desc: t("emergency.form.permissions.collect.desc") }
                             ].map((perm) => (
                               <label key={perm.name} className="flex items-center p-4 bg-white rounded-xl border border-slate-200 hover:border-teal-500/30 transition-all cursor-pointer group">
                                 <div className="relative inline-flex items-center cursor-pointer">
@@ -586,7 +588,7 @@ const EmergencyContactPage = () => {
                     </div>
 
                     <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center">
-                       <button type="button" onClick={() => { resetForm(); setActiveTab("list"); }} className="px-6 py-2 rounded-lg border border-slate-300 text-slate-600 font-semibold hover:bg-slate-50 transition-all text-sm">Cancel</button>
+                        <button type="button" onClick={() => { resetForm(); setActiveTab("list"); }} className="px-6 py-2 rounded-lg border border-slate-300 text-slate-600 font-semibold hover:bg-slate-50 transition-all text-sm">{t("emergency.button.cancel")}</button>
                        <div className="flex gap-3">
                          {!isLastSection ? (
                            <button
@@ -594,7 +596,7 @@ const EmergencyContactPage = () => {
                              onClick={handleNext}
                              className="flex items-center gap-2 px-8 py-2 rounded-lg bg-teal-600 text-white font-bold hover:bg-teal-700 shadow-lg shadow-teal-600/20 active:scale-95 transition-all outline-none text-sm"
                            >
-                             Next <ChevronRight className="w-4 h-4" />
+                             {t("register.nextButton")} <ChevronRight className="w-4 h-4" />
                            </button>
                          ) : (
                            <button 
@@ -602,7 +604,7 @@ const EmergencyContactPage = () => {
                              onClick={handleSave} 
                              className="px-8 py-2 rounded-lg bg-teal-600 text-white font-bold hover:bg-teal-700 shadow-lg shadow-teal-600/20 active:scale-95 transition-all outline-none text-sm"
                            >
-                             {isEditing ? "Update Contact" : "Save Emergency Contact"}
+                             {isEditing ? t("emergency.button.update") : t("emergency.button.save")}
                            </button>
                          )}
                        </div>
@@ -614,7 +616,7 @@ const EmergencyContactPage = () => {
               <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="relative max-w-2xl">
                   <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                  <input type="text" placeholder="Search by name or phone..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-teal-500 outline-none transition-all bg-slate-50/50 font-medium" />
+                  <input type="text" placeholder={t("emergency.search.placeholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-teal-500 outline-none transition-all bg-slate-50/50 font-medium" />
                 </div>
                 {loading ? (
                   <div className="flex justify-center py-32"><div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-100 border-t-teal-700"></div></div>
@@ -683,8 +685,8 @@ const EmergencyContactPage = () => {
                 ) : (
                   <div className="text-center py-32 bg-slate-50/50 rounded-[3rem] border-2 border-dashed border-slate-200">
                     <AlertCircle className="w-20 h-20 text-slate-200 mx-auto mb-6" />
-                    <h2 className="text-2xl font-bold text-slate-400">No Authorized Contacts</h2>
-                    <p className="text-slate-400 mt-2 max-w-sm mx-auto">Please add a primary emergency contact to ensure your medical safety.</p>
+                    <h2 className="text-2xl font-bold text-slate-400">{t("emergency.empty.title")}</h2>
+                    <p className="text-slate-400 mt-2 max-w-sm mx-auto">{t("emergency.empty.body")}</p>
                   </div>
                 )}
               </div>
