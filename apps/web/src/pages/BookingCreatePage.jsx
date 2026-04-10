@@ -187,14 +187,12 @@ function BookingCreatePage() {
 				throw new Error(t("booking.create.error.missingBookingId"));
 			}
 
-			// Always proceed to PayHere for ONLINE payments.
-			if (formData.paymentMethod === "ONLINE") {
+			// Proceed to PayHere ONLY when the user chose the payment flow.
+			if (!isWalkIn && formData.paymentMethod === "ONLINE" && continueToPayment) {
 				setToastMessage({
 					type: "success",
 					text: t("booking.create.toast.createdRedirecting"),
 				});
-			// Proceed to PayHere ONLY when the user chose the payment flow.
-			if (continueToPayment && !isWalkIn && formData.paymentMethod === "ONLINE") {
 				const checkout = await createPayHereCheckout({ bookingId });
 				if (!checkout?.checkoutUrl || !checkout?.fields) {
 					throw new Error(t("booking.create.error.payherePayload"));

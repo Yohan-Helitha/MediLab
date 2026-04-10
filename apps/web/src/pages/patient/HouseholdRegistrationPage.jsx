@@ -593,19 +593,15 @@ const HouseholdRegistrationPage = () => {
                                                         type="text"
                                                         name="household_id"
                                                         value={regData.household_id}
-                                                        onChange={handleRegChange}
-                                                        placeholder={t("healthProfile.form.householdPlaceholder")}
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all outline-none bg-slate-50/30 font-mono text-sm group-hover:bg-white"
-                                                    />
-                                                    {!regData.household_id && (
-                                                        <div className="absolute right-3 top-3.5 px-2 py-0.5 bg-teal-50 text-teal-600 text-[10px] font-bold uppercase rounded-md tracking-tighter">{t("household.form.autoGen")}</div>
                                                         readOnly
                                                         disabled
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-slate-100/70 font-mono text-sm cursor-not-allowed text-slate-500"
                                                         placeholder="Auto-generated upon registration"
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none bg-slate-100/70 font-mono text-sm cursor-not-allowed text-slate-500"
                                                     />
                                                     {!regData.household_id && (
-                                                        <div className="absolute right-3 top-3.5 px-2 py-0.5 bg-slate-200 text-slate-500 text-[10px] font-bold uppercase rounded-md tracking-tighter">Auto-Gen</div>
+                                                        <div className="absolute right-3 top-3.5 px-2 py-0.5 bg-teal-50 text-teal-600 text-[10px] font-bold uppercase rounded-md tracking-tighter">
+                                                            {t("household.form.autoGen")}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>

@@ -150,7 +150,7 @@ const BookingPage = () => {
 	const onDelete = async (booking) => {
 		const bookingId = booking?._id;
 		if (!bookingId) return;
-		const ok = window.confirm("Delete this booking? You can’t undo this action.");
+		const ok = window.confirm(t("bookings.confirmDelete"));
 		if (!ok) return;
 
 		setError("");
@@ -158,7 +158,7 @@ const BookingPage = () => {
 			await softDeleteBooking(bookingId);
 			setItems((prev) => (prev || []).filter((x) => x?._id !== bookingId));
 		} catch (err) {
-			setError(err?.message || "Failed to delete booking");
+			setError(err?.message || t("bookings.error.deleteFailed"));
 		}
 	};
 
@@ -241,13 +241,13 @@ const BookingPage = () => {
 								nameTranslations[baseCenterName] || baseCenterName;
 							const bookingDateLabel = formatDate(b?.bookingDate);
 							const timeSlot = b?.timeSlot || "-";
-							const status = formatEnum(b?.status);
-							const paymentStatus = formatEnum(b?.paymentStatus);
-							const bookingType = formatEnum(b?.bookingType);
-							const priority = formatEnum(b?.priorityLevel);
+							const status = formatEnum(b?.status, "status");
+							const paymentStatus = formatEnum(b?.paymentStatus, "payment");
+							const bookingType = formatEnum(b?.bookingType, "type");
+							const priority = formatEnum(b?.priorityLevel, "priority");
 							const queueLabel =
 								b?.queueNumber === null || b?.queueNumber === undefined
-									? "N/A"
+									? t("bookings.queue.na")
 									: `#${b.queueNumber}`;
 							const canEdit = (b?.status || "").toString().toUpperCase() !== "COMPLETED";
 
@@ -268,14 +268,14 @@ const BookingPage = () => {
 												<button
 													type="button"
 													disabled={!canEdit}
-													title={!canEdit ? "Completed bookings can’t be edited." : "Edit booking"}
+													title={!canEdit ? t("bookings.tooltip.editDisabled") : t("bookings.tooltip.edit")}
 													onClick={() => {
 													if (!canEdit) return;
 													navigate(`/bookings/${b._id}/edit`, { state: { booking: b } });
 												}}
 												className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
 											>
-												Edit
+													{t("bookings.button.edit")}
 											</button>
 
 												<button
@@ -283,7 +283,7 @@ const BookingPage = () => {
 													onClick={() => onDelete(b)}
 												className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200"
 											>
-												Delete
+												{t("bookings.button.delete")}
 											</button>
 											</div>
 										</div>
@@ -323,7 +323,7 @@ const BookingPage = () => {
 												{t("bookings.card.label.priority")}: <span className="font-semibold text-slate-800">{priority}</span>
 											</span>
 											<span className="rounded-full bg-slate-50 border border-slate-200 px-3 py-1">
-												Queue: <span className="font-semibold text-slate-800">{queueLabel}</span>
+												{t("bookings.card.label.queue")}: <span className="font-semibold text-slate-800">{queueLabel}</span>
 											</span>
 										</div>
 									</div>

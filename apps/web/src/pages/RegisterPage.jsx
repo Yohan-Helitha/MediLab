@@ -49,7 +49,7 @@ const response = await authApi.registerPatient(patientData);
 if (response && response.success && response.data.token) {
 login(response.data.user, response.data.token);
 } else {
-setError("Patient registration failed");
+setError(t("register.error.failed"));
 }
 } catch (err) {
 setError(err.message || t("register.errorGeneric"));
@@ -194,13 +194,13 @@ placeholder="••••••••"
     <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" />
   </svg>
   <p className="text-[10px] text-slate-500 font-medium leading-tight">
-    Minimum 8 characters with at least one uppercase, lowercase, number, and special character (@, #, or _)
+    {t("register.passwordHint")}
   </p>
 </div>
 </div>
 <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
 <p className="text-[10px] text-teal-600 font-medium leading-relaxed">
-By clicking register, you agree to MediLab's patient terms of service and privacy policy.
+{t("register.termsText")}
 </p>
 </div>
 </div>

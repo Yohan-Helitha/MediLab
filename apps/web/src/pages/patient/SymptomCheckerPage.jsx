@@ -36,8 +36,11 @@ function SymptomCheckerPage() {
       });
     } catch (error) {
       console.error("AI Analysis Error:", error);
-      alert(sanitizeErrorMessage(error.message) || t("aiHealth.error.generic"));
-      toast.error(getSafeErrorMessage(error, "symptom-analysis"));
+      const message =
+        getSafeErrorMessage(error, "symptom-analysis") ||
+        t("aiHealth.error.generic");
+      alert(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
