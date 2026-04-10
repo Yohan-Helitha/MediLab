@@ -11,6 +11,7 @@ import {
 } from "../api/labTestApi";
 import ToggleSwitch from "../components/ToggleSwitch";
 import Modal from "../components/Modal";
+import ToastMessage from "../components/ToastMessage";
 
 function TestAvailabilityPage() {
 	const [labs, setLabs] = useState([]);
@@ -34,6 +35,7 @@ function TestAvailabilityPage() {
 		price: "",
 		estimatedResultTimeHours: "",
 	});
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	useEffect(() => {
 		const loadLabs = async () => {
@@ -152,6 +154,7 @@ function TestAvailabilityPage() {
 				)
 			);
 			closeEditModal();
+			setToastMessage({ type: "success", text: "Lab test details updated." });
 		} catch (err) {
 			setError(err.message || "Failed to update test details");
 		}
@@ -206,6 +209,7 @@ function TestAvailabilityPage() {
 			const refreshed = await fetchLabTestsByLab(selectedLabId);
 			setLabTests(refreshed);
 			setIsAddModalOpen(false);
+			setToastMessage({ type: "success", text: "Test added to lab." });
 		} catch (err) {
 			setError(err.message || "Failed to add test to lab");
 		}
@@ -223,6 +227,13 @@ function TestAvailabilityPage() {
 						: t
 				)
 			);
+			setToastMessage({
+				type: "success",
+				text:
+					newStatus === "AVAILABLE"
+						? "Test marked as available."
+						: "Test marked as unavailable.",
+			});
 		} catch (err) {
 			setError(err.message || "Failed to update availability");
 		}
@@ -236,6 +247,7 @@ function TestAvailabilityPage() {
 		try {
 			await deleteLabTest(labTest._id);
 			setLabTests((prev) => prev.filter((t) => t._id !== labTest._id));
+			setToastMessage({ type: "success", text: "Test removed from lab." });
 		} catch (err) {
 			setError(err.message || "Failed to delete lab test");
 		}
@@ -256,6 +268,11 @@ function TestAvailabilityPage() {
 
 	return (
 		<div className="space-y-6">
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<header className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-slate-900">

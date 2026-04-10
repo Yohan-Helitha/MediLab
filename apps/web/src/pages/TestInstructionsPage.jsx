@@ -8,6 +8,7 @@ import {
 	deleteTestInstruction,
 } from "../api/testInstructionApi";
 import Modal from "../components/Modal";
+import ToastMessage from "../components/ToastMessage";
 
 function TestInstructionsPage() {
 	const [instructions, setInstructions] = useState([]);
@@ -23,6 +24,7 @@ function TestInstructionsPage() {
 		preText: "",
 		postText: "",
 	});
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	useEffect(() => {
 		const load = async () => {
@@ -121,6 +123,12 @@ function TestInstructionsPage() {
 				return [enriched, ...others];
 			});
 			closeModal();
+			setToastMessage({
+				type: "success",
+				text: editingItem
+					? "Test instructions updated successfully."
+					: "Test instructions created successfully.",
+			});
 		} catch (err) {
 			setError(err.message || "Failed to save instructions");
 		}
@@ -134,6 +142,10 @@ function TestInstructionsPage() {
 		try {
 			await deleteTestInstruction(item._id);
 			setInstructions((prev) => prev.filter((i) => i._id !== item._id));
+			setToastMessage({
+				type: "success",
+				text: "Test instructions deleted successfully.",
+			});
 		} catch (err) {
 			setError(err.message || "Failed to delete instructions");
 		}
@@ -156,6 +168,11 @@ function TestInstructionsPage() {
 
 	return (
 		<div className="space-y-6">
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<header className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-slate-900">

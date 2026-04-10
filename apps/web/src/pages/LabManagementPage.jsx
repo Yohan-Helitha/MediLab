@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { HiPencilSquare, HiTrash } from "react-icons/hi2";
 import Modal from "../components/Modal";
 import LabForm from "../components/LabForm";
+import ToastMessage from "../components/ToastMessage";
 import { fetchLabs, createLab, updateLab, deleteLab } from "../api/labApi";
 
 function getLabFormErrorMessage(error) {
@@ -28,6 +29,7 @@ function LabManagementPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [formError, setFormError] = useState(null);
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	useEffect(() => {
 		let isMounted = true;
@@ -111,6 +113,7 @@ function LabManagementPage() {
 			const created = await createLab(payload);
 			setLabs((prev) => [...prev, created]);
 			setIsLabModalOpen(false);
+			setToastMessage({ type: "success", text: "Lab created successfully." });
 		} catch (err) {
 			console.error("Failed to create lab", err);
 			setFormError(getLabFormErrorMessage(err));
@@ -125,6 +128,7 @@ function LabManagementPage() {
 			setLabs((prev) => prev.map((lab) => (lab._id === updated._id ? updated : lab)));
 			setIsLabModalOpen(false);
 			setEditingLab(null);
+			setToastMessage({ type: "success", text: "Lab updated successfully." });
 		} catch (err) {
 			console.error("Failed to update lab", err);
 			setFormError(getLabFormErrorMessage(err));
@@ -138,6 +142,7 @@ function LabManagementPage() {
 		try {
 			await deleteLab(labId);
 			setLabs((prev) => prev.filter((lab) => lab._id !== labId));
+			setToastMessage({ type: "success", text: "Lab deleted successfully." });
 		} catch (err) {
 			console.error("Failed to delete lab", err);
 			alert(err.message || "Failed to delete lab. Check console for details.");
@@ -155,6 +160,11 @@ function LabManagementPage() {
 	// Simple static layout matching the Lab Management screenshot
 	return (
 		<div className="space-y-6">
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<header className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-slate-900">

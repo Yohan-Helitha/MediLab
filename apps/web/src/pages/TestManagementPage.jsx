@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { HiBeaker, HiPencilSquare, HiTrash } from "react-icons/hi2";
 import Modal from "../components/Modal";
 import TestForm from "../components/TestForm";
+import ToastMessage from "../components/ToastMessage";
 import { fetchTests, createTest, updateTest, deleteTest } from "../api/testApi";
 
 function TestManagementPage() {
@@ -10,6 +11,7 @@ function TestManagementPage() {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [editingTest, setEditingTest] = useState(null);
 	const [search, setSearch] = useState("");
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	useEffect(() => {
 		let isMounted = true;
@@ -76,6 +78,7 @@ function TestManagementPage() {
 			setTests((prev) => prev.map((t) => (t._id === updated._id ? updated : t)));
 			setIsModalOpen(false);
 			setEditingTest(null);
+			setToastMessage({ type: "success", text: "Test updated successfully." });
 		} catch (err) {
 			console.error("Failed to update test", err);
 			alert(err.message || "Failed to update test. Check console for details.");
@@ -89,6 +92,7 @@ function TestManagementPage() {
 		try {
 			await deleteTest(id);
 			setTests((prev) => prev.filter((t) => t._id !== id));
+			setToastMessage({ type: "success", text: "Test deleted successfully." });
 		} catch (err) {
 			console.error("Failed to delete test", err);
 			alert(err.message || "Failed to delete test. Check console for details.");
@@ -107,6 +111,11 @@ function TestManagementPage() {
 
 	return (
 		<div className="space-y-6">
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<header className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-slate-900">
