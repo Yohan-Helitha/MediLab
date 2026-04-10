@@ -171,65 +171,68 @@ const addPatientInfo = (doc, testResult) => {
   const patient = testResult.patientProfileId;
   const yStart = doc.y;
 
+  // Section heading with light gray background band
   doc
+    .rect(50, yStart, 495, 18)
+    .fill("#F0F0F0");
+  doc
+    .fillColor("#000000")
     .fontSize(11)
     .font("Helvetica-Bold")
-    .text("Patient Information", 50, yStart);
-  doc.moveDown(0.5);
+    .text("Patient Information", 55, yStart + 3);
 
-  // Left column
+  // Capture data start Y BEFORE writing any column — both columns must start here
+  const dataStartY = yStart + 26;
+
   doc.fontSize(10).font("Helvetica");
-  const leftX = 50;
-  let leftY = doc.y;
 
-  // Use correct field name from Member schema: full_name (snake_case)
+  // Left column — patient demographics
+  const leftX = 55;
+  let leftY = dataStartY;
+  const lineH = 18;
+
   if (patient?.full_name) {
     doc.text(`Patient Name: ${patient.full_name}`, leftX, leftY);
-    leftY += 20;
+    leftY += lineH;
   }
-
-  // Calculate age from date_of_birth if age not directly available
   if (patient?.date_of_birth) {
     const age = Math.floor(
       (new Date() - new Date(patient.date_of_birth)) /
         (365.25 * 24 * 60 * 60 * 1000),
     );
     doc.text(`Age: ${age} years`, leftX, leftY);
-    leftY += 20;
+    leftY += lineH;
   }
-
   if (patient?.gender) {
     doc.text(`Gender: ${patient.gender}`, leftX, leftY);
-    leftY += 20;
+    leftY += lineH;
   }
 
-  // Right column
+  // Right column — report metadata — starts at the SAME dataStartY as left column
   const rightX = 320;
-  let rightY = doc.y;
+  let rightY = dataStartY;
 
   if (testResult.bookingId?.bookingDate) {
     doc.text(
       `Collection Date: ${new Date(testResult.bookingId.bookingDate).toLocaleDateString()}`,
       rightX,
       rightY,
+      { width: 225 },
     );
-    rightY += 20;
+    rightY += lineH;
   }
-
   doc.text(
     `Report Date: ${new Date(testResult.releasedAt || Date.now()).toLocaleDateString()}`,
     rightX,
     rightY,
+    { width: 225 },
   );
-  rightY += 20;
+  rightY += lineH;
+  doc.text(`Report ID: ${testResult._id}`, rightX, rightY, { width: 225 });
+  rightY += lineH;
 
-  doc.text(`Report ID: ${testResult._id}`, rightX, rightY);
-  rightY += 20;
-
-  // Set Y position to the maximum of both columns
-  doc.y = Math.max(leftY, rightY);
-
-  doc.moveDown(2);
+  // Advance Y past both columns with a small bottom margin
+  doc.y = Math.max(leftY, rightY) + 12;
 
   // Horizontal line
   doc
@@ -239,16 +242,23 @@ const addPatientInfo = (doc, testResult) => {
     .lineTo(545, doc.y)
     .stroke();
 
-  doc.moveDown(1);
+  doc.moveDown(0.8);
 };
 
 /**
  * Add test results section header
  */
 const addResultsHeader = (doc, testName) => {
-  doc.fontSize(11).font("Helvetica-Bold").text("Test Results", 50);
-  doc.fontSize(10).font("Helvetica").text(`Test Type: ${testName}`);
-  doc.moveDown(1);
+  const y = doc.y;
+  doc.rect(50, y, 495, 18).fill("#F0F0F0");
+  doc
+    .fillColor("#000000")
+    .fontSize(11)
+    .font("Helvetica-Bold")
+    .text("Test Results", 55, y + 3);
+  doc.y = y + 26;
+  doc.fontSize(10).font("Helvetica").text(`Test Type: ${testName}`, 55);
+  doc.moveDown(0.8);
 };
 
 /**
@@ -296,13 +306,20 @@ const addResultRow = (
  */
 const addObservations = (doc, observations) => {
   if (observations && observations.trim()) {
-    doc.moveDown(1);
-    doc.fontSize(11).font("Helvetica-Bold").text("Observations / Notes:");
-    doc.moveDown(0.3);
-    doc.fontSize(10).font("Helvetica").text(observations, {
+    doc.moveDown(0.8);
+    const y = doc.y;
+    doc.rect(50, y, 495, 18).fill("#F0F0F0");
+    doc
+      .fillColor("#000000")
+      .fontSize(11)
+      .font("Helvetica-Bold")
+      .text("Observations / Notes:", 55, y + 3);
+    doc.y = y + 26;
+    doc.fontSize(10).font("Helvetica").text(observations, 55, doc.y, {
       align: "justify",
+      width: 485,
     });
-    doc.moveDown(1);
+    doc.moveDown(0.5);
   }
 };
 
@@ -310,7 +327,7 @@ const addObservations = (doc, observations) => {
  * Add footer with signature area (prepared for both digital and print scenarios)
  */
 const addFooter = (doc, testResult) => {
-  doc.moveDown(2);
+  doc.moveDown(1.5);
 
   // Horizontal line
   doc
@@ -320,30 +337,31 @@ const addFooter = (doc, testResult) => {
     .lineTo(545, doc.y)
     .stroke();
 
-  doc.moveDown(1);
+  doc.moveDown(0.8);
 
-  // Lab technician information (digital verification)
-  doc.fontSize(9).font("Helvetica");
-  doc.text("Verified By:", 50);
-  doc.moveDown(0.3);
+  // Capture Y before writing either side so both align horizontally
+  const sigY = doc.y;
 
-  // Use correct field name from User schema (may need fullName or firstName + lastName)
+  // Left side — Verified By block
+  doc.fontSize(9).font("Helvetica").text("Verified By:", 50, sigY);
+
   const personnelName =
     testResult.testingPersonnelId?.fullName ||
     testResult.testingPersonnelId?.name ||
     "Lab Personnel";
-  doc.font("Helvetica-Bold").text(personnelName);
-  doc.font("Helvetica").text("Medical Laboratory Technician");
+  doc.font("Helvetica-Bold").text(personnelName, 50, sigY + 14);
+  doc.font("Helvetica").text("Medical Laboratory Technician", 50, sigY + 26);
 
-  // Date
-  doc.text(
+  // Right side — Date, aligned with "Verified By:" line
+  doc.fontSize(9).font("Helvetica").text(
     `Date: ${new Date(testResult.releasedAt || Date.now()).toLocaleDateString()}`,
     400,
-    doc.y - 40,
+    sigY,
+    { width: 145, align: "right" },
   );
 
-  // Signature placeholder for print scenarios
-  doc.moveDown(2);
+  // Signature placeholder for print scenarios — below both sides
+  doc.y = sigY + 42;
   doc.fontSize(8).font("Helvetica").fillColor("#999999");
   doc.text(
     "[For hard copy: Manual signature and official stamp required above]",
@@ -352,8 +370,7 @@ const addFooter = (doc, testResult) => {
     { align: "center", width: 495 },
   );
 
-  // Disclaimer
-  doc.moveDown(1.5);
+  // Disclaimer pinned to bottom of page
   doc
     .fontSize(8)
     .font("Helvetica-Oblique")
@@ -367,6 +384,46 @@ const addFooter = (doc, testResult) => {
     );
 
   doc.fillColor("#000000");
+};
+
+/**
+ * Add table column headers with a tight underline rule.
+ * The separator is drawn immediately below the text so it reads as
+ * belonging to the headers, not the first data row.
+ */
+const addTableHeader = (doc) => {
+  const headerY = doc.y;
+  doc.fontSize(9).font("Helvetica-Bold");
+  doc.text("Parameter",       50,  headerY, { width: 150 });
+  doc.text("Result",          210, headerY, { width: 100 });
+  doc.text("Reference Range", 320, headerY, { width: 120 });
+  doc.text("Interpretation",  450, headerY, { width: 95  });
+
+  // 9pt text is ~12px tall. Draw the rule at +15px (text + 3px breathing room).
+  const lineY = headerY + 15;
+  doc
+    .strokeColor("#333333")
+    .lineWidth(1)
+    .moveTo(50, lineY)
+    .lineTo(545, lineY)
+    .stroke();
+
+  // Advance cursor past the rule with a clear gap before the first data row.
+  doc.y = lineY + 10;
+};
+
+/**
+ * Close the result table with a thin bottom rule.
+ * Visually separates results from the "Additional info" block below.
+ */
+const addTableFooter = (doc) => {
+  doc
+    .strokeColor("#AAAAAA")
+    .lineWidth(0.5)
+    .moveTo(50, doc.y)
+    .lineTo(545, doc.y)
+    .stroke();
+  doc.y = doc.y + 8;
 };
 
 /**
@@ -420,23 +477,7 @@ const generateBloodGlucoseReport = (doc, testResult) => {
     }
   };
 
-  // Add table header
-  const headerY = doc.y;
-  doc.fontSize(9).font("Helvetica-Bold");
-  doc.text("Parameter", 50, headerY, { width: 150 });
-  doc.text("Result", 210, headerY, { width: 100 });
-  doc.text("Reference Range", 320, headerY, { width: 120 });
-  doc.text("Interpretation", 450, headerY, { width: 95 });
-  doc.moveDown(1.5);
-
-  // Underline header
-  doc
-    .strokeColor("#333333")
-    .lineWidth(0.5)
-    .moveTo(50, doc.y)
-    .lineTo(545, doc.y)
-    .stroke();
-  doc.moveDown(0.5);
+  addTableHeader(doc);
 
   // Add result
   const unit = testResult.glucoseTestType === "HbA1c" ? "%" : testResult.unit;
@@ -449,18 +490,20 @@ const generateBloodGlucoseReport = (doc, testResult) => {
     interpretGlucose(testResult.glucoseLevel, testResult.glucoseTestType),
   );
 
+  addTableFooter(doc);
+
   // Additional info
   doc.moveDown(0.5);
   doc.fontSize(9).font("Helvetica");
-  doc.text(`Test Type: ${testResult.glucoseTestType}`, 50);
-  doc.text(`Sample Type: ${testResult.sampleType}`, 50);
-  doc.text(`Sample Quality: ${testResult.sampleQuality}`, 50);
+  doc.text(`Test Type: ${testResult.glucoseTestType}`, 55);
+  doc.text(`Sample Type: ${testResult.sampleType}`, 55);
+  doc.text(`Sample Quality: ${testResult.sampleQuality}`, 55);
   doc.text(
     `Collection Time: ${new Date(testResult.sampleCollectionTime).toLocaleString()}`,
-    50,
+    55,
   );
   if (testResult.fastingDuration) {
-    doc.text(`Fasting Duration: ${testResult.fastingDuration} hours`, 50);
+    doc.text(`Fasting Duration: ${testResult.fastingDuration} hours`, 55);
   }
 
   addObservations(doc, testResult.observations);
@@ -505,23 +548,7 @@ const generateHemoglobinReport = (doc, testResult) => {
     return "High";
   };
 
-  // Add table header
-  const headerY = doc.y;
-  doc.fontSize(9).font("Helvetica-Bold");
-  doc.text("Parameter", 50, headerY, { width: 150 });
-  doc.text("Result", 210, headerY, { width: 100 });
-  doc.text("Reference Range", 320, headerY, { width: 120 });
-  doc.text("Interpretation", 450, headerY, { width: 95 });
-  doc.moveDown(1.5);
-
-  // Underline header
-  doc
-    .strokeColor("#333333")
-    .lineWidth(0.5)
-    .moveTo(50, doc.y)
-    .lineTo(545, doc.y)
-    .stroke();
-  doc.moveDown(0.5);
+  addTableHeader(doc);
 
   // Add result
   const gender = testResult.patientProfileId?.gender;
@@ -534,15 +561,17 @@ const generateHemoglobinReport = (doc, testResult) => {
     interpretHemoglobin(testResult.hemoglobinLevel, gender),
   );
 
+  addTableFooter(doc);
+
   // Additional info
   doc.moveDown(0.5);
   doc.fontSize(9).font("Helvetica");
-  doc.text(`Sample Type: ${testResult.sampleType}`, 50);
-  doc.text(`Sample Quality: ${testResult.sampleQuality}`, 50);
-  doc.text(`Testing Method: ${testResult.method}`, 50);
+  doc.text(`Sample Type: ${testResult.sampleType}`, 55);
+  doc.text(`Sample Quality: ${testResult.sampleQuality}`, 55);
+  doc.text(`Testing Method: ${testResult.method}`, 55);
   doc.text(
     `Collection Time: ${new Date(testResult.sampleCollectionTime).toLocaleString()}`,
-    50,
+    55,
   );
 
   addObservations(doc, testResult.observations);
@@ -567,23 +596,7 @@ const generateBloodPressureReport = (doc, testResult) => {
     return "Hypertensive Crisis";
   };
 
-  // Add table header
-  const headerY = doc.y;
-  doc.fontSize(9).font("Helvetica-Bold");
-  doc.text("Parameter", 50, headerY, { width: 150 });
-  doc.text("Result", 210, headerY, { width: 100 });
-  doc.text("Reference Range", 320, headerY, { width: 120 });
-  doc.text("Interpretation", 450, headerY, { width: 95 });
-  doc.moveDown(1.5);
-
-  // Underline header
-  doc
-    .strokeColor("#333333")
-    .lineWidth(0.5)
-    .moveTo(50, doc.y)
-    .lineTo(545, doc.y)
-    .stroke();
-  doc.moveDown(0.5);
+  addTableHeader(doc);
 
   // Add results
   addResultRow(
@@ -621,13 +634,15 @@ const generateBloodPressureReport = (doc, testResult) => {
     interpretBP(testResult.systolic, testResult.diastolic),
   );
 
+  addTableFooter(doc);
+
   // Additional info
   doc.moveDown(0.5);
   doc.fontSize(9).font("Helvetica");
-  doc.text(`Measurement Position: ${testResult.position}`, 50);
-  doc.text(`Arm Used: ${testResult.arm}`, 50);
+  doc.text(`Measurement Position: ${testResult.position}`, 55);
+  doc.text(`Arm Used: ${testResult.arm}`, 55);
   if (testResult.heartRate) {
-    doc.text(`Heart Rate: ${testResult.heartRate} bpm`, 50);
+    doc.text(`Heart Rate: ${testResult.heartRate} bpm`, 55);
   }
 
   addObservations(doc, testResult.observations);
@@ -642,23 +657,7 @@ const generatePregnancyReport = (doc, testResult) => {
   addPatientInfo(doc, testResult);
   addResultsHeader(doc, "Pregnancy Test");
 
-  // Add table header
-  const headerY = doc.y;
-  doc.fontSize(9).font("Helvetica-Bold");
-  doc.text("Parameter", 50, headerY, { width: 150 });
-  doc.text("Result", 210, headerY, { width: 100 });
-  doc.text("Reference Range", 320, headerY, { width: 120 });
-  doc.text("Interpretation", 450, headerY, { width: 95 });
-  doc.moveDown(1.5);
-
-  // Underline header
-  doc
-    .strokeColor("#333333")
-    .lineWidth(0.5)
-    .moveTo(50, doc.y)
-    .lineTo(545, doc.y)
-    .stroke();
-  doc.moveDown(0.5);
+  addTableHeader(doc);
 
   // Add result
   addResultRow(
@@ -670,12 +669,14 @@ const generatePregnancyReport = (doc, testResult) => {
     testResult.result === "Positive" ? "Pregnant" : "Not Pregnant",
   );
 
+  addTableFooter(doc);
+
   // Additional info
   doc.moveDown(0.5);
   doc.fontSize(9).font("Helvetica");
-  doc.text(`Test Type: ${testResult.pregnancyTestType}`, 50);
-  doc.text(`Sample Type: ${testResult.sampleType}`, 50);
-  doc.text(`Test Sensitivity: ${testResult.sensitivity} mIU/ml`, 50);
+  doc.text(`Test Type: ${testResult.pregnancyTestType}`, 55);
+  doc.text(`Sample Type: ${testResult.sampleType}`, 55);
+  doc.text(`Test Sensitivity: ${testResult.sensitivity} mIU/ml`, 55);
 
   addObservations(doc, testResult.observations);
   addFooter(doc, testResult);
@@ -692,15 +693,16 @@ const generateGenericReport = (doc, testResult) => {
   doc.fontSize(10).font("Helvetica");
   doc.text(
     "This is a generic test report. Detailed interpretation requires specialized medical review.",
+    55,
   );
 
   // Check if there are uploaded files
   if (testResult.uploadedFiles && testResult.uploadedFiles.length > 0) {
     doc.moveDown(1);
-    doc.font("Helvetica-Bold").text("Uploaded Files:");
+    doc.font("Helvetica-Bold").text("Uploaded Files:", 55);
     doc.font("Helvetica");
     testResult.uploadedFiles.forEach((file, index) => {
-      doc.text(`${index + 1}. ${file.fileName} (${file.mimeType})`);
+      doc.text(`${index + 1}. ${file.fileName} (${file.mimeType})`, 55);
     });
   }
 
