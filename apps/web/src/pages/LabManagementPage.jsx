@@ -4,6 +4,23 @@ import Modal from "../components/Modal";
 import LabForm from "../components/LabForm";
 import { fetchLabs, createLab, updateLab, deleteLab } from "../api/labApi";
 
+function getLabFormErrorMessage(error) {
+	// Prefer specific validation messages from the backend when available
+	if (error && Array.isArray(error.errors) && error.errors.length > 0) {
+		const phoneError = error.errors.find((e) => e.param === "phoneNumber");
+		if (phoneError) {
+			// Use a user-friendly message for contact number validation
+			return "Contact number must have exactly 10 digits.";
+		}
+		// Fallback: join all validation messages
+		return error.errors.map((e) => e.msg).join("; ");
+	}
+	return (
+		(error && error.message) ||
+		"Failed to save lab. Please check the form and try again."
+	);
+}
+
 function LabManagementPage() {
 	const [isLabModalOpen, setIsLabModalOpen] = useState(false);
 	const [editingLab, setEditingLab] = useState(null);
@@ -96,9 +113,7 @@ function LabManagementPage() {
 			setIsLabModalOpen(false);
 		} catch (err) {
 			console.error("Failed to create lab", err);
-			setFormError(
-				err.message || "Failed to create lab. Check console for details."
-			);
+			setFormError(getLabFormErrorMessage(err));
 		}
 	};
 
@@ -112,9 +127,7 @@ function LabManagementPage() {
 			setEditingLab(null);
 		} catch (err) {
 			console.error("Failed to update lab", err);
-			setFormError(
-				err.message || "Failed to update lab. Check console for details."
-			);
+			setFormError(getLabFormErrorMessage(err));
 		}
 	};
 
