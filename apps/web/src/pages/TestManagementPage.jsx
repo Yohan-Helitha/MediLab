@@ -5,6 +5,16 @@ import TestForm from "../components/TestForm";
 import ToastMessage from "../components/ToastMessage";
 import { fetchTests, createTest, updateTest, deleteTest } from "../api/testApi";
 
+function getTestFormErrorMessage(error) {
+	if (error && Array.isArray(error.errors) && error.errors.length > 0) {
+		return error.errors.map((e) => e.msg).join("; ");
+	}
+	return (
+		(error && error.message) ||
+		"Failed to save test. Please check the form and try again."
+	);
+}
+
 function TestManagementPage() {
 	const [tests, setTests] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -12,6 +22,7 @@ function TestManagementPage() {
 	const [editingTest, setEditingTest] = useState(null);
 	const [search, setSearch] = useState("");
 	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
+	const [formError, setFormError] = useState(null);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -61,18 +72,20 @@ function TestManagementPage() {
 
 	const handleCreateTest = async (formData) => {
 		try {
+			setFormError(null);
 			const payload = buildPayloadFromForm(formData);
 			const created = await createTest(payload);
 			setTests((prev) => [...prev, created]);
 			setIsModalOpen(false);
 		} catch (err) {
 			console.error("Failed to create test", err);
-			alert(err.message || "Failed to create test. Check console for details.");
+			setFormError(getTestFormErrorMessage(err));
 		}
 	};
 
 	const handleUpdateTest = async (id, formData) => {
 		try {
+			setFormError(null);
 			const payload = buildPayloadFromForm(formData);
 			const updated = await updateTest(id, payload);
 			setTests((prev) => prev.map((t) => (t._id === updated._id ? updated : t)));
@@ -81,7 +94,7 @@ function TestManagementPage() {
 			setToastMessage({ type: "success", text: "Test updated successfully." });
 		} catch (err) {
 			console.error("Failed to update test", err);
-			alert(err.message || "Failed to update test. Check console for details.");
+			setFormError(getTestFormErrorMessage(err));
 		}
 	};
 
@@ -190,6 +203,7 @@ function TestManagementPage() {
 				<TestForm
 					initialValues={buildInitialFormValues(editingTest)}
 					submitLabel={editingTest ? "Save Changes" : "Create Test"}
+					errorMessage={formError}
 					onCancel={() => {
 						setIsModalOpen(false);
 						setEditingTest(null);

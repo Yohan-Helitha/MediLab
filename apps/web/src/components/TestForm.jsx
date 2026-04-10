@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 // Form for creating or editing a Test Type.
 // initialValues lets us pre-fill fields when editing.
-function TestForm({ onSubmit, onCancel, initialValues, submitLabel }) {
+function TestForm({ onSubmit, onCancel, initialValues, submitLabel, errorMessage }) {
 	const [formData, setFormData] = useState(() => ({
 		name: initialValues?.name || "",
 		code: initialValues?.code || "",
@@ -38,6 +38,11 @@ function TestForm({ onSubmit, onCancel, initialValues, submitLabel }) {
 
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
+			{errorMessage && (
+				<div className="rounded-md bg-rose-50 px-3 py-2 text-xs text-rose-700">
+					{errorMessage}
+				</div>
+			)}
 			<div className="grid grid-cols-2 gap-4">
 				<div className="space-y-1">
 					<label className="text-sm font-medium text-slate-700">
