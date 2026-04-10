@@ -7,8 +7,6 @@ import XRayResult from "./discriminators/xray.result.js";
 import ECGResult from "./discriminators/ecg.result.js";
 import UltrasoundResult from "./discriminators/ultrasound.result.js";
 import AutomatedReportResult from "./discriminators/automatedReport.result.js";
-import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
-import fs from "fs";
 import Booking from "../booking/booking.model.js";
 
 // Business logic for test result operations
@@ -187,17 +185,6 @@ export const updateResultStatus = async (id, status, changedBy) => {
     result.releasedAt = new Date();
   }
 
-  // Generate PDF report when status is released
-  if (status === "released" && !result.generatedReportPath) {
-    try {
-      const pdfPath = await generateTestResultPDF(result);
-      result.generatedReportPath = pdfPath;
-    } catch (pdfError) {
-      console.error("Error generating PDF report:", pdfError);
-      // Continue without PDF - don't block status update
-    }
-  }
-
   await result.save();
 
   return result;
@@ -271,48 +258,6 @@ export const updateTestResult = async (id, updateData) => {
 
   // Save changes first to ensure discriminator fields are persisted
   await result.save();
-
-  // Regenerate PDF if form data changed and result is released
-  if (formDataChanged && result.currentStatus === "released") {
-    try {
-      // Delete old PDF if it exists
-      if (
-        result.generatedReportPath &&
-        fs.existsSync(result.generatedReportPath)
-      ) {
-        fs.unlinkSync(result.generatedReportPath);
-      }
-
-      // Fetch the saved result with all populated fields for PDF generation
-      const resultForPdf = await TestResult.findById(result._id)
-        .populate(
-          "patientProfileId",
-          "full_name date_of_birth gender contact_number",
-        )
-        .populate("testTypeId", "name code")
-        .populate(
-          "healthCenterId",
-          "name addressLine1 addressLine2 district province phoneNumber email",
-        )
-        .populate("testingPersonnelId", "fullName name")
-        .populate("bookingId", "bookingDate");
-
-      // Generate new PDF
-      const pdfPath = await generateTestResultPDF(resultForPdf);
-      result.generatedReportPath = pdfPath;
-
-      // Save again with the new PDF path
-      await result.save();
-
-      console.log(
-        "[Result Service] PDF regenerated after data update:",
-        pdfPath,
-      );
-    } catch (pdfError) {
-      console.error("[Result Service] Error regenerating PDF:", pdfError);
-      // Continue without PDF - don't block update
-    }
-  }
 
   return result;
 };
@@ -516,17 +461,6 @@ export const hardDeleteTestResult = async (id, deleteReason, deletedBy) => {
     ═══════════════════════════════════════════════════════════
   `);
 
-  // Delete associated PDF file if exists
-  if (result.generatedReportPath && fs.existsSync(result.generatedReportPath)) {
-    try {
-      fs.unlinkSync(result.generatedReportPath);
-      console.log(`📄 Deleted PDF file: ${result.generatedReportPath}`);
-    } catch (fileError) {
-      console.error(`⚠️ Error deleting PDF file: ${fileError.message}`);
-      // Continue with database deletion even if file deletion fails
-    }
-  }
-
   // Revert booking status to "processing" (if booking exists)
   if (result.bookingId) {
     try {
@@ -559,10 +493,30 @@ export const hardDeleteTestResult = async (id, deleteReason, deletedBy) => {
 };
 
 /**
- * Helper function to get the correct discriminator model
- * @param {String} discriminatorType - The discriminator type
- * @returns {Model} Mongoose model for the discriminator
+ * Fetch a test result with all fields needed to generate a PDF report.
+ * @param {string} id - Test result ID
+ * @returns {Promise<Object>} Populated test result
  */
+export const findTestResultForPDF = async (id) => {
+  const result = await TestResult.findOne({ _id: id, isDeleted: false })
+    .populate("patientProfileId", "full_name date_of_birth gender contact_number")
+    .populate("testTypeId", "name code")
+    .populate(
+      "healthCenterId",
+      "name addressLine1 addressLine2 district province phoneNumber email",
+    )
+    .populate("testingPersonnelId", "fullName name")
+    .populate("bookingId", "bookingDate");
+
+  if (!result) {
+    const error = new Error("Test result not found or has been deleted");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return result;
+};
+
 export const getDiscriminatorModel = (discriminatorType) => {
   const models = {
     BloodGlucose: BloodGlucoseResult,

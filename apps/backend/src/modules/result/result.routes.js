@@ -7,8 +7,20 @@ import {
   isHealthOfficer,
   checkRole,
 } from "../auth/auth.middleware.js";
+import resultUpload from "../../middlewares/resultUploadMiddleware.js";
 
 const router = express.Router();
+
+// File upload endpoint — Health Officer uploads a single file and receives
+// back { fileName, filePath (Cloudinary URL), fileSize, mimeType }.
+// The client includes this object in uploadedFiles[] when submitting a result.
+router.post(
+  "/upload-file",
+  authenticate,
+  isHealthOfficer,
+  resultUpload.single("file"),
+  resultController.uploadResultFile,
+);
 
 // Create/Submit Routes (Lab Staff only)
 router.post(

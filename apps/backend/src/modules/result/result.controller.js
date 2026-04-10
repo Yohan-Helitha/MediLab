@@ -1,13 +1,125 @@
 import { validationResult } from "express-validator";
 import * as resultService from "./result.service.js";
 import TestType from "../test/testType.model.js";
-import fs from "fs";
-import path from "path";
+import { uploadToCloudinary } from "../../utils/cloudinaryUpload.js";
+import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
 import { sendHardCopyReadyNotification } from "../notification/notification.service.js";
 import TestResult from "./testResult.model.js";
 
 // Test Result Controller
 // Handles test result submission, viewing, and management
+
+// ===== UPLOAD-TYPE DISCRIMINATORS =====
+const UPLOAD_DISCRIMINATORS = ["XRay", "ECG", "Ultrasound", "AutomatedReport"];
+
+/**
+ * Validate discriminator-specific fields for upload-type test results.
+ * Returns an array of error objects (empty if valid).
+ */
+const validateUploadDiscriminatorFields = (discriminatorType, body) => {
+  if (!UPLOAD_DISCRIMINATORS.includes(discriminatorType)) return [];
+
+  const errors = [];
+  const files = body.uploadedFiles;
+
+  // uploadedFiles array
+  if (!Array.isArray(files) || files.length === 0) {
+    errors.push({ path: "uploadedFiles", msg: "uploadedFiles must be a non-empty array" });
+    return errors; // no point continuing
+  }
+
+  const maxFiles = { XRay: 5, ECG: 3, Ultrasound: 5, AutomatedReport: 1 };
+  if (files.length > maxFiles[discriminatorType]) {
+    errors.push({ path: "uploadedFiles", msg: `Maximum ${maxFiles[discriminatorType]} file(s) allowed for ${discriminatorType}` });
+  }
+
+  files.forEach((f, i) => {
+    if (!f.fileName) errors.push({ path: `uploadedFiles[${i}].fileName`, msg: "fileName is required" });
+    if (!f.filePath) errors.push({ path: `uploadedFiles[${i}].filePath`, msg: "filePath is required" });
+    if (!f.fileSize || f.fileSize < 1) errors.push({ path: `uploadedFiles[${i}].fileSize`, msg: "fileSize must be a positive number" });
+    if (!f.mimeType) errors.push({ path: `uploadedFiles[${i}].mimeType`, msg: "mimeType is required" });
+    if (discriminatorType === "AutomatedReport" && f.mimeType !== "application/pdf") {
+      errors.push({ path: `uploadedFiles[${i}].mimeType`, msg: "AutomatedReport files must be PDFs" });
+    }
+  });
+
+  // Type-specific required fields
+  if (discriminatorType === "XRay") {
+    if (!body.bodyPart) errors.push({ path: "bodyPart", msg: "bodyPart is required" });
+    if (!body.clinicalIndication) errors.push({ path: "clinicalIndication", msg: "clinicalIndication is required" });
+    if (!Array.isArray(body.views) || body.views.length === 0) errors.push({ path: "views", msg: "at least one view is required" });
+    if (!body.findings) errors.push({ path: "findings", msg: "findings is required" });
+    if (!body.impression) errors.push({ path: "impression", msg: "impression is required" });
+    if (!body.interpretation) errors.push({ path: "interpretation", msg: "interpretation is required" });
+  }
+
+  if (discriminatorType === "ECG") {
+    if (!body.ecgType) errors.push({ path: "ecgType", msg: "ecgType is required" });
+    if (!body.clinicalIndication) errors.push({ path: "clinicalIndication", msg: "clinicalIndication is required" });
+    if (!body.findings) errors.push({ path: "findings", msg: "findings is required" });
+    if (!body.interpretation) errors.push({ path: "interpretation", msg: "interpretation is required" });
+  }
+
+  if (discriminatorType === "Ultrasound") {
+    if (!body.studyType) errors.push({ path: "studyType", msg: "studyType is required" });
+    if (!body.clinicalIndication) errors.push({ path: "clinicalIndication", msg: "clinicalIndication is required" });
+    if (!body.findings) errors.push({ path: "findings", msg: "findings is required" });
+    if (!body.impression) errors.push({ path: "impression", msg: "impression is required" });
+    if (!body.interpretation) errors.push({ path: "interpretation", msg: "interpretation is required" });
+  }
+
+  if (discriminatorType === "AutomatedReport") {
+    if (!body.testPanelName) errors.push({ path: "testPanelName", msg: "testPanelName is required" });
+    if (!body.testCategory) errors.push({ path: "testCategory", msg: "testCategory is required" });
+    if (!body.sampleType) errors.push({ path: "sampleType", msg: "sampleType is required" });
+    if (!body.sampleCollectionTime) errors.push({ path: "sampleCollectionTime", msg: "sampleCollectionTime is required" });
+    if (!body.analysisCompletedTime) errors.push({ path: "analysisCompletedTime", msg: "analysisCompletedTime is required" });
+  }
+
+  return errors;
+};
+
+/**
+ * Upload a single test result file (image or PDF) to Cloudinary.
+ * The client receives { fileName, filePath, fileSize, mimeType } and includes
+ * it in the uploadedFiles[] array when submitting the result form.
+ * POST /api/results/upload-file
+ */
+export const uploadResultFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded. Use field name \"file\" in multipart/form-data.",
+      });
+    }
+
+    const resourceType =
+      req.file.mimetype === "application/pdf" ? "raw" : "image";
+
+    // For PDFs, include .pdf in publicId so Cloudinary serves with Content-Type: application/pdf
+    const uploadOptions = { folder: "medilab/results", resourceType };
+    if (req.file.mimetype === "application/pdf") {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      uploadOptions.publicId = `result-${uniqueSuffix}.pdf`;
+    }
+
+    const { url } = await uploadToCloudinary(req.file.buffer, uploadOptions);
+
+    res.status(200).json({
+      success: true,
+      message: "File uploaded successfully",
+      data: {
+        fileName: req.file.originalname,
+        filePath: url,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * Submit a new test result with discriminator support
@@ -39,6 +151,19 @@ export const submitTestResult = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: "Test type is not active",
+      });
+    }
+
+    // Validate discriminator-specific fields (upload types: XRay, ECG, Ultrasound, AutomatedReport)
+    const discriminatorErrors = validateUploadDiscriminatorFields(
+      testType.discriminatorType,
+      req.body,
+    );
+    if (discriminatorErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: discriminatorErrors,
       });
     }
 
@@ -689,42 +814,32 @@ export const downloadTestResultPDF = async (req, res, next) => {
       }
     }
 
-    // Check if PDF has been generated
-    if (!result.generatedReportPath) {
-      return res.status(404).json({
+    // Gate on released status — PDF is generated on-demand, never stored
+    if (result.currentStatus !== "released") {
+      return res.status(403).json({
         success: false,
-        message: "PDF report not yet generated. Result must be released first.",
+        message: "PDF report is only available for released results.",
       });
     }
 
-    // Check if file exists
-    if (!fs.existsSync(result.generatedReportPath)) {
-      return res.status(404).json({
-        success: false,
-        message: "PDF report file not found on server",
-      });
-    }
+    // Fetch fully populated result for PDF generation
+    const resultForPDF = await resultService.findTestResultForPDF(req.params.id);
 
-    // Get filename for download
-    const fileName = path.basename(result.generatedReportPath);
+    // Generate PDF in-memory and stream directly to client
+    const pdfBuffer = await generateTestResultPDF(resultForPDF);
 
-    // Set headers for PDF download
+    // Build a descriptive filename: e.g. MediLab_Blood_Glucose_Test_<id>.pdf
+    const testTypeName = resultForPDF.testTypeId?.name
+      ? resultForPDF.testTypeId.name.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "")
+      : resultForPDF.constructor.modelName;
+    const fileName = `MediLab_${testTypeName}_${result._id}.pdf`;
+
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-
-    // Stream the PDF file
-    const fileStream = fs.createReadStream(result.generatedReportPath);
-    fileStream.pipe(res);
-
-    fileStream.on("error", (error) => {
-      console.error("Error streaming PDF:", error);
-      if (!res.headersSent) {
-        res.status(500).json({
-          success: false,
-          message: "Error streaming PDF file",
-        });
-      }
-    });
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${fileName}"`,
+    );
+    res.send(pdfBuffer);
   } catch (error) {
     if (error.statusCode === 404) {
       return res.status(404).json({

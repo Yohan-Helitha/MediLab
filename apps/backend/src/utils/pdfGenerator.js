@@ -1,6 +1,4 @@
 import PDFDocument from "pdfkit";
-import fs from "fs";
-import path from "path";
 
 /**
  * PDF Report Generator for Test Results
@@ -31,18 +29,7 @@ import path from "path";
  * @param {Object} testResult - Test result with populated references
  * @returns {Promise<string>} - Path to generated PDF file
  */
-export const generateTestResultPDF = async (testResult) => {
-  // Ensure reports directory exists
-  const reportsDir = path.join(process.cwd(), "reports");
-  if (!fs.existsSync(reportsDir)) {
-    fs.mkdirSync(reportsDir, { recursive: true });
-  }
-
-  // Generate unique filename
-  const timestamp = new Date().getTime();
-  const fileName = `report_${testResult._id}_${timestamp}.pdf`;
-  const filePath = path.join(reportsDir, fileName);
-
+export const generateTestResultPDF = (testResult) => {
   return new Promise((resolve, reject) => {
     try {
       // Create PDF document
@@ -51,9 +38,11 @@ export const generateTestResultPDF = async (testResult) => {
         margins: { top: 50, bottom: 50, left: 50, right: 50 },
       });
 
-      // Pipe to file
-      const stream = fs.createWriteStream(filePath);
-      doc.pipe(stream);
+      // Collect PDF data chunks in memory — return Buffer, never touch disk or cloud
+      const chunks = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
 
       // Generate report based on discriminator type
       const discriminator = testResult.constructor.modelName;
@@ -74,14 +63,8 @@ export const generateTestResultPDF = async (testResult) => {
           generatePregnancyReport(doc, testResult);
           break;
         case "XRay":
-          generateGenericReport(doc, testResult);
-          break;
         case "ECG":
-          generateGenericReport(doc, testResult);
-          break;
         case "Ultrasound":
-          generateGenericReport(doc, testResult);
-          break;
         case "AutomatedReport":
           generateGenericReport(doc, testResult);
           break;
@@ -92,17 +75,8 @@ export const generateTestResultPDF = async (testResult) => {
           generateGenericReport(doc, testResult);
       }
 
-      // Finalize PDF
+      // Finalize PDF — triggers data/end events
       doc.end();
-
-      // Wait for file to be written
-      stream.on("finish", () => {
-        resolve(filePath);
-      });
-
-      stream.on("error", (error) => {
-        reject(error);
-      });
     } catch (error) {
       reject(error);
     }
