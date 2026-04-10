@@ -1,6 +1,6 @@
 # Artillery Load Test - Payment (PayHere) Module
-# Usage (smoke/default): npx artillery run tests/performance/payment/artillery-payment.yml
-# Usage (full):          npx artillery run --environment full tests/performance/payment/artillery-payment.yml
+# Usage (smoke/default): npx artillery run src/modules/payment/__tests__/artillery-payment.yml
+# Usage (full):          npx artillery run --environment full src/modules/payment/__tests__/artillery-payment.yml
 # Notes:
 # - /checkout may return 400 if MERCHANT_ID / MERCHANT_SECRET env vars are not set.
 # - /notify is unauthenticated and will return 200 even for invalid signatures.

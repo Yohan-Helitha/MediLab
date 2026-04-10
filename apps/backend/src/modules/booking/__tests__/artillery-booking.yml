@@ -1,6 +1,6 @@
 # Artillery Load Test - Booking Module
-# Usage (smoke/default): npx artillery run tests/performance/booking/artillery-booking.yml
-# Usage (full):          npx artillery run --environment full tests/performance/booking/artillery-booking.yml
+# Usage (smoke/default): npx artillery run src/modules/booking/__tests__/artillery-booking.yml
+# Usage (full):          npx artillery run --environment full src/modules/booking/__tests__/artillery-booking.yml
 
 config:
   target: "http://localhost:5000"

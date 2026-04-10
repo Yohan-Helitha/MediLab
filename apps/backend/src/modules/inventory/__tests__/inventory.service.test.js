@@ -1,10 +1,10 @@
 import { jest } from "@jest/globals";
 import mongoose from "mongoose";
 
-import InventoryStock from "./inventoryStock.model.js";
-import StockTransaction from "./stockTransaction.model.js";
-import TestEquipmentRequirement from "./testEquipmentRequirement.model.js";
-import Booking from "../booking/booking.model.js";
+import InventoryStock from "../inventoryStock.model.js";
+import StockTransaction from "../stockTransaction.model.js";
+import TestEquipmentRequirement from "../testEquipmentRequirement.model.js";
+import Booking from "../../booking/booking.model.js";
 
 import {
 	restockEquipment,
@@ -13,7 +13,7 @@ import {
 	getTestEquipmentRequirements,
 	upsertTestEquipmentRequirement,
 	deactivateTestEquipmentRequirement,
-} from "./inventory.service.js";
+} from "../inventory.service.js";
 
 // Helper to mock a simple mongoose session that just runs the callback inline
 function mockSession() {
@@ -117,7 +117,7 @@ describe("inventory.service", () => {
 		const equipmentSession = jest.fn().mockReturnValue({ exec: equipmentExec });
 		const equipmentFindById = jest.fn().mockReturnValue({ session: equipmentSession });
 		// Lazy import mocking: overwrite the method on the model instance used by service
-		const equipmentModule = await import("./equipment.model.js");
+		const equipmentModule = await import("../equipment.model.js");
 		equipmentModule.default.findById = equipmentFindById;
 
 		// Idempotency: no prior DEDUCT

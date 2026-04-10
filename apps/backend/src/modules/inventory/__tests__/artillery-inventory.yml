@@ -1,6 +1,6 @@
 # Artillery Load Test - Inventory Module
-# Usage (smoke/default): npx artillery run tests/performance/inventory/artillery-inventory.yml
-# Usage (full):          npx artillery run --environment full tests/performance/inventory/artillery-inventory.yml
+# Usage (smoke/default): npx artillery run src/modules/inventory/__tests__/artillery-inventory.yml
+# Usage (full):          npx artillery run --environment full src/modules/inventory/__tests__/artillery-inventory.yml
 
 config:
   target: "http://localhost:5000"

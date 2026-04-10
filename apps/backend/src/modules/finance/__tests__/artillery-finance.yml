@@ -1,6 +1,6 @@
 # Artillery Load Test - Finance Module
-# Usage (smoke/default): npx artillery run tests/performance/finance/artillery-finance.yml
-# Usage (full):          npx artillery run --environment full tests/performance/finance/artillery-finance.yml
+# Usage (smoke/default): npx artillery run src/modules/finance/__tests__/artillery-finance.yml
+# Usage (full):          npx artillery run --environment full src/modules/finance/__tests__/artillery-finance.yml
 
 config:
   target: "http://localhost:5000"

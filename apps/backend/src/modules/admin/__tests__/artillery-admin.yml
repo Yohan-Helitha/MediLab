@@ -1,6 +1,6 @@
 # Artillery Load Test - Admin Module
-# Usage (smoke/default): npx artillery run tests/performance/admin/artillery-admin.yml
-# Usage (full):          npx artillery run --environment full tests/performance/admin/artillery-admin.yml
+# Usage (smoke/default): npx artillery run src/modules/admin/__tests__/artillery-admin.yml
+# Usage (full):          npx artillery run --environment full src/modules/admin/__tests__/artillery-admin.yml
 
 config:
   target: "http://localhost:5000"
@@ -28,31 +28,31 @@ config:
 scenarios:
   - name: "Admin Overview & Users"
     flow:
-      # Register Admin staff and capture token
+      # Register staff and capture token
       - post:
           url: "/api/auth/staff/register"
           json:
             fullName: "Admin Perf User"
             email: "perf.admin.module.{{ $timestamp }}.{{ $randomNumber(1, 1000000) }}@example.com"
             contactNumber: "0771234567"
-            role: "Admin"
-            password: "AdminPassword123!"
+            role: "Staff"
+            password: "StaffPassword123!"
           capture:
             - json: "$.data.token"
-              as: "adminToken"
+              as: "staffToken"
           expect:
             - statusCode: 201
 
       - get:
           url: "/api/admin/overview"
           headers:
-            Authorization: "Bearer {{ adminToken }}"
+            Authorization: "Bearer {{ staffToken }}"
           expect:
             - statusCode: 200
 
       - get:
-          url: "/api/admin/users?role=Admin"
+          url: "/api/admin/users?role=Staff"
           headers:
-            Authorization: "Bearer {{ adminToken }}"
+            Authorization: "Bearer {{ staffToken }}"
           expect:
             - statusCode: 200
