@@ -68,18 +68,22 @@ describe('Lab routes integration', () => {
   });
 
   it('should allow Staff to create a lab', async () => {
+		const uniqueSuffix = Date.now();
+		const uniqueName = `Integration Health Center ${uniqueSuffix}`;
+		const uniqueEmail = `integration.lab+${uniqueSuffix}@example.com`;
+
     const res = await request(app)
       .post('/api/labs')
       .set('Authorization', `Bearer ${staffToken}`)
       .send({
-        name: 'Integration Health Center',
+			name: uniqueName,
         district: 'Colombo',
         province: 'Western',
         phoneNumber: '0112000000',
-        email: 'integration.lab@example.com',
+			email: uniqueEmail,
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.name).toBe('Integration Health Center');
+		expect(res.body.name).toBe(uniqueName);
   });
 });
