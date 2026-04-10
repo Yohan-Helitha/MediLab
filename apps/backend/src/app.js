@@ -52,12 +52,59 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Core middleware
-app.use(cors({
-  origin: 'http://localhost:5173',
+const parseCsv = (value) =>
+  String(value || '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+const normalizeOrigin = (value) => {
+  const v = String(value || '').trim();
+  return v.replace(/\/+$/g, '');
+};
+
+const allowedOrigins = new Set(
+  [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+
+    // Your custom production domain
+    'https://medilab.dev',
+
+    // Optional env-driven origin(s)
+    process.env.FRONTEND_URL,
+    process.env.WEB_URL,
+    ...parseCsv(process.env.CORS_ORIGINS),
+  ]
+    .filter(Boolean)
+    .map(normalizeOrigin),
+);
+
+const allowedOriginPatterns = [
+  // Vercel preview + production domains
+  /^https:\/\/.*\.vercel\.app$/i,
+];
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser clients (curl/Postman) with no Origin
+    if (!origin) return callback(null, true);
+
+    const normalized = normalizeOrigin(origin);
+    const isAllowed =
+      allowedOrigins.has(normalized) ||
+      allowedOriginPatterns.some((re) => re.test(normalized));
+
+    return callback(null, isAllowed);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(config.isDev ? "dev" : "combined"));
