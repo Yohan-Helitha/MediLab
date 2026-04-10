@@ -35,6 +35,12 @@ import HouseholdRegistrationPage from "../pages/patient/HouseholdRegistrationPag
 import SymptomCheckerPage from "../pages/patient/SymptomCheckerPage";
 import VisitReferralPage from "../pages/patient/VisitReferralPage";
 import TestResultsPage from "../pages/staff/TestResultsPage";
+import LabTechnicianLayout from "../layout/LabTechnicianLayout";
+import LabOverviewPage from "../pages/lab/LabOverviewPage";
+import LabResultsPage from "../pages/lab/LabResultsPage";
+import LabSubmitPage from "../pages/lab/LabSubmitPage";
+import LabUncollectedPage from "../pages/lab/LabUncollectedPage";
+import LabNotificationsPage from "../pages/lab/LabNotificationsPage";
 
 const POST_AUTH_REDIRECT_KEY = "medilab.postAuthRedirect";
 
@@ -68,7 +74,7 @@ const AppRoutes = () => {
 	const getPostAuthRedirect = () => {
 		if (!user) return "/";
 		if (isAdminUser()) return "/admin/overview";
-		if (isLabTechnicianUser()) return "/staff/lab-dashboard";
+		if (isLabTechnicianUser()) return "/lab/overview";
 		if (isPatientUser()) return "/";
 		return "/staff/dashboard";
 	};
@@ -158,7 +164,7 @@ const AppRoutes = () => {
 				/>
 				<Route
 					path="/staff/lab-dashboard"
-					element={<DashboardLayout activePage="labs"><div className="p-8">Lab Technician dashboard coming soon</div></DashboardLayout>}
+					element={<Navigate to="/lab/overview" replace />}
 				/>
 				<Route path="/staff/tests" element={<DashboardLayout activePage="tests"><TestManagementPage /></DashboardLayout>} />
 				<Route path="/staff/availability" element={<DashboardLayout activePage="availability"><TestAvailabilityPage /></DashboardLayout>} />
@@ -234,6 +240,17 @@ const AppRoutes = () => {
 				<Route path="/symptom-checker" element={<SymptomCheckerPage />} />
 				<Route path="/ai-doctor" element={<AIDoctorChatPage />} />
 				<Route path="/dashboard" element={<div className="p-8">Patient Dashboard Coming Soon</div>} />
+			</Route>
+
+			{/* Protected Lab Technician Routes */}
+			<Route element={<ProtectedRoute allowedRoles={["Lab_Technician"]} redirectTo="/staff/login" />}>
+				<Route element={<LabTechnicianLayout />}>
+					<Route path="/lab/overview" element={<LabOverviewPage />} />
+					<Route path="/lab/results" element={<LabResultsPage />} />
+					<Route path="/lab/submit" element={<LabSubmitPage />} />
+					<Route path="/lab/uncollected" element={<LabUncollectedPage />} />
+					<Route path="/lab/notifications" element={<LabNotificationsPage />} />
+				</Route>
 			</Route>
 
 			{/* Catch all */}

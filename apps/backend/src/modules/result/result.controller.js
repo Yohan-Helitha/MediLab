@@ -2,6 +2,7 @@ import axios from "axios";
 import { validationResult } from "express-validator";
 import * as resultService from "./result.service.js";
 import TestType from "../test/testType.model.js";
+import Booking from "../booking/booking.model.js";
 import { uploadToCloudinary, getSignedDownloadUrl } from "../../utils/cloudinaryUpload.js";
 import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
 import { sendHardCopyReadyNotification, sendResultReadyNotification } from "../notification/notification.service.js";
@@ -168,6 +169,11 @@ export const submitTestResult = async (req, res, next) => {
       testType.discriminatorType,
       req.body,
     );
+
+    // Mark the booking as COMPLETED so it no longer appears in the pending list
+    await Booking.findByIdAndUpdate(req.body.bookingId, {
+      $set: { status: "COMPLETED" },
+    });
 
     res.status(201).json({
       success: true,
