@@ -10,6 +10,16 @@ import {
 import Modal from "../components/Modal";
 import ToastMessage from "../components/ToastMessage";
 
+function getTestInstructionErrorMessage(error) {
+	if (error && Array.isArray(error.errors) && error.errors.length > 0) {
+		return error.errors.map((e) => e.msg).join("; ");
+	}
+	return (
+		(error && error.message) ||
+		"Failed to save instructions. Please check the form and try again."
+	);
+}
+
 function TestInstructionsPage() {
 	const [instructions, setInstructions] = useState([]);
 	const [allTests, setAllTests] = useState([]);
@@ -130,7 +140,7 @@ function TestInstructionsPage() {
 					: "Test instructions created successfully.",
 			});
 		} catch (err) {
-			setError(err.message || "Failed to save instructions");
+			setError(getTestInstructionErrorMessage(err));
 		}
 	};
 
@@ -147,7 +157,7 @@ function TestInstructionsPage() {
 				text: "Test instructions deleted successfully.",
 			});
 		} catch (err) {
-			setError(err.message || "Failed to delete instructions");
+			setError(getTestInstructionErrorMessage(err));
 		}
 	};
 

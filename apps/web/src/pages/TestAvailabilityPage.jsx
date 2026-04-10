@@ -13,6 +13,16 @@ import ToggleSwitch from "../components/ToggleSwitch";
 import Modal from "../components/Modal";
 import ToastMessage from "../components/ToastMessage";
 
+function getLabTestErrorMessage(error) {
+	if (error && Array.isArray(error.errors) && error.errors.length > 0) {
+		return error.errors.map((e) => e.msg).join("; ");
+	}
+	return (
+		(error && error.message) ||
+		"Failed to save lab test details. Please check the form and try again."
+	);
+}
+
 function TestAvailabilityPage() {
 	const [labs, setLabs] = useState([]);
 	const [selectedLabId, setSelectedLabId] = useState("");
@@ -156,7 +166,7 @@ function TestAvailabilityPage() {
 			closeEditModal();
 			setToastMessage({ type: "success", text: "Lab test details updated." });
 		} catch (err) {
-			setError(err.message || "Failed to update test details");
+			setError(getLabTestErrorMessage(err));
 		}
 	};
 
@@ -211,7 +221,7 @@ function TestAvailabilityPage() {
 			setIsAddModalOpen(false);
 			setToastMessage({ type: "success", text: "Test added to lab." });
 		} catch (err) {
-			setError(err.message || "Failed to add test to lab");
+			setError(getLabTestErrorMessage(err));
 		}
 	};
 
@@ -235,7 +245,7 @@ function TestAvailabilityPage() {
 						: "Test marked as unavailable.",
 			});
 		} catch (err) {
-			setError(err.message || "Failed to update availability");
+			setError(getLabTestErrorMessage(err));
 		}
 	};
 
@@ -249,7 +259,7 @@ function TestAvailabilityPage() {
 			setLabTests((prev) => prev.filter((t) => t._id !== labTest._id));
 			setToastMessage({ type: "success", text: "Test removed from lab." });
 		} catch (err) {
-			setError(err.message || "Failed to delete lab test");
+			setError(getLabTestErrorMessage(err));
 		}
 	};
 
