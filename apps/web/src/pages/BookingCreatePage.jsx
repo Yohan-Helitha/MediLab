@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { createBooking, createPayHereCheckout } from "../api/bookingApi";
 import { translateTexts } from "../api/translationApi";
 import { useTranslation } from "react-i18next";
+import ToastMessage from "../components/ToastMessage";
 
 function postToPayHere(checkoutUrl, fields) {
 	const form = document.createElement("form");
@@ -60,6 +61,7 @@ function BookingCreatePage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [translatedNames, setTranslatedNames] = useState({});
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	useEffect(() => {
 		// If user opened this page directly, force them back to labs.
@@ -151,6 +153,10 @@ function BookingCreatePage() {
 
 			// Always proceed to PayHere for ONLINE payments.
 			if (formData.paymentMethod === "ONLINE") {
+				setToastMessage({
+					type: "success",
+					text: t("booking.create.toast.createdRedirecting"),
+				});
 				const checkout = await createPayHereCheckout({ bookingId });
 				if (!checkout?.checkoutUrl || !checkout?.fields) {
 					throw new Error(t("booking.create.error.payherePayload"));
@@ -159,9 +165,17 @@ function BookingCreatePage() {
 				return;
 			}
 
+			setToastMessage({
+				type: "success",
+				text: t("booking.create.toast.createdCash"),
+			});
 			navigate("/dashboard");
 		} catch (err) {
 			setError(err?.message || t("booking.create.error.generic"));
+			setToastMessage({
+				type: "error",
+				text: err?.message || t("booking.create.error.generic"),
+			});
 		} finally {
 			setLoading(false);
 		}
@@ -173,6 +187,11 @@ function BookingCreatePage() {
 
 	return (
 		<PublicLayout onNavigate={onNavigate}>
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<div className="space-y-6">
 				<div className="rounded-2xl bg-white shadow-md border border-slate-200 overflow-hidden">
 					<div className="h-1 w-full bg-gradient-to-r from-teal-500 to-emerald-400" />

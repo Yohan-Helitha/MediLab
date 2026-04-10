@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Modal from "../components/Modal";
 import { fetchFinanceSummary, fetchPayments, recordCashPayment } from "../api/financeApi";
 import UnpaidBookingsPanel from "../components/UnpaidBookingsPanel";
+import ToastMessage from "../components/ToastMessage";
 
 function AdminFinanceDashboard() {
 	const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +18,7 @@ function AdminFinanceDashboard() {
 	const [cashNotes, setCashNotes] = useState("");
 	const [isSubmittingCash, setIsSubmittingCash] = useState(false);
 	const [unpaidRefreshKey, setUnpaidRefreshKey] = useState(0);
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	const paymentMethodFilter = useMemo(() => {
 		if (activeTab === "CASH") return "CASH";
@@ -118,13 +120,16 @@ function AdminFinanceDashboard() {
 		if (event) event.preventDefault();
 
 		if (!cashBookingId.trim()) {
-			alert("Please enter a booking id.");
+			setToastMessage({ type: "error", text: "Please enter a booking id." });
 			return;
 		}
 
 		const amountNumber = Number(cashAmount);
 		if (!Number.isFinite(amountNumber) || amountNumber < 0) {
-			alert("Please enter a valid amount (>= 0). ");
+			setToastMessage({
+				type: "error",
+				text: "Please enter a valid amount (>= 0).",
+			});
 			return;
 		}
 
@@ -137,9 +142,16 @@ function AdminFinanceDashboard() {
 			});
 			setIsRecordingCash(false);
 			await reloadFinance({ methodFilter: paymentMethodFilter });
+			setToastMessage({
+				type: "success",
+				text: "Cash payment recorded successfully.",
+			});
 		} catch (err) {
 			console.error("Failed to record cash payment", err);
-			alert(err.message || "Failed to record cash payment");
+			setToastMessage({
+				type: "error",
+				text: err.message || "Failed to record cash payment",
+			});
 		} finally {
 			setIsSubmittingCash(false);
 		}
@@ -147,6 +159,11 @@ function AdminFinanceDashboard() {
 
 	return (
 		<div className="space-y-6">
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<header className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-semibold text-slate-900">
