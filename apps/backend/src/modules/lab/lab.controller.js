@@ -31,14 +31,14 @@ export const getLabs = async (req, res) => {
 export const getLabById = async (req, res) => {
   try {
     const lab = await labService.getLabById(req.params.id);
-    if (!lab) {
-      return res.status(404).json({
-        success: false,
-        message: 'Lab not found',
-      });
-    }
     res.json(lab);
   } catch (error) {
+    if (error.name === 'NotFoundError') {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
     res.status(500).json({
       success: false,
       message: error.message,
@@ -49,14 +49,14 @@ export const getLabById = async (req, res) => {
 export const updateLab = async (req, res) => {
   try {
     const lab = await labService.updateLab(req.params.id, req.body);
-    if (!lab) {
-      return res.status(404).json({
-        success: false,
-        message: 'Lab not found',
-      });
-    }
     res.json(lab);
   } catch (error) {
+    if (error.name === 'NotFoundError') {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
     res.status(400).json({
       success: false,
       message: error.message,
@@ -67,14 +67,14 @@ export const updateLab = async (req, res) => {
 export const deleteLab = async (req, res) => {
   try {
     const lab = await labService.deleteLab(req.params.id);
-    if (!lab) {
-      return res.status(404).json({
-        success: false,
-        message: 'Lab not found',
-      });
-    }
     res.json({ message: 'Lab deleted successfully' });
   } catch (error) {
+    if (error.name === 'NotFoundError') {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
     res.status(500).json({
       success: false,
       message: error.message,
@@ -86,14 +86,14 @@ export const updateLabStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const lab = await labService.updateLabStatus(req.params.id, status);
-    if (!lab) {
-      return res.status(404).json({
-        success: false,
-        message: 'Lab not found',
-      });
-    }
     res.json(lab);
   } catch (error) {
+    if (error.name === 'NotFoundError') {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
     res.status(400).json({
       success: false,
       message: error.message,

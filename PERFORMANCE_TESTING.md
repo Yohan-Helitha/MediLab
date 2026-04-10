@@ -66,6 +66,7 @@ Vite build warnings about large chunks (>500kB) can correlate with slow initial 
 Two common approaches:
 - **autocannon** (Node) for quick single-endpoint tests
 - **k6** for scenario-based, repeatable load tests
+- **Artillery** for HTTP scenario-based load tests (used in this project)
 
 ### 1) Smoke test (safe)
 Run a low-rate test first (avoids accidental overload):
@@ -83,6 +84,28 @@ Simulate normal usage:
 Only on staging:
 - ramp beyond expected load
 - stop when error rate rises or latency explodes
+
+### 4) Artillery load test for lab & test APIs
+This project includes an Artillery scenario focused on the critical lab/test endpoints:
+
+- File: `apps/backend/perf/test-management-perf.yml`
+- Endpoints covered:
+  - `GET /api/test-types`
+  - `GET /api/test-types/method/form`
+  - `GET /api/test-types/method/upload`
+  - `GET /api/labs`
+  - `GET /api/health`
+
+Run locally:
+
+1. From `apps/backend`, install dev dependencies (including Artillery):
+  - `npm install`
+2. Start the backend API (in one terminal):
+  - `npm run dev`
+3. In another terminal, run the load test:
+  - `npm run perf:test`
+
+Artillery will report latency percentiles (p50, p95), RPS, and error rate. Compare these to the targets above to evaluate whether the API can handle concurrent requests without significant latency.
 
 ## Critical endpoints to test
 ### Public (no auth)

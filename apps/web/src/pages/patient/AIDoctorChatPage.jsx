@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import PublicLayout from "../../layout/PublicLayout";
 import { consultationApi } from "../../api/consultationApi";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from 'react-markdown';
 
 // Safety net: strips raw JSON error payloads before showing to user
@@ -21,6 +22,7 @@ const sanitizeErrorMessage = (msg) => {
 
 function AIDoctorChatPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Chatbot State
   const [chatMessage, setChatMessage] = useState("");
@@ -118,15 +120,15 @@ function AIDoctorChatPage() {
                     </svg>
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-teal-100 italic">
-                    REAL-TIME CLINICAL CONSULTATION
+                    {t("aiDoctor.badge")}
                   </span>
                 </div>
                 
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                  AI Doctor Chat
+                  {t("navbar.aiDoctorChat")}
                 </h1>
                 <p className="text-teal-50/70 text-xs font-medium max-w-xl leading-relaxed mt-1 italic">
-                  Describe your concerns, and receive expert-level clinical guidance powered by Gemini AI.
+                  {t("aiDoctor.subtitle")}
                 </p>
               </div>
             </div>
@@ -135,13 +137,13 @@ function AIDoctorChatPage() {
             <div className="p-8 md:p-12 flex flex-col h-[820px] animate-in fade-in duration-500">
                 <div className="flex items-center justify-between mb-6">
                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
-                      <span className="text-[10px] font-bold text-teal-600 uppercase tracking-widest italic">Conversation History Persistent</span>
+                     <div className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
+                     <span className="text-[10px] font-bold text-teal-600 uppercase tracking-widest italic">{t("aiDoctor.historyPersistent")}</span>
                    </div>
                    {chatHistory.length > 0 && (
                      <button 
                        onClick={() => {
-                         if(confirm("Are you sure you want to clear the conversation?")) {
+                         if(confirm(t("aiDoctor.clearConfirm"))) {
                            setChatHistory([]);
                            localStorage.removeItem(storageKey);
                          }
@@ -149,7 +151,7 @@ function AIDoctorChatPage() {
                        className="text-[10px] font-bold text-rose-400 hover:text-rose-600 uppercase tracking-widest transition-colors flex items-center gap-1"
                      >
                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                       Clear Chat
+                       {t("aiDoctor.clearButton")}
                      </button>
                    )}
                 </div>
@@ -161,7 +163,7 @@ function AIDoctorChatPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                         </svg>
                       </div>
-                      <p className="text-sm font-medium italic">How can I assist you with your health today?</p>
+                      <p className="text-sm font-medium italic">{t("aiDoctor.emptyPrompt")}</p>
                     </div>
                   ) : (
                     chatHistory.map((msg, idx) => {
@@ -212,7 +214,7 @@ function AIDoctorChatPage() {
                     type="text"
                     value={chatMessage}
                     onChange={(e) => setChatMessage(e.target.value)}
-                    placeholder="Ask about your symptoms, medications, or health concerns..."
+                    placeholder={t("aiDoctor.inputPlaceholder")}
                     className="w-full py-4 pl-6 pr-14 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-700 text-sm focus:border-teal-500/30 focus:bg-white outline-none transition-all placeholder:text-slate-400"
                     disabled={chatLoading}
                   />
@@ -233,15 +235,15 @@ function AIDoctorChatPage() {
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[14px] font-bold text-slate-400 uppercase">AES-256 Encrypted</span>
+                  <span className="text-[14px] font-bold text-slate-400 uppercase">{t("ai.common.security.aes")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[14px] font-bold text-slate-400 uppercase">HIPAA Compliant</span>
+                  <span className="text-[14px] font-bold text-slate-400 uppercase">{t("ai.common.security.hipaa")}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[14px] font-bold text-slate-300 uppercase ">MediLab Intelligence Engine v4.2.0</span>
+                <span className="text-[14px] font-bold text-slate-300 uppercase ">{t("ai.common.security.engineLabel")}</span>
               </div>
             </div>
 

@@ -11,6 +11,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import PublicLayout from '../../layout/PublicLayout';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { fetchFamilyMembers, fetchFamilyTree, fetchHouseholdBySubmittedBy, updateFamilyMember } from '../../api/patientApi';
 import { toast } from 'react-hot-toast';
 import { getSafeErrorMessage } from '../../utils/errorHandler';
@@ -115,6 +116,7 @@ const nodeTypes = {
 
 function FamilyTreePage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [targetMemberName, setTargetMemberName] = useState(null); 
@@ -584,6 +586,30 @@ function FamilyTreePage() {
         {/* Header - Static at top */}
         <div className='flex items-center justify-between px-6 py-4'>
             <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('familyTree.title')}</h1>
+              <p className="text-slate-400 text-[15px] font-bold mt-0.5 ">
+                {loading
+                  ? t('familyTree.loading')
+                  : `${t('familyTree.residentLabel')}: ${user?.full_name || t('familyTree.anonymous')}`}
+              </p>
+            </div>
+
+            {/* Instructions Bar pushed to the right */}
+            <div className="hidden md:flex items-center gap-5 bg-teal-600 backdrop-blur-md px-5 py-2 rounded-xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.scroll')}</span>
+                </div>
+                <div className="w-px h-3 bg-slate-200" />
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/60  shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.drag')}</span>
+                </div>
+                <div className="w-px h-3 bg-slate-200" />
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/60  shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.addDisease')}</span>
+                </div>
                 <h1 className='text-2xl font-bold text-slate-800 flex items-center gap-3'>
                   <div className='w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center text-white'>
                     <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -604,6 +630,50 @@ function FamilyTreePage() {
             </button>
         </div>
 
+        <div className="flex-1 bg-white rounded-[32px] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden relative group">
+          {loading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-50">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-600 font-bold animate-pulse">Synchronizing Family Records...</p>
+                </div>
+            </div>
+          ) : nodes.length === 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center p-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <div className="text-5xl mb-4">🌳</div>
+                <h3 className="text-xl font-bold text-slate-800">{t('familyTree.empty.title')}</h3>
+                <p className="text-slate-500 max-w-xs mx-auto mt-2">{t('familyTree.empty.body')}</p>
+                </div>
+            </div>
+          ) : null}
+          
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            nodeTypes={nodeTypes}
+            fitView
+            connectionMode="loose"
+            maxZoom={1.5}
+            minZoom={0.2}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={true}
+            panOnDrag={!isLocked}
+            zoomOnScroll={!isLocked}
+            zoomOnPinch={!isLocked}
+            zoomOnDoubleClick={!isLocked}
+            preventScrolling={true}
+          >
+            <Background color="#cbd5e1" gap={30} size={1} variant="dots" />
+            <Controls 
+              className="!bg-white/80 backdrop-blur-md !border-none !shadow-2xl !rounded-full p-2" 
+              onInteractiveChange={(interactive) => setIsLocked(!interactive)}
+            />
+          </ReactFlow>
+        </div>
         {/* React Flow Canvas - Takes remaining space */}
         <div className='flex-1 relative overflow-hidden'>
 

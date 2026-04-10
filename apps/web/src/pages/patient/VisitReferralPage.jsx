@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
   Clock, 
@@ -27,6 +28,7 @@ import { fetchVisitsByPatient, createVisit, updateVisit, deleteVisit, fetchRefer
 import { generateVisitPDF, generateReferralPDF } from '../../utils/pdfGenerator';
 
 const VisitReferralPage = () => {
+  const { t } = useTranslation();
   const { user } = useContext(AuthContext);
   const isPatient = user?.role === 'patient' || user?.userType === 'patient';
   
@@ -323,8 +325,8 @@ const VisitReferralPage = () => {
           {/* Header */}
           <div className="bg-teal-700 px-8 py-6 text-white flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold">Visits & Referrals</h1>
-              <p className="text-teal-100 mt-1">Manage your medical visits and clinical referrals</p>
+              <h1 className="text-2xl font-bold">{t('visits.title')}</h1>
+              <p className="text-teal-100 mt-1">{t('visits.subtitle')}</p>
             </div>
             {viewMode === 'list' && !isPatient && (
               <button 
@@ -347,7 +349,7 @@ const VisitReferralPage = () => {
                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
               }`}
             >
-              Clinical Visits
+              {t('visits.tab.clinical')}
             </button>
             <button
               onClick={() => { setActiveTab("referrals"); setViewMode('list'); }}
@@ -357,7 +359,7 @@ const VisitReferralPage = () => {
                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
               }`}
             >
-              Referral History
+              {t('visits.tab.referrals')}
             </button>
           </div>
 
@@ -615,7 +617,7 @@ const VisitReferralPage = () => {
                       )) : (
                         <div className="py-12 text-center">
                           <FileText className="w-12 h-12 text-slate-100 mx-auto mb-3" />
-                          <p className="text-slate-400 text-sm">No visit records found</p>
+                          <p className="text-slate-400 text-sm">{t('visits.empty.noVisits')}</p>
                         </div>
                       )}
                     </div>
@@ -650,7 +652,7 @@ const VisitReferralPage = () => {
                       )) : (
                         <div className="py-12 text-center">
                           <FileBadge className="w-12 h-12 text-slate-100 mx-auto mb-3" />
-                          <p className="text-slate-400 text-sm">No referrals found</p>
+                          <p className="text-slate-400 text-sm">{t('visits.empty.noReferrals')}</p>
                         </div>
                       )}
                     </div>
