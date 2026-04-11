@@ -38,8 +38,8 @@ export const validateMemberCreate = [
   body("contact_number")
     .notEmpty()
     .withMessage("Contact number is required")
-    .matches(/^[0-9]{10}$/)
-    .withMessage("Contact number must be exactly 10 digits with no symbols or letters"),
+    .matches(/^\+94\d{9}$/)
+    .withMessage('Contact number must be in format +94xxxxxxxxx (e.g., +94712345678)'),
   
   body("nic")
     .optional()
@@ -195,9 +195,9 @@ export const validateMemberUpdate = [
     .withMessage("Diseases must be an array of strings"),
   
   body("contact_number")
-    .optional()
-    .matches(/^[0-9]{10}$/)
-    .withMessage("Contact number must be exactly 10 digits with no symbols or letters"),
+    .optional({ checkFalsy: true })
+    .matches(/^\+94\d{9}$/)
+    .withMessage('Contact number must be in format +94xxxxxxxxx (e.g., +94712345678)'),
   
   body("nic")
     .optional()
