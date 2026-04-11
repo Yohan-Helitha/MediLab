@@ -74,3 +74,17 @@ Languages example:
 Actors
 •	Staff manage translations
 •	Patients read translations
+
+
+ii. API Endpoint Documentation
+Complete documentation of all API endpoints (HTTP methods, request/response formats, authentication requirements, example requests and responses):
+
+- Lab Operations APIs (Labs, Lab Tests, Test Instructions): see `docs/arani/LAB_API_DOCUMENTATION.md`
+- Test Type APIs (Diagnostic Test Types): see `docs/arani/TEST_API_DOCUMENTATION.md`
+
+
+iii. Testing Instruction Reports
+Include: testing environment configuration details, how to run unit tests, integration testing setup and execution, performance testing setup and execution.
+
+- Lab module testing report: see `docs/arani/Testing_Instruction_Report_Lab.md`
+- Test Type module testing report: see `docs/arani/Testing_Instruction_Report_Test.md`

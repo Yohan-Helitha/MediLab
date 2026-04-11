@@ -161,6 +161,15 @@ describeIfDb("Finance routes integration", () => {
     ).toBe(false);
   });
 
+  it("does not include booking in unpaid CASH list after payment is recorded", async () => {
+    const res = await request(app)
+      .get("/api/finance/unpaid-bookings?paymentMethod=CASH")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items.some((row) => String(row.bookingId) === bookingId)).toBe(false);
+  });
+
   it("returns finance summary including cash revenue", async () => {
     const res = await request(app)
       .get("/api/finance/summary")

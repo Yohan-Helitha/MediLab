@@ -24,7 +24,7 @@ export default defineConfig({
       branches: 80,
       statements: 80
     },
-    include: ['src/**/*.test.{js,jsx}'],
+    include: ['src/**/*.test.{js,jsx}', 'tests/**/*.test.{js,jsx}'],
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
     deps: {
       inline: ['lucide-react', '@xyflow/react']
