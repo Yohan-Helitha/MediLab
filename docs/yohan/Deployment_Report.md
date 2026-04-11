@@ -24,7 +24,7 @@ Recommended deployment (low-friction for university demos):
 
 These URLs are based on the latest known deployment details provided during development:
 - Backend (Render): `https://medilab-l74h.onrender.com`
-- Frontend (Vercel): `https://medi-bz1hqvtzb-yohan-helithas-projects.vercel.app/`
+- Frontend (Vercel): `https://medilab.dev`
 
 If you re-deploy to a new URL, update this section and the corresponding env vars (`APP_URL`, `FRONTEND_URL`, `VITE_API_BASE_URL`).
 
