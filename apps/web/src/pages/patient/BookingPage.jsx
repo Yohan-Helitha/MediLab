@@ -1,16 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PublicLayout from "../../layout/PublicLayout";
 import { useAuth } from "../../context/AuthContext";
 import { getBookingsByPatientId, softDeleteBooking } from "../../api/bookingApi";
 import { translateTexts } from "../../api/translationApi";
+import ToastMessage from "../../components/ToastMessage";
 
 const BookingPage = () => {
 	const { t, i18n } = useTranslation();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { user } = useAuth();
 	const patientProfileId = user?.profile?._id || null;
+
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
@@ -34,6 +38,15 @@ const BookingPage = () => {
 				return;
 		}
 	};
+
+	useEffect(() => {
+		const incomingToast = location.state?.toastMessage;
+		if (incomingToast?.text) {
+			setToastMessage(incomingToast);
+			// Clear state so the toast doesn't re-appear on refresh/back.
+			navigate(location.pathname, { replace: true, state: {} });
+		}
+	}, [location.pathname, location.state, navigate]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -164,6 +177,11 @@ const BookingPage = () => {
 
 	return (
 		<PublicLayout onNavigate={onNavigate}>
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<div className="space-y-6">
 				<header className="flex flex-wrap items-start justify-between gap-4">
 					<div>

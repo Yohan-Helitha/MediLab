@@ -150,6 +150,7 @@ describeIfDb("Finance routes integration", () => {
     expect(res.body.transaction.paymentMethod).toBe("CASH");
     expect(res.body.transaction.paymentStatus).toBe("PAID");
     expect(res.body.booking.paymentStatus).toBe("PAID");
+    expect(res.body.booking.status).toBe("PENDING");
 
     const unpaidAfterRes = await request(app)
       .get("/api/finance/unpaid-bookings?paymentMethod=CASH")

@@ -107,7 +107,7 @@ describe("finance.service", () => {
     expect(result.booking).toEqual(updatedBooking);
   });
 
-  test("recordPayment with ONLINE PAID marks booking COMPLETED and assigns queueNumber", async () => {
+  test("recordPayment with ONLINE PAID marks booking as PAID without changing status", async () => {
     const bookingId = "b-online";
 
     const bookingDoc = {
@@ -117,6 +117,7 @@ describe("finance.service", () => {
       paymentMethod: "ONLINE",
       healthCenterId: "center1",
       bookingDate: new Date("2026-04-08T10:00:00.000Z"),
+      bookingType: "WALK_IN",
       status: "PENDING",
       queueNumber: null,
     };
@@ -147,7 +148,7 @@ describe("finance.service", () => {
       ...bookingDoc,
       paymentStatus: "PAID",
       paymentMethod: "ONLINE",
-      status: "COMPLETED",
+		  status: "PENDING",
       queueNumber: 5,
     };
 
@@ -170,7 +171,6 @@ describe("finance.service", () => {
       expect.objectContaining({
         paymentMethod: "ONLINE",
         paymentStatus: "PAID",
-        status: "COMPLETED",
         queueNumber: 5,
       }),
       expect.objectContaining({ new: true, runValidators: true, session: expect.any(Object) }),

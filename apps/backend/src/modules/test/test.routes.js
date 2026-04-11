@@ -29,14 +29,6 @@ router.put(
 	handleValidationErrors,
 	testController.updateTestType
 );
-router.patch(
-	"/:id/soft-delete",
-	authenticate,
-	isStaff,
-	idParamValidation,
-	handleValidationErrors,
-	testController.softDeleteTestType
-);
 router.delete(
 	"/:id",
 	authenticate,

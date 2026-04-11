@@ -104,23 +104,20 @@ export const recordPayment = async ({
         bookingUpdate.paymentStatus = nextBookingStatus;
       }
 
-      // For online payments, treat a confirmed PAID transaction as completion.
-      // This keeps booking lifecycle consistent for PRE_BOOKED bookings.
+      // IMPORTANT: Payment confirmation should not change booking lifecycle status.
+      // Only the payment fields should be updated here.
+      // Queue numbers are still relevant for WALK_IN bookings; assign one if missing.
       if (
         paymentMethod === 'ONLINE' &&
         status === 'PAID' &&
-        booking.status === 'PENDING'
+        booking.bookingType === 'WALK_IN' &&
+        booking.queueNumber == null
       ) {
-        bookingUpdate.status = 'COMPLETED';
-
-        // Assign queue number upon completion if missing.
-        if (booking.queueNumber == null) {
-          bookingUpdate.queueNumber = await getNextQueueNumber({
-            session,
-            healthCenterId: booking.healthCenterId,
-            bookingDate: booking.bookingDate,
-          });
-        }
+        bookingUpdate.queueNumber = await getNextQueueNumber({
+          session,
+          healthCenterId: booking.healthCenterId,
+          bookingDate: booking.bookingDate,
+        });
       }
 
       if (Object.keys(bookingUpdate).length) {
