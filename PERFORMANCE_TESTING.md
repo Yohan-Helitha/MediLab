@@ -85,16 +85,50 @@ Only on staging:
 - ramp beyond expected load
 - stop when error rate rises or latency explodes
 
-### 4) Artillery load test for lab & test APIs
-This project includes an Artillery scenario focused on the critical lab/test endpoints:
+### 4) Artillery load test for Test Management Component APIs
+This project includes an Artillery scenario file covering endpoints across three modules of the Test Management Component:
 
 - File: `apps/backend/perf/test-management-perf.yml`
-- Endpoints covered:
-  - `GET /api/test-types`
-  - `GET /api/test-types/method/form`
-  - `GET /api/test-types/method/upload`
-  - `GET /api/labs`
-  - `GET /api/health`
+- Run command: `npm run perf:test` (from `apps/backend/`)
+
+#### Scenarios — Test Type & Lab module
+Public, unauthenticated — no tokens required:
+
+| Scenario | Endpoints hit |
+|---|---|
+| Browse test types | `GET /api/test-types`, `GET /api/test-types/method/form`, `GET /api/test-types/method/upload` |
+| Browse labs list | `GET /api/labs` |
+| API health check | `GET /api/health` |
+
+#### Scenarios — Result module
+Authenticated — require `LAB_TECH_TOKEN`, `ADMIN_TOKEN`, `HEALTH_CENTER_ID`, `LAB_TECH_ID`, `BOOKING_ID`, `TEST_TYPE_ID`:
+
+| Scenario | Endpoints hit |
+|---|---|
+| Lab tech browses health-center results | `GET /api/results/health-center/:healthCenterId` (with pagination + status filter), `GET /api/results/uncollected` |
+| Lab technician submits and releases result | `POST /api/results` → captures created `resultId` → `PATCH /api/results/:resultId/status` |
+| Admin fetch all results | `GET /api/results/admin` (with pagination, `includeDeleted`, and `currentStatus` filters) |
+
+#### Scenarios — Notification module
+Authenticated — require `PATIENT_TOKEN`, `PATIENT_ID`:
+
+| Scenario | Endpoints hit |
+|---|---|
+| Patient notification history | `GET /api/notifications/patient/:patientId` (with type + status filters), `GET /api/notifications/subscriptions/patient/:patientId` |
+
+#### Required environment variables (authenticated scenarios)
+Set these in your shell before running the load test:
+
+| Variable | Purpose |
+|---|---|
+| `LAB_TECH_TOKEN` | JWT for a HealthOfficer with role `Lab_Technician` |
+| `ADMIN_TOKEN` | JWT for a HealthOfficer with role `Admin` |
+| `PATIENT_TOKEN` | JWT for a patient (Member) |
+| `LAB_TECH_ID` | ObjectId of the lab technician health officer |
+| `HEALTH_CENTER_ID` | ObjectId of the health center / lab in your dev DB |
+| `PATIENT_ID` | ObjectId of the patient (Member) |
+| `BOOKING_ID` | ObjectId of an existing `PENDING` booking (used in the result submission scenario) |
+| `TEST_TYPE_ID` | ObjectId of a Hemoglobin test type in your dev DB |
 
 Run locally:
 
@@ -102,21 +136,34 @@ Run locally:
   - `npm install`
 2. Start the backend API (in one terminal):
   - `npm run dev`
-3. In another terminal, run the load test:
+3. Set the required environment variables for authenticated scenarios (see table above).
+4. In another terminal, run the load test:
   - `npm run perf:test`
 
-Artillery will report latency percentiles (p50, p95), RPS, and error rate. Compare these to the targets above to evaluate whether the API can handle concurrent requests without significant latency.
+Artillery will report latency percentiles (p50, p95), RPS, and error rate per scenario. Compare these to the targets above to evaluate whether the API can handle concurrent requests without significant latency.
 
 ## Critical endpoints to test
 ### Public (no auth)
 - `GET /api/labs` (Health Centers list)
 - `GET /api/labs/:id` (Lab details)
 - `GET /api/lab-tests/lab/:labId` (Tests for lab)
+- `GET /api/test-types` (Test type catalogue — Test Management Component)
 
 ### Patient (auth)
 - `POST /api/bookings`
 - `GET /api/bookings/patient/:patientProfileId`
 - `POST /api/payments/payhere/checkout`
+- `GET /api/notifications/patient/:patientId` (Notification history — Test Management Component)
+- `POST /api/notifications/subscriptions` (Create reminder subscription — Test Management Component)
+- `GET /api/notifications/subscriptions/patient/:patientId` (Patient subscriptions — Test Management Component)
+
+### Health Officer (auth) — Test Management Component
+- `POST /api/results` (Submit lab result — Result module)
+- `GET /api/results/health-center/:healthCenterId` (Browse results by center — Result module)
+- `PATCH /api/results/:id/status` (Release result — Result module)
+- `GET /api/results/uncollected` (Uncollected results list — Result module)
+- `GET /api/results/admin` (Admin results overview — Result module)
+- `POST /api/notifications/send/result-ready` (Trigger result-ready notification — Notification module)
 
 ## Example k6 plan (template)
 Use k6 if you want consistent results across runs.

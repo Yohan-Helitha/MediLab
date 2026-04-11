@@ -17,6 +17,24 @@ config:
   defaults:
     headers:
       Content-Type: "application/json"
+  # Set these env vars before running: npx artillery run perf/test-management-perf.yml
+  # LAB_TECH_TOKEN   — JWT for a health officer with role Lab_Technician
+  # ADMIN_TOKEN      — JWT for a health officer with role Admin
+  # PATIENT_TOKEN    — JWT for a patient (Member)
+  # LAB_TECH_ID      — ObjectId of the lab technician health officer (for enteredBy / changedBy)
+  # HEALTH_CENTER_ID — ObjectId of the lab / health center used in your dev DB
+  # PATIENT_ID       — ObjectId of the patient (Member) used in your dev DB
+  # BOOKING_ID       — ObjectId of an existing PENDING booking for the result submission flow
+  # TEST_TYPE_ID     — ObjectId of a Hemoglobin test type in your dev DB
+  variables:
+    labTechToken: "{{ $processEnvironment.LAB_TECH_TOKEN }}"
+    adminToken: "{{ $processEnvironment.ADMIN_TOKEN }}"
+    patientToken: "{{ $processEnvironment.PATIENT_TOKEN }}"
+    labTechId: "{{ $processEnvironment.LAB_TECH_ID }}"
+    healthCenterId: "{{ $processEnvironment.HEALTH_CENTER_ID }}"
+    patientId: "{{ $processEnvironment.PATIENT_ID }}"
+    bookingId: "{{ $processEnvironment.BOOKING_ID }}"
+    testTypeId: "{{ $processEnvironment.TEST_TYPE_ID }}"
 
 scenarios:
   # Simulates staff browsing test types for configuration and management
@@ -40,3 +58,100 @@ scenarios:
     flow:
       - get:
           url: "/api/health"
+
+  # Simulates a lab technician browsing results for their health center
+  - name: "Lab tech browses health-center results"
+    flow:
+      - get:
+          url: "/api/results/health-center/{{ healthCenterId }}"
+          headers:
+            Authorization: "Bearer {{ labTechToken }}"
+          qs:
+            page: 1
+            limit: 20
+      - get:
+          url: "/api/results/health-center/{{ healthCenterId }}"
+          headers:
+            Authorization: "Bearer {{ labTechToken }}"
+          qs:
+            page: 1
+            limit: 20
+            currentStatus: "pending"
+      - get:
+          url: "/api/results/uncollected"
+          headers:
+            Authorization: "Bearer {{ labTechToken }}"
+
+  # Simulates a lab technician submitting a hemoglobin result and then releasing it
+  # (PATCH /:id/status uses isHealthOfficer — lab tech token is correct)
+  - name: "Lab technician submits and releases result"
+    flow:
+      - post:
+          url: "/api/results"
+          headers:
+            Authorization: "Bearer {{ labTechToken }}"
+          json:
+            bookingId: "{{ bookingId }}"
+            patientProfileId: "{{ patientId }}"
+            testTypeId: "{{ testTypeId }}"
+            healthCenterId: "{{ healthCenterId }}"
+            enteredBy: "{{ labTechId }}"
+            hemoglobinLevel: 13.5
+            unit: "g/dL"
+            observations: "Perf test submission"
+          capture:
+            - json: "$.data._id"
+              as: "resultId"
+      - patch:
+          url: "/api/results/{{ resultId }}/status"
+          headers:
+            Authorization: "Bearer {{ labTechToken }}"
+          json:
+            currentStatus: "released"
+            changedBy: "{{ labTechId }}"
+
+  # Simulates an admin fetching the full results list with pagination
+  - name: "Admin fetch all results"
+    flow:
+      - get:
+          url: "/api/results/admin"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          qs:
+            page: 1
+            limit: 20
+      - get:
+          url: "/api/results/admin"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          qs:
+            page: 1
+            limit: 20
+            includeDeleted: "true"
+      - get:
+          url: "/api/results/admin"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          qs:
+            page: 2
+            limit: 20
+            currentStatus: "released"
+
+  # Simulates a patient viewing their notification history
+  - name: "Patient notification history"
+    flow:
+      - get:
+          url: "/api/notifications/patient/{{ patientId }}"
+          headers:
+            Authorization: "Bearer {{ patientToken }}"
+      - get:
+          url: "/api/notifications/patient/{{ patientId }}"
+          headers:
+            Authorization: "Bearer {{ patientToken }}"
+          qs:
+            type: "result_ready"
+            status: "sent"
+      - get:
+          url: "/api/notifications/subscriptions/patient/{{ patientId }}"
+          headers:
+            Authorization: "Bearer {{ patientToken }}"
