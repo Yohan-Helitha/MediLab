@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
-import { getSafeErrorMessage } from "../../utils/errorHandler";
+import { getSafeErrorMessage, formatValidationError } from "../../utils/errorHandler";
 import { generateHouseholdPDF } from "../../utils/pdfGenerator";
 import { 
     createHousehold,
@@ -294,7 +294,7 @@ const HouseholdRegistrationPage = () => {
                 let displayMsg = "Operation failed";
                 
                 if (res.errors && Array.isArray(res.errors)) {
-                    displayMsg = res.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
+                    displayMsg = res.errors.map(e => formatValidationError(e)).join(", ");
                 } else if (res.message) {
                     displayMsg = getSafeErrorMessage(new Error(res.message), "household");
                 } else {
@@ -312,9 +312,9 @@ const HouseholdRegistrationPage = () => {
             
             // If the error object has a structured 'errors' array inside its context/response
             if (err.errors && Array.isArray(err.errors)) {
-                displayMsg = err.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
+                displayMsg = err.errors.map(e => formatValidationError(e)).join(", ");
             } else if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
-                displayMsg = err.response.data.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
+                displayMsg = err.response.data.errors.map(e => formatValidationError(e)).join(", ");
             } else if (err.response?.data?.message) {
                 displayMsg = getSafeErrorMessage(new Error(err.response.data.message), "household");
             } else {

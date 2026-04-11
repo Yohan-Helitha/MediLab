@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
 import { toast } from "react-hot-toast";
-import { getSafeErrorMessage } from "../../utils/errorHandler";
+import { getSafeErrorMessage, formatValidationError } from "../../utils/errorHandler";
 import { 
     updateMemberProfile, 
     createHealthDetails, 
@@ -831,7 +831,7 @@ const HealthProfilePage = () => {
             } else {
                 console.error("Profile update failed:", response);
                 const errorMsg = response.errors ? 
-                    response.errors.map(err => `${err.path}: ${err.msg}`).join(", ") : 
+                    response.errors.map(err => formatValidationError(err)).join(", ") : 
                     (response.message || t("healthProfile.alert.updateFailed"));
                 setMessage({ type: "error", text: errorMsg });
             }
@@ -840,7 +840,7 @@ const HealthProfilePage = () => {
             let errorText = getSafeErrorMessage(err, "general") || t("healthProfile.alert.genericError");
             // If the error has detailed validation errors, display them
             if (err.errors && Array.isArray(err.errors)) {
-                errorText = err.errors.map(e => `${e.path}: ${e.msg}`).join(", ");
+                errorText = err.errors.map(e => formatValidationError(e)).join(", ");
             }
             setMessage({
                 type: "error",
