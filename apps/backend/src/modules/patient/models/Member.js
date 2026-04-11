@@ -102,6 +102,23 @@ const memberSchema = new mongoose.Schema({
 
 // Pre-save middleware to auto-generate member ID and update age
 memberSchema.pre('save', async function() {
+  // Normalize and validate contact number to +94xxxxxxxxx
+  if (this.contact_number) {
+    let v = String(this.contact_number).trim();
+    // If user entered local format starting with 0 (eg. 07XXXXXXXX), convert to +94XXXXXXXXX
+    if (/^0\d{9}$/.test(v)) {
+      v = `+94${v.slice(1)}`;
+    }
+    // If user entered 9 digits (eg. 7XXXXXXXX), convert to +94
+    if (/^\d{9}$/.test(v)) {
+      v = `+94${v}`;
+    }
+    // Final validation: must be +94 followed by 9 digits
+    if (!/^\+94\d{9}$/.test(v)) {
+      throw new Error('Invalid contact number format. Expected +94xxxxxxxxx');
+    }
+    this.contact_number = v;
+  }
   // Generate custom member ID if it's not already set (for new documents)
   if (!this.member_id) {
     // Find the latest member with the highest code
