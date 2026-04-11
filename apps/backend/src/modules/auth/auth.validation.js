@@ -21,10 +21,10 @@ export const validatePatientRegister = [
   body('contact_number')
     .notEmpty()
     .withMessage('Contact number is required')
-    .matches(/^[0-9+\-() ]+$/)
-    .withMessage('Invalid contact number format')
-    .isLength({ min: 9, max: 20 })
-    .withMessage('Contact number must be between 9 and 20 characters'),
+    .matches(/^\+94\d{9}$/)
+    .withMessage('Contact number must be in format +94xxxxxxxxx (e.g., +94712345678)')
+    .isLength({ min: 12, max: 12 })
+    .withMessage('Contact number must be exactly 12 characters (+94 followed by 9 digits)'),
 
   body('password')
     .notEmpty()
@@ -70,10 +70,10 @@ export const validateHealthOfficerRegister = [
   body('contactNumber')
     .notEmpty()
     .withMessage('Contact number is required')
-    .matches(/^[0-9+\-() ]+$/)
-    .withMessage('Invalid contact number format')
-    .isLength({ min: 9, max: 20 })
-    .withMessage('Contact number must be between 9 and 20 characters'),
+    .matches(/^\+94\d{9}$/)
+    .withMessage('Contact number must be in format +94xxxxxxxxx (e.g., +94712345678)')
+    .isLength({ min: 12, max: 12 })
+    .withMessage('Contact number must be exactly 12 characters (+94 followed by 9 digits'),
 
   body('role')
     .notEmpty()
