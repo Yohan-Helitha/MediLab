@@ -6,6 +6,16 @@ import { updateMemberProfile } from "../../api/patientApi";
 import { toast } from "react-hot-toast";
 import { getSafeErrorMessage } from "../../utils/errorHandler";
 
+// Normalize phone input to +94XXXXXXXXX. Accepts local formats like 07XXXXXXXX and converts them.
+function normalizeContact(input) {
+  if (!input) return input;
+  const v = String(input).trim();
+  if (/^\+94\d{9}$/.test(v)) return v;
+  if (/^0\d{9}$/.test(v)) return `+94${v.slice(1)}`;
+  if (/^\d{9}$/.test(v)) return `+94${v}`;
+  throw new Error('Phone number must be in +94xxxxxxxxx format');
+}
+
 const AccountPage = () => {
   const { user, login } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -78,12 +88,19 @@ const AccountPage = () => {
       // 1. Update Profile (Member Schema)
       const profileId = user.profile?._id || user._id;
       
-      // Clean phone number (strip spaces/dashes) to meet backend regex requirement (exactly 10 digits)
-      const cleanPhone = formData.phoneNumber.replace(/[\s\-\+\(\)]/g, '').slice(-10);
+      // Normalize phone number to +94xxxxxxxxx format
+      let normalizedPhone = formData.phoneNumber;
+      try {
+        normalizedPhone = normalizeContact(formData.phoneNumber);
+      } catch (err) {
+        toast.error(err.message);
+        setLoading(false);
+        return;
+      }
 
       const profilePromise = updateMemberProfile(profileId, {
         email: formData.email,
-        contact_number: cleanPhone,
+        contact_number: normalizedPhone,
       });
 
       // 2. Update Auth (Master Schema) - only if password or email changes
@@ -112,14 +129,14 @@ const AccountPage = () => {
           ...user,
           ...profileRes.data,
           email: formData.email,
-          contact_number: cleanPhone
+          contact_number: normalizedPhone
         };
         login(updatedUser, localStorage.getItem("token"));
         
-        // Update input field to show the sanitized number
+        // Update input field to show the normalized number
         setFormData(prev => ({
           ...prev,
-          phoneNumber: cleanPhone,
+          phoneNumber: normalizedPhone,
           currentPassword: "",
           newPassword: "",
           confirmPassword: "",
@@ -172,7 +189,7 @@ const AccountPage = () => {
                     value={formData.phoneNumber}
                     onChange={handleChange}
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-sm text-slate-600 focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none transition-all font-medium"
-                    placeholder="+94 7X XXX XXXX"
+                    placeholder="+94XXXXXXXXX"
                   />
                   <p className="text-[10px] text-slate-400 ml-1">Primary contact for appointments.</p>
                 </div>
