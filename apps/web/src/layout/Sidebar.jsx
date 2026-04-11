@@ -81,12 +81,6 @@ function Sidebar() {
 							isActive={location.pathname === "/staff/instructions"}
 							to="/staff/instructions"
 						/>
-						<SidebarItem
-							label="Test Results"
-							Icon={HiDocumentText}
-							isActive={location.pathname === "/staff/results"}
-							to="/staff/results"
-						/>
 					</>
 				)}
 			</nav>
