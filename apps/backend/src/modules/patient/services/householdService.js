@@ -7,14 +7,14 @@ class HouseholdService {
   async getAllHouseholds(query = {}) {
     const { page = 1, limit = 10, ...filter } = query;
     const skip = (page - 1) * limit;
-    
+
     const households = await Household.find(filter)
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ registration_date: -1 });
-    
+
     const total = await Household.countDocuments(filter);
-    
+
     return {
       households,
       pagination: {
@@ -29,12 +29,12 @@ class HouseholdService {
   async getHouseholdById(id) {
     // Try to find by MongoDB _id first (for internal references)
     let household = await Household.findById(id);
-    
+
     // If not found and id doesn't look like ObjectId, try by custom household_id
     if (!household && !/^[0-9a-fA-F]{24}$/.test(id)) {
       household = await Household.findOne({ household_id: id });
     }
-    
+
     if (!household) {
       throw new Error("Household not found");
     }
@@ -55,7 +55,7 @@ class HouseholdService {
 
     // Fetch family members for this household
     const familyMembers = await FamilyMember.find({ household_id: householdObj.household_id }).lean();
-    
+
     // Fetch relationships to determine roles
     const relationships = await FamilyRelationship.find({
       $or: [
@@ -95,7 +95,7 @@ class HouseholdService {
     if (members_list && Array.isArray(members_list)) {
       const createdMembers = [];
       const memberIdsForHousehold = []; // Array to collect family_member_ids
-      
+
       for (const m of members_list) {
         const familyMember = new FamilyMember({
           household_id: household.household_id,
@@ -117,7 +117,7 @@ class HouseholdService {
 
       // CRITICAL: Cleanup - ensure ONLY ONE member has isHead: true per household
       const headMember = createdMembers.find(m => m.isHead) || createdMembers[0];
-      
+
       if (headMember) {
         // Update all members to set isHead correctly
         await FamilyMember.updateMany(
@@ -136,7 +136,7 @@ class HouseholdService {
       if (head) {
         // Import service dynamically to avoid circular dependency if any
         const familyRelationshipService = (await import("./familyRelationshipService.js")).default;
-        
+
         for (const m of createdMembers) {
           if (!m.isHead && m.relationship) {
             await familyRelationshipService.createFamilyRelationship({
@@ -153,24 +153,24 @@ class HouseholdService {
             // Find resident (Niranjan)
             const resident = createdMembers.find(rm => rm.full_name.toUpperCase().includes("NIRANJAN") || rm.isHead);
             if (resident) {
-                // If resident is head, it's already handled if relationship was "grandchild"
-                // But let's ensure it's explicitly set if not
-                await familyRelationshipService.createRelationshipByNames(
-                    household.household_id,
-                    m.full_name,
-                    resident.full_name,
-                    'grandchild'
-                );
+              // If resident is head, it's already handled if relationship was "grandchild"
+              // But let's ensure it's explicitly set if not
+              await familyRelationshipService.createRelationshipByNames(
+                household.household_id,
+                m.full_name,
+                resident.full_name,
+                'grandchild'
+              );
             }
           }
 
           // Handle explicit parent relationship for grandchildren/nieces/nephews
           if (m.parent_name) {
             await familyRelationshipService.createRelationshipByNames(
-                household.household_id,
-                m.full_name,
-                m.parent_name,
-                'child'
+              household.household_id,
+              m.full_name,
+              m.parent_name,
+              'child'
             );
           }
         }
@@ -188,7 +188,7 @@ class HouseholdService {
       data,
       { new: true, runValidators: true }
     );
-    
+
     if (!household) {
       throw new Error("Household not found");
     }
@@ -215,49 +215,49 @@ class HouseholdService {
       // 2. Update or Create members
       const finalMemberIds = [];
       const createdOrUpdatedMembers = [];
-      
+
       for (const m of members_list) {
         let familyMember;
-        
+
         // Determine if this member should be the head
         // Only the member matching household.head_member_name should have isHead: true
         const shouldBeHead = m.full_name === household.head_member_name && !!m.isHead;
-        
+
         if (m.family_member_id && existingMemberIds.includes(m.family_member_id)) {
-            // Update existing
-            familyMember = await FamilyMember.findOneAndUpdate(
-                { family_member_id: m.family_member_id },
-                {
-                    full_name: m.full_name,
-                    gender: m.gender,
-                    date_of_birth: m.date_of_birth,
-                    isHead: shouldBeHead,
-                    spouse_name: m.spouse_name || "",
-                    parent_name: m.parent_name || ""
-                },
-                { new: true }
-            );
+          // Update existing
+          familyMember = await FamilyMember.findOneAndUpdate(
+            { family_member_id: m.family_member_id },
+            {
+              full_name: m.full_name,
+              gender: m.gender,
+              date_of_birth: m.date_of_birth,
+              isHead: shouldBeHead,
+              spouse_name: m.spouse_name || "",
+              parent_name: m.parent_name || ""
+            },
+            { new: true }
+          );
         } else {
-            // Create new
-            familyMember = new FamilyMember({
-                household_id: household.household_id,
-                full_name: m.full_name,
-                gender: m.gender,
-                date_of_birth: m.date_of_birth,
-                isHead: shouldBeHead,
-                spouse_name: m.spouse_name || "",
-                parent_name: m.parent_name || ""
-            });
-            await familyMember.save();
+          // Create new
+          familyMember = new FamilyMember({
+            household_id: household.household_id,
+            full_name: m.full_name,
+            gender: m.gender,
+            date_of_birth: m.date_of_birth,
+            isHead: shouldBeHead,
+            spouse_name: m.spouse_name || "",
+            parent_name: m.parent_name || ""
+          });
+          await familyMember.save();
         }
 
         if (familyMember) {
-            finalMemberIds.push(familyMember.family_member_id);
-            createdOrUpdatedMembers.push({ 
-                ...m, 
-                family_member_id: familyMember.family_member_id,
-                isHead: familyMember.isHead 
-            });
+          finalMemberIds.push(familyMember.family_member_id);
+          createdOrUpdatedMembers.push({
+            ...m,
+            family_member_id: familyMember.family_member_id,
+            isHead: familyMember.isHead
+          });
         }
       }
 
@@ -269,7 +269,7 @@ class HouseholdService {
       // This fixes any data corruption where multiple members were marked as head
       const allMembers = await FamilyMember.find({ household_id: household.household_id });
       const headMember = allMembers.find(m => m.full_name === household.head_member_name);
-      
+
       if (headMember) {
         // Update all members to set isHead correctly
         await FamilyMember.updateMany(
@@ -295,7 +295,7 @@ class HouseholdService {
       const head = createdOrUpdatedMembers.find(m => m.isHead);
       if (head) {
         const familyRelationshipService = (await import("./familyRelationshipService.js")).default;
-        
+
         for (const m of createdOrUpdatedMembers) {
           if (!m.isHead && m.relationship) {
             await familyRelationshipService.createFamilyRelationship({
@@ -308,19 +308,19 @@ class HouseholdService {
           // Handle explicit parent relationship for grandchildren/nieces/nephews
           if (m.parent_name) {
             await familyRelationshipService.createRelationshipByNames(
-                household.household_id,
-                m.full_name,
-                m.parent_name,
-                'child'
+              household.household_id,
+              m.full_name,
+              m.parent_name,
+              'child'
             );
-            
+
             // If this is a grandchild (grandson/granddaughter), also create relationship to head
             if (m.relationship && (m.relationship.toLowerCase().includes('grandson') || m.relationship.toLowerCase().includes('granddaughter') || m.relationship.toLowerCase().includes('grandchild'))) {
               await familyRelationshipService.createRelationshipByNames(
-                  household.household_id,
-                  m.full_name,
-                  head.full_name,
-                  'grandchild'
+                household.household_id,
+                m.full_name,
+                head.full_name,
+                'grandchild'
               );
             }
           }
@@ -341,7 +341,7 @@ class HouseholdService {
   async deleteHousehold(id) {
     // Try to find by MongoDB _id first
     let household = await Household.findById(id);
-    
+
     // If not found and id doesn't look like ObjectId, try by custom household_id
     if (!household && !/^[0-9a-fA-F]{24}$/.test(id)) {
       household = await Household.findOne({ household_id: id });
@@ -373,13 +373,13 @@ class HouseholdService {
 
     // 4. Update the main member record to remove this household_id
     await Member.findOneAndUpdate(
-        { household_id: householdId },
-        { $unset: { household_id: "" } }
+      { household_id: householdId },
+      { $unset: { household_id: "" } }
     );
 
     // 5. Finally delete the household itself
     await Household.findByIdAndDelete(mongoId);
-    
+
     return household;
   }
 }
