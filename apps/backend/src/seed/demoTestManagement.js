@@ -143,6 +143,7 @@ const seedDemoData = async () => {
       gender: "MALE",
       gn_division: "Colombo Central",
       district: "Colombo",
+      isProfileComplete: true,
     });
     await Auth.create({
       email: "mafham2001@yahoo.com",
