@@ -11,6 +11,7 @@ import {
   sendRoutineCheckupReminderEmail,
   sendUnviewedResultReminderEmail,
   sendHardCopyReadyEmail,
+  sendHardCopyCollectionReminderEmail,
 } from "../../config/sendgrid.js";
 import config from "../../config/environment.js";
 
@@ -132,7 +133,15 @@ export const sendResultReadyNotification = async (data) => {
   };
 
   // Prepare message content
-  const smsMessage = `Rural Health Alert: Your ${testType.name} results are now ready. Login to view your report: ${config.frontendUrl} - ${healthCenter.name}`;
+  const smsMessage = `MediLab | Your test results are ready.
+
+Test: ${testType.name}
+Health Center: ${healthCenter.name}
+
+Log in to view and download your report:
+${config.frontendUrl}/login
+
+This is an automated message from MediLab.`;
 
   // Send SMS/WhatsApp if patient has phone number
   // NOTE: Twilio carrier SMS does not work in Sri Lanka. WhatsApp is used as primary channel.
@@ -222,7 +231,16 @@ export const sendUnviewedResultReminder = async (data) => {
     email: null,
   };
 
-  const smsMessage = `MediLab Reminder: Your ${testType.name} results (released ${daysUnviewed} days ago) have not been viewed. Please login to check: ${config.frontendUrl} - ${healthCenter.name}`;
+  const smsMessage = `MediLab | Action Required: Unviewed Test Results
+
+Your ${testType.name} results have been available for ${daysUnviewed} day(s) and have not been viewed yet.
+
+Health Center: ${healthCenter.name}
+
+Please log in to review your results:
+${config.frontendUrl}/login
+
+This is an automated message from MediLab.`;
 
   // Send WhatsApp + SMS if patient has phone number
   if (patient.contactNumber) {
@@ -443,7 +461,16 @@ export const sendRoutineCheckupReminder = async (data) => {
     email: null,
   };
 
-  const smsMessage = `Health Reminder: It's time for your routine ${testType.name} checkup. Last test: ${subscription.lastTestDate.toLocaleDateString()}. Book your appointment: ${config.frontendUrl} - MediLab`;
+  const smsMessage = `MediLab | Routine Health Reminder
+
+It is time for your ${testType.name} checkup.
+Last test: ${subscription.lastTestDate.toLocaleDateString()}
+
+Book your next appointment:
+${config.frontendUrl}/booking
+
+To stop receiving these reminders, manage your preferences in the app.
+This is an automated message from MediLab.`;
 
   // Send WhatsApp + SMS if patient has phone number
   if (patient.contactNumber) {
@@ -711,7 +738,18 @@ export const sendHardCopyReadyNotification = async (data) => {
     email: null,
   };
 
-  const whatsappMessage = `MediLab: Your ${testType.name} hard copy report is printed and ready for pickup at ${healthCenter.name}. Please bring a valid ID. Visit ${config.frontendUrl}/login to view online.`;
+  const whatsappMessage = `MediLab | Hard Copy Report Ready
+
+Your ${testType.name} report has been printed and is available for collection.
+
+Pickup Location: ${healthCenter.name}
+
+Please bring a valid ID when collecting your report.
+
+To view your results online:
+${config.frontendUrl}/login
+
+This is an automated message from MediLab.`;
 
   if (patient.contactNumber) {
     const whatsappResult = await sendWhatsAppWithRetry(
@@ -850,7 +888,7 @@ export const sendUncollectedHardCopyReminder = async (data) => {
     email: null,
   };
 
-  const whatsappMessage = `MediLab Reminder: Your ${testType.name} hard copy report has been waiting ${daysSincePrinting} day(s) at ${healthCenter.name}. Please collect it at your earliest convenience.`;
+  const whatsappMessage = `MediLab | Collection Reminder\n\nDear ${patient.fullName || "Patient"},\n\nYour ${testType.name} printed report has been waiting at ${healthCenter.name} for ${daysSincePrinting} day(s) and has not yet been collected.\n\nPlease visit the health center at your earliest convenience to collect your report.\n\nView results online: ${config.frontendUrl}/login\n\nMediLab Rural Health System`;
 
   if (patient.contactNumber) {
     const whatsappResult = await sendWhatsAppWithRetry(
@@ -881,13 +919,13 @@ export const sendUncollectedHardCopyReminder = async (data) => {
       testName: testType.name,
       centerName: healthCenter.name,
       centerAddress: healthCenter.address || null,
-      bookingCode: null,
+      daysSincePrinting,
       operatingHours: null,
       centerPhone: healthCenter.contactNumber || null,
       loginUrl: `${config.frontendUrl}/login`,
     };
 
-    const emailResult = await sendHardCopyReadyEmail(emailData);
+    const emailResult = await sendHardCopyCollectionReminderEmail(emailData);
 
     await createNotificationLog({
       patientProfileId: patient._id,

@@ -18,6 +18,7 @@ import {
   FileUploadForm,
   UPLOAD_TYPES,
   buildPayload,
+  validateFormDates,
   inputCls,
   textareaCls,
 } from "./labFormHelpers";
@@ -131,6 +132,12 @@ export default function LabSubmitPage() {
     }
     setSubmitLoading(true);
     try {
+      const dateError = validateFormDates(discriminatorType, submitForm);
+      if (dateError) {
+        toast.error(dateError);
+        setSubmitLoading(false);
+        return;
+      }
       const payload = buildPayload(
         discriminatorType,
         submitForm,

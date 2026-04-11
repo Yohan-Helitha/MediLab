@@ -12,6 +12,7 @@ import {
   softDeleteResult,
   updateResultStatus,
   updateTestResult,
+  downloadUploadedFile,
 } from "../../api/resultApi";
 import { getSafeErrorMessage } from "../../utils/errorHandler";
 import LabCentrePicker from "./LabCentrePicker";
@@ -28,6 +29,7 @@ import {
   FileUploadForm,
   UPLOAD_TYPES,
   buildPayload,
+  validateFormDates,
   inputCls,
   selectCls,
   labelCls,
@@ -120,6 +122,28 @@ export default function LabResultsPage() {
       toast.error(getSafeErrorMessage(err));
     } finally {
       setViewLoading(false);
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Download individual uploaded file
+  // -------------------------------------------------------------------------
+  const handleDownloadFile = async (result, fileIndex) => {
+    const resultId = result._id?.toString?.() || result._id;
+    const file = (result.uploadedFiles || [])[fileIndex];
+    const fileName = file?.fileName || `file-${fileIndex}`;
+    try {
+      const blob = await downloadUploadedFile(resultId, fileIndex);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(getSafeErrorMessage(err));
     }
   };
 
@@ -320,6 +344,12 @@ export default function LabResultsPage() {
       "";
     setEditSaving(true);
     try {
+      const dateError = validateFormDates(dt, editForm);
+      if (dateError) {
+        toast.error(dateError);
+        setEditSaving(false);
+        return;
+      }
       const payload = {
         observations: editForm.observations || "",
         ...buildPayload(
@@ -568,7 +598,7 @@ export default function LabResultsPage() {
           <p className="py-4 text-sm text-slate-500">Loading…</p>
         ) : (
           <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
-            <ResultDetailView result={viewResult} />
+            <ResultDetailView result={viewResult} onDownloadFile={handleDownloadFile} />
             {Array.isArray(viewHistory) && viewHistory.length > 0 && (
               <div>
                 <div className={labelCls}>Status History</div>

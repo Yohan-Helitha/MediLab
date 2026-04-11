@@ -214,6 +214,46 @@ export const daysSince = (value) => {
   return Math.floor(diff / 86400000);
 };
 
+// Returns the current local time as "YYYY-MM-DDTHH:MM" for datetime-local max attribute.
+// Works correctly across all timezones including Sri Lanka (UTC+5:30).
+const getNowLocalISO = () => {
+  const now = new Date();
+  // getTimezoneOffset() returns minutes west of UTC (negative for UTC+)
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
+// Returns an error message if any datetime field is in the future, otherwise null.
+// Checks only the date fields relevant to each discriminator type.
+export function validateFormDates(discriminatorType, form) {
+  const now = new Date();
+  const checkField = (fieldName, label) => {
+    const val = form[fieldName];
+    if (val && new Date(val) > now) {
+      return `${label} cannot be in the future.`;
+    }
+    return null;
+  };
+  if (
+    discriminatorType === "BloodGlucose" ||
+    discriminatorType === "Hemoglobin" ||
+    discriminatorType === "Pregnancy"
+  ) {
+    return checkField("sampleCollectionTime", "Collection Time");
+  }
+  if (discriminatorType === "BloodPressure") {
+    return checkField("measurementTime", "Measurement Time");
+  }
+  if (discriminatorType === "AutomatedReport") {
+    return (
+      checkField("sampleCollectionTime", "Collection Time") ||
+      checkField("analysisCompletedTime", "Analysis Completed Time")
+    );
+  }
+  // XRay, ECG, Ultrasound have no date fields — nothing to validate
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Shared UI components
 // ---------------------------------------------------------------------------
@@ -255,7 +295,7 @@ export const textareaCls =
 // ---------------------------------------------------------------------------
 // ResultDetailView — displays result data for any discriminator type
 // ---------------------------------------------------------------------------
-export function ResultDetailView({ result }) {
+export function ResultDetailView({ result, onDownloadFile }) {
   if (!result) return null;
   const dt = result.discriminatorType || result.__t || result.testType || "";
 
@@ -367,15 +407,14 @@ export function ResultDetailView({ result }) {
             <div className={labelCls}>Uploaded Files</div>
             <div className="flex flex-wrap gap-2">
               {files.map((f, i) => (
-                <a
+                <button
                   key={i}
-                  href={f.filePath}
-                  target="_blank"
-                  rel="noreferrer"
+                  type="button"
+                  onClick={() => onDownloadFile && onDownloadFile(result, i)}
                   className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700 hover:bg-teal-100"
                 >
-                  ↗ {f.fileName || `File ${i + 1}`}
-                </a>
+                  ↓ {f.fileName || `File ${i + 1}`}
+                </button>
               ))}
             </div>
           </div>
@@ -629,6 +668,7 @@ export function BloodGlucoseForm({ form, setForm }) {
           <input
             type="datetime-local"
             className={inputCls}
+            max={getNowLocalISO()}
             value={form.sampleCollectionTime || ""}
             onChange={(e) =>
               setForm((p) => ({ ...p, sampleCollectionTime: e.target.value }))
@@ -826,6 +866,7 @@ export function HemoglobinForm({ form, setForm }) {
           <input
             type="datetime-local"
             className={inputCls}
+            max={getNowLocalISO()}
             value={form.sampleCollectionTime || ""}
             onChange={(e) =>
               setForm((p) => ({ ...p, sampleCollectionTime: e.target.value }))
@@ -995,6 +1036,7 @@ export function BloodPressureForm({ form, setForm }) {
           <input
             type="datetime-local"
             className={inputCls}
+            max={getNowLocalISO()}
             value={form.measurementTime || ""}
             onChange={(e) =>
               setForm((p) => ({ ...p, measurementTime: e.target.value }))
@@ -1099,6 +1141,7 @@ export function PregnancyForm({ form, setForm }) {
           <input
             type="datetime-local"
             className={inputCls}
+            max={getNowLocalISO()}
             value={form.sampleCollectionTime || ""}
             onChange={(e) =>
               setForm((p) => ({ ...p, sampleCollectionTime: e.target.value }))
@@ -1580,6 +1623,7 @@ export function FileUploadForm({ discriminatorType, form, setForm }) {
               <input
                 type="datetime-local"
                 className={inputCls}
+                max={getNowLocalISO()}
                 value={form.sampleCollectionTime || ""}
                 onChange={(e) =>
                   setForm((p) => ({
@@ -1594,6 +1638,7 @@ export function FileUploadForm({ discriminatorType, form, setForm }) {
               <input
                 type="datetime-local"
                 className={inputCls}
+                max={getNowLocalISO()}
                 value={form.analysisCompletedTime || ""}
                 onChange={(e) =>
                   setForm((p) => ({

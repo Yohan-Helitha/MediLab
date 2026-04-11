@@ -182,55 +182,47 @@ export const sendResultReadyEmail = async (data) => {
 
   const subject = "Your Test Results are Ready - MediLab";
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-    .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
-    .button { display: inline-block; padding: 12px 30px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-    .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
-    .details { background-color: white; padding: 15px; border-left: 4px solid #3498db; margin: 20px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🏥 MediLab Rural Health System</h1>
-    </div>
-    <div class="content">
-      <h2>Dear ${patientName},</h2>
-      <p>Your test results are now ready for viewing!</p>
-      
-      <div class="details">
-        <p><strong>Test:</strong> ${testName}</p>
-        <p><strong>Date Conducted:</strong> ${testDate}</p>
-        <p><strong>Health Center:</strong> ${centerName}</p>
-      </div>
-      
-      <p>Please login to your account to view and download your complete test report:</p>
-      
-      <p style="text-align: center;">
-        <a href="${loginUrl}" class="button">View My Results</a>
-      </p>
-      
-      <p>If you have any questions about your results, please contact your health center.</p>
-      
-      <p>Stay healthy!</p>
-      <p><strong>MediLab Rural Health System</strong></p>
-    </div>
-    <div class="footer">
-      <p>This is an automated notification. Please do not reply to this email.</p>
-      <p>© 2026 MediLab. All rights reserved.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;" bgcolor="#f0f4f8">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:20px 10px;">
+<table cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;" bgcolor="#ffffff">
+<tr><td align="center" bgcolor="#1e3a6e" style="background-color:#1e3a6e;padding:28px 24px;">
+  <p style="margin:0 0 8px 0;font-family:Arial,sans-serif;font-size:28px;color:#ffffff;">&#x2713;</p>
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#ffffff;">MediLab Rural Health System</p>
+  <p style="margin:5px 0 0 0;font-family:Arial,sans-serif;font-size:12px;color:#a8c4e0;">Test Result Notification</p>
+</td></tr>
+<tr><td style="padding:28px 30px;">
+  <p style="margin:0 0 10px 0;font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#1e3a6e;">Dear ${patientName},</p>
+  <p style="margin:0 0 20px 0;font-family:Arial,sans-serif;font-size:14px;color:#4a5568;line-height:1.6;">Your test results have been reviewed and released by your health center. You may now view and download your complete report by logging into your account.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;border-left:4px solid #2b6cb0;background-color:#f7fafc;" bgcolor="#f7fafc">
+    <tr>
+      <td width="38%" valign="top" style="padding:9px 8px 9px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;border-bottom:1px solid #e2e8f0;">Test</td>
+      <td width="62%" valign="top" style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;border-bottom:1px solid #e2e8f0;">${testName}</td>
+    </tr>
+    <tr>
+      <td width="38%" valign="top" style="padding:9px 8px 9px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;border-bottom:1px solid #e2e8f0;">Date Conducted</td>
+      <td width="62%" valign="top" style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;border-bottom:1px solid #e2e8f0;">${testDate}</td>
+    </tr>
+    <tr>
+      <td width="38%" valign="top" style="padding:9px 8px 9px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;">Health Center</td>
+      <td width="62%" valign="top" style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;">${centerName}</td>
+    </tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+    <tr><td align="center" style="padding:16px 0;">
+      <a href="${loginUrl}" style="display:inline-block;padding:13px 32px;background-color:#2b6cb0;color:#ffffff;text-decoration:none;border-radius:5px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">View My Results</a>
+    </td></tr>
+  </table>
+  <p style="margin:0;border-top:1px solid #e2e8f0;padding-top:16px;font-family:Arial,sans-serif;font-size:13px;color:#718096;line-height:1.5;">If you have any questions about your results, please contact your health center directly. Do not reply to this email.</p>
+</td></tr>
+<tr><td align="center" bgcolor="#f7fafc" style="background-color:#f7fafc;padding:16px 24px;border-top:1px solid #e2e8f0;">
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">MediLab Rural Health System &mdash; <a href="https://medilab.dev" style="color:#718096;text-decoration:none;">medilab.dev</a></p>
+  <p style="margin:3px 0 0 0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">&copy; 2026 MediLab. All rights reserved.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 
   return await sendEmailWithRetry(to, subject, html);
 };
@@ -252,58 +244,45 @@ export const sendRoutineCheckupReminderEmail = async (data) => {
 
   const subject = `Routine Checkup Reminder - ${testName}`;
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #27ae60; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-    .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
-    .button { display: inline-block; padding: 12px 30px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-    .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
-    .reminder-box { background-color: #fff3cd; padding: 15px; border-left: 4px solid #f39c12; margin: 20px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>⏰ Health Reminder</h1>
-    </div>
-    <div class="content">
-      <h2>Dear ${patientName},</h2>
-      <p>This is a friendly reminder for your routine <strong>${testName}</strong> checkup.</p>
-      
-      <div class="reminder-box">
-        <p><strong>📅 Last Test Date:</strong> ${lastTestDate}</p>
-        <p>Regular monitoring is important for maintaining good health and early detection of potential issues.</p>
-      </div>
-      
-      <p>Please book an appointment at your nearest health center through our app:</p>
-      
-      <p style="text-align: center;">
-        <a href="${bookingUrl}" class="button">Book Appointment</a>
-      </p>
-      
-      <p>If you've already completed this test or would like to stop receiving these reminders, you can unsubscribe below.</p>
-      
-      <p style="text-align: center; font-size: 12px;">
-        <a href="${unsubscribeUrl}" style="color: #777;">Unsubscribe from reminders</a>
-      </p>
-      
-      <p>Stay healthy!</p>
-      <p><strong>MediLab Rural Health System</strong></p>
-    </div>
-    <div class="footer">
-      <p>This is an automated reminder. Please do not reply to this email.</p>
-      <p>© 2026 MediLab. All rights reserved.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;" bgcolor="#f0f4f8">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:20px 10px;">
+<table cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;" bgcolor="#ffffff">
+<tr><td align="center" bgcolor="#1a4731" style="background-color:#1a4731;padding:28px 24px;">
+  <p style="margin:0 0 8px 0;font-family:Arial,sans-serif;font-size:28px;color:#ffffff;">&#x25CB;</p>
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#ffffff;">MediLab Rural Health System</p>
+  <p style="margin:5px 0 0 0;font-family:Arial,sans-serif;font-size:12px;color:#9ae6b4;">Routine Health Reminder</p>
+</td></tr>
+<tr><td style="padding:28px 30px;">
+  <p style="margin:0 0 10px 0;font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#1a4731;">Dear ${patientName},</p>
+  <p style="margin:0 0 20px 0;font-family:Arial,sans-serif;font-size:14px;color:#4a5568;line-height:1.6;">This is a scheduled reminder for your routine <strong style="color:#1a4731;">${testName}</strong> checkup. Regular monitoring plays an important role in early detection and maintaining your overall health.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;border-left:4px solid #38a169;background-color:#f0fff4;" bgcolor="#f0fff4">
+    <tr><td colspan="2" style="padding:9px 14px 4px 14px;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#38a169;">Checkup Details</td></tr>
+    <tr>
+      <td width="38%" valign="top" style="padding:6px 8px 6px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;border-bottom:1px solid #c6f6d5;">Test</td>
+      <td width="62%" valign="top" style="padding:6px 14px 6px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;border-bottom:1px solid #c6f6d5;">${testName}</td>
+    </tr>
+    <tr>
+      <td width="38%" valign="top" style="padding:6px 8px 10px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;">Last Conducted</td>
+      <td width="62%" valign="top" style="padding:6px 14px 10px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;">${lastTestDate}</td>
+    </tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+    <tr><td align="center" style="padding:16px 0;">
+      <a href="${bookingUrl}" style="display:inline-block;padding:13px 32px;background-color:#38a169;color:#ffffff;text-decoration:none;border-radius:5px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">Book an Appointment</a>
+    </td></tr>
+  </table>
+  <p style="margin:0 0 12px 0;border-top:1px solid #e2e8f0;padding-top:16px;font-family:Arial,sans-serif;font-size:13px;color:#718096;line-height:1.5;">If you have already completed this test recently, you may disregard this reminder. To stop receiving these reminders, click the link below.</p>
+  <p style="margin:0;text-align:center;"><a href="${unsubscribeUrl}" style="font-family:Arial,sans-serif;font-size:12px;color:#718096;">Unsubscribe from routine reminders</a></p>
+</td></tr>
+<tr><td align="center" bgcolor="#f7fafc" style="background-color:#f7fafc;padding:16px 24px;border-top:1px solid #e2e8f0;">
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">MediLab Rural Health System &mdash; <a href="https://medilab.dev" style="color:#718096;text-decoration:none;">medilab.dev</a></p>
+  <p style="margin:3px 0 0 0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">&copy; 2026 MediLab. All rights reserved.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 
   return await sendEmailWithRetry(to, subject, html);
 };
@@ -319,62 +298,51 @@ export const sendUnviewedResultReminderEmail = async (data) => {
 
   const subject = "Reminder: Your Test Results are Still Unviewed - MediLab";
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-    .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
-    .button { display: inline-block; padding: 12px 30px; background-color: #e74c3c; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-    .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
-    .warning-box { background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
-    .details { background-color: white; padding: 15px; border-left: 4px solid #e74c3c; margin: 20px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>⚠️ MediLab Rural Health System</h1>
-    </div>
-    <div class="content">
-      <h2>Dear ${patientName},</h2>
-      
-      <div class="warning-box">
-        <p><strong>⚠️ Important Reminder:</strong></p>
-        <p>Your test results have been available for <strong>${daysUnviewed} days</strong> but have not been viewed yet.</p>
-      </div>
-      
-      <p>We noticed that you haven't checked your test results. Your health is important to us, and reviewing your results is an essential part of your healthcare.</p>
-      
-      <div class="details">
-        <p><strong>Test:</strong> ${testName}</p>
-        <p><strong>Released Date:</strong> ${releasedDate}</p>
-        <p><strong>Days Unviewed:</strong> ${daysUnviewed} days</p>
-      </div>
-      
-      <p>Please take a moment to login and review your test results:</p>
-      
-      <p style="text-align: center;">
-        <a href="${loginUrl}" class="button">View My Results Now</a>
-      </p>
-      
-      <p>If you have concerns or questions about your results, please contact your healthcare provider or visit your health center.</p>
-      
-      <p>Your health matters!</p>
-      <p><strong>MediLab Rural Health System</strong></p>
-    </div>
-    <div class="footer">
-      <p>This is an automated reminder. Please do not reply to this email.</p>
-      <p>© 2026 MediLab. All rights reserved.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;" bgcolor="#f0f4f8">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:20px 10px;">
+<table cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;" bgcolor="#ffffff">
+<tr><td align="center" bgcolor="#742a2a" style="background-color:#742a2a;padding:28px 24px;">
+  <p style="margin:0 0 8px 0;font-family:Arial,sans-serif;font-size:28px;font-weight:bold;color:#ffffff;">!</p>
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#ffffff;">MediLab Rural Health System</p>
+  <p style="margin:5px 0 0 0;font-family:Arial,sans-serif;font-size:12px;color:#feb2b2;">Unviewed Results Reminder</p>
+</td></tr>
+<tr><td style="padding:28px 30px;">
+  <p style="margin:0 0 10px 0;font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#742a2a;">Dear ${patientName},</p>
+  <p style="margin:0 0 20px 0;font-family:Arial,sans-serif;font-size:14px;color:#4a5568;line-height:1.6;">Your test results have been available for <strong style="color:#742a2a;">${daysUnviewed} day(s)</strong> and have not yet been viewed. Reviewing your results is an important step in your ongoing healthcare.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;border-left:4px solid #c53030;background-color:#fff5f5;" bgcolor="#fff5f5">
+    <tr><td style="padding:9px 14px 4px 14px;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#c53030;">Action Required</td></tr>
+    <tr><td style="padding:0 14px 12px 14px;font-family:Arial,sans-serif;font-size:13px;color:#742a2a;line-height:1.5;">Your results have been waiting for ${daysUnviewed} day(s). Please log in to review them at your earliest convenience.</td></tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;border-left:4px solid #718096;background-color:#f7fafc;" bgcolor="#f7fafc">
+    <tr>
+      <td width="38%" valign="top" style="padding:9px 8px 9px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;border-bottom:1px solid #e2e8f0;">Test</td>
+      <td width="62%" valign="top" style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;border-bottom:1px solid #e2e8f0;">${testName}</td>
+    </tr>
+    <tr>
+      <td width="38%" valign="top" style="padding:9px 8px 9px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;border-bottom:1px solid #e2e8f0;">Released Date</td>
+      <td width="62%" valign="top" style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;border-bottom:1px solid #e2e8f0;">${releasedDate}</td>
+    </tr>
+    <tr>
+      <td width="38%" valign="top" style="padding:9px 8px 9px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;">Days Unviewed</td>
+      <td width="62%" valign="top" style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;">${daysUnviewed} day(s)</td>
+    </tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+    <tr><td align="center" style="padding:16px 0;">
+      <a href="${loginUrl}" style="display:inline-block;padding:13px 32px;background-color:#c53030;color:#ffffff;text-decoration:none;border-radius:5px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">View My Results Now</a>
+    </td></tr>
+  </table>
+  <p style="margin:0;border-top:1px solid #e2e8f0;padding-top:16px;font-family:Arial,sans-serif;font-size:13px;color:#718096;line-height:1.5;">If you have concerns about your results, please contact your health center. Do not reply to this email.</p>
+</td></tr>
+<tr><td align="center" bgcolor="#f7fafc" style="background-color:#f7fafc;padding:16px 24px;border-top:1px solid #e2e8f0;">
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">MediLab Rural Health System &mdash; <a href="https://medilab.dev" style="color:#718096;text-decoration:none;">medilab.dev</a></p>
+  <p style="margin:3px 0 0 0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">&copy; 2026 MediLab. All rights reserved.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 
   return await sendEmailWithRetry(to, subject, html);
 };
@@ -397,65 +365,121 @@ export const sendHardCopyReadyEmail = async (data) => {
     loginUrl,
   } = data;
 
-  const subject = "Your Hard Copy Report is Ready for Pickup - MediLab";
+  const subject = "Your Hard Copy Report is Ready for Collection - MediLab";
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #27ae60; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-    .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
-    .button { display: inline-block; padding: 12px 30px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-    .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
-    .details { background-color: white; padding: 15px; border-left: 4px solid #27ae60; margin: 20px 0; }
-    .pickup-box { background-color: #eafaf1; padding: 15px; border-left: 4px solid #27ae60; margin: 20px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🏥 MediLab Rural Health System</h1>
-    </div>
-    <div class="content">
-      <h2>Dear ${patientName},</h2>
+  const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;" bgcolor="#f0f4f8">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:20px 10px;">
+<table cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;" bgcolor="#ffffff">
+<tr><td align="center" bgcolor="#1e3a6e" style="background-color:#1e3a6e;padding:28px 24px;">
+  <p style="margin:0 0 8px 0;font-family:Arial,sans-serif;font-size:28px;color:#ffffff;">&#x2393;</p>
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#ffffff;">MediLab Rural Health System</p>
+  <p style="margin:5px 0 0 0;font-family:Arial,sans-serif;font-size:12px;color:#a8c4e0;">Hard Copy Report Ready</p>
+</td></tr>
+<tr><td style="padding:28px 30px;">
+  <p style="margin:0 0 10px 0;font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#1e3a6e;">Dear ${patientName},</p>
+  <p style="margin:0 0 20px 0;font-family:Arial,sans-serif;font-size:14px;color:#4a5568;line-height:1.6;">Your printed hard copy report is ready and available for collection at the health center.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;border-left:4px solid #2b6cb0;background-color:#f7fafc;" bgcolor="#f7fafc">
+    <tr>
+      <td width="38%" valign="top" style="padding:9px 8px 9px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;border-bottom:1px solid #e2e8f0;">Test</td>
+      <td width="62%" valign="top" style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;border-bottom:1px solid #e2e8f0;">${testName}</td>
+    </tr>
+    ${bookingCode ? `<tr><td width="38%" valign="top" style="padding:9px 8px 9px 14px;font-family:Arial,sans-serif;font-size:13px;color:#718096;">Booking Reference</td><td width="62%" valign="top" style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#2d3748;">${bookingCode}</td></tr>` : ""}
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;border-left:4px solid #3182ce;background-color:#ebf8ff;" bgcolor="#ebf8ff">
+    <tr><td style="padding:9px 14px 4px 14px;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#2b6cb0;">Collection Details</td></tr>
+    <tr><td style="padding:4px 14px;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;color:#1e3a6e;">${centerName}</td></tr>
+    ${centerAddress ? `<tr><td style="padding:3px 14px;font-family:Arial,sans-serif;font-size:13px;color:#4a5568;">${centerAddress}</td></tr>` : ""}
+    ${centerPhone ? `<tr><td style="padding:3px 14px;font-family:Arial,sans-serif;font-size:13px;color:#4a5568;">Tel: ${centerPhone}</td></tr>` : ""}
+    ${operatingHours ? `<tr><td style="padding:3px 14px;font-family:Arial,sans-serif;font-size:13px;color:#4a5568;">Hours: ${operatingHours}</td></tr>` : ""}
+    <tr><td style="padding:0 0 8px 0;font-size:0;line-height:0;">&nbsp;</td></tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;background-color:#fffbeb;border:1px solid #f6e05e;" bgcolor="#fffbeb">
+    <tr><td style="padding:12px 16px;font-family:Arial,sans-serif;font-size:13px;color:#744210;">Please bring a valid government-issued ID when collecting your report.</td></tr>
+  </table>
+  <p style="margin:0 0 16px 0;font-family:Arial,sans-serif;font-size:14px;color:#4a5568;">You may also view and download your results online by logging into your account.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+    <tr><td align="center" style="padding:8px 0 16px 0;">
+      <a href="${loginUrl}" style="display:inline-block;padding:13px 32px;background-color:#2b6cb0;color:#ffffff;text-decoration:none;border-radius:5px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">View Results Online</a>
+    </td></tr>
+  </table>
+  <p style="margin:0;border-top:1px solid #e2e8f0;padding-top:16px;font-family:Arial,sans-serif;font-size:13px;color:#718096;line-height:1.5;">If you have any questions, please contact the health center directly. Do not reply to this email.</p>
+</td></tr>
+<tr><td align="center" bgcolor="#f7fafc" style="background-color:#f7fafc;padding:16px 24px;border-top:1px solid #e2e8f0;">
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">MediLab Rural Health System &mdash; <a href="https://medilab.dev" style="color:#718096;text-decoration:none;">medilab.dev</a></p>
+  <p style="margin:3px 0 0 0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">&copy; 2026 MediLab. All rights reserved.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 
-      <p>Your printed hard copy report is ready for pickup at the health center.</p>
+  return await sendEmailWithRetry(to, subject, html);
+};
 
-      <div class="details">
-        <p><strong>Test:</strong> ${testName}</p>
-        <p><strong>Booking Reference:</strong> ${bookingCode || "N/A"}</p>
-      </div>
+/**
+ * Send hard copy collection reminder email (report has been waiting, not yet collected)
+ * @param {Object} data - { to, patientName, testName, centerName, centerAddress, daysSincePrinting, centerPhone, operatingHours, loginUrl }
+ * @returns {Promise<Object>} Result of email sending
+ */
+export const sendHardCopyCollectionReminderEmail = async (data) => {
+  const {
+    to,
+    patientName,
+    testName,
+    centerName,
+    centerAddress,
+    daysSincePrinting,
+    centerPhone,
+    operatingHours,
+    loginUrl,
+  } = data;
 
-      <div class="pickup-box">
-        <p><strong>📍 Pickup Location:</strong></p>
-        <p><strong>${centerName}</strong></p>
-        ${centerAddress ? `<p>${centerAddress}</p>` : ""}
-        ${centerPhone ? `<p>📞 ${centerPhone}</p>` : ""}
-        ${operatingHours ? `<p>🕐 Operating Hours: ${operatingHours}</p>` : ""}
-      </div>
+  const subject = "Reminder: Your Hard Copy Report Awaits Collection - MediLab";
 
-      <p>Please bring a valid ID when collecting your report. You can also view your results online by logging into your account.</p>
-
-      <p style="text-align: center;">
-        <a href="${loginUrl}" class="button">View My Results Online</a>
-      </p>
-
-      <p>If you have any questions, please contact the health center directly.</p>
-
-      <p>Thank you for using <strong>MediLab Rural Health System</strong>.</p>
-    </div>
-    <div class="footer">
-      <p>This is an automated notification. Please do not reply to this email.</p>
-      <p>© 2026 MediLab. All rights reserved.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;" bgcolor="#f0f4f8">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:20px 10px;">
+<table cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;" bgcolor="#ffffff">
+<tr><td align="center" bgcolor="#7b4b00" style="background-color:#7b4b00;padding:28px 24px;">
+  <p style="margin:0 0 8px 0;font-family:Arial,sans-serif;font-size:28px;font-weight:bold;color:#ffffff;">!</p>
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#ffffff;">MediLab Rural Health System</p>
+  <p style="margin:5px 0 0 0;font-family:Arial,sans-serif;font-size:12px;color:#fbd38d;">Hard Copy Collection Reminder</p>
+</td></tr>
+<tr><td style="padding:28px 30px;">
+  <p style="margin:0 0 10px 0;font-family:Arial,sans-serif;font-size:17px;font-weight:bold;color:#7b4b00;">Dear ${patientName},</p>
+  <p style="margin:0 0 20px 0;font-family:Arial,sans-serif;font-size:14px;color:#4a5568;line-height:1.6;">This is a reminder that your <strong style="color:#7b4b00;">${testName}</strong> hard copy report has been available for collection for <strong style="color:#7b4b00;">${daysSincePrinting} day(s)</strong> and has not yet been collected.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;border-left:4px solid #c05621;background-color:#fffaf0;" bgcolor="#fffaf0">
+    <tr><td style="padding:9px 14px 4px 14px;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#c05621;">Awaiting Collection</td></tr>
+    <tr><td style="padding:0 14px 12px 14px;font-family:Arial,sans-serif;font-size:13px;color:#7b4b00;line-height:1.5;">Your report has been waiting at the health center for ${daysSincePrinting} day(s). Please collect it at your earliest convenience.</td></tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;border-left:4px solid #c05621;background-color:#feebc8;" bgcolor="#feebc8">
+    <tr><td style="padding:9px 14px 4px 14px;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#c05621;">Collection Location</td></tr>
+    <tr><td style="padding:4px 14px;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;color:#7b4b00;">${centerName}</td></tr>
+    ${centerAddress ? `<tr><td style="padding:3px 14px;font-family:Arial,sans-serif;font-size:13px;color:#4a5568;">${centerAddress}</td></tr>` : ""}
+    ${centerPhone ? `<tr><td style="padding:3px 14px;font-family:Arial,sans-serif;font-size:13px;color:#4a5568;">Tel: ${centerPhone}</td></tr>` : ""}
+    ${operatingHours ? `<tr><td style="padding:3px 14px;font-family:Arial,sans-serif;font-size:13px;color:#4a5568;">Hours: ${operatingHours}</td></tr>` : ""}
+    <tr><td style="padding:0 0 8px 0;font-size:0;line-height:0;">&nbsp;</td></tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;background-color:#fffbeb;border:1px solid #f6e05e;" bgcolor="#fffbeb">
+    <tr><td style="padding:12px 16px;font-family:Arial,sans-serif;font-size:13px;color:#744210;">Please bring a valid government-issued ID when collecting your report.</td></tr>
+  </table>
+  <p style="margin:0 0 16px 0;font-family:Arial,sans-serif;font-size:14px;color:#4a5568;">You may also view and download your results online by logging into your account.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+    <tr><td align="center" style="padding:8px 0 16px 0;">
+      <a href="${loginUrl}" style="display:inline-block;padding:13px 32px;background-color:#c05621;color:#ffffff;text-decoration:none;border-radius:5px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">View Results Online</a>
+    </td></tr>
+  </table>
+  <p style="margin:0;border-top:1px solid #e2e8f0;padding-top:16px;font-family:Arial,sans-serif;font-size:13px;color:#718096;line-height:1.5;">If you have any questions, please contact the health center directly. Do not reply to this email.</p>
+</td></tr>
+<tr><td align="center" bgcolor="#f7fafc" style="background-color:#f7fafc;padding:16px 24px;border-top:1px solid #e2e8f0;">
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">MediLab Rural Health System &mdash; <a href="https://medilab.dev" style="color:#718096;text-decoration:none;">medilab.dev</a></p>
+  <p style="margin:3px 0 0 0;font-family:Arial,sans-serif;font-size:11px;color:#a0aec0;">&copy; 2026 MediLab. All rights reserved.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 
   return await sendEmailWithRetry(to, subject, html);
 };
@@ -490,6 +514,7 @@ export default {
   sendRoutineCheckupReminderEmail,
   sendUnviewedResultReminderEmail,
   sendHardCopyReadyEmail,
+  sendHardCopyCollectionReminderEmail,
   isValidEmail,
   isSendGridConfigured,
 };
