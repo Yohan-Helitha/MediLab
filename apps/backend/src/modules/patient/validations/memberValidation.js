@@ -38,8 +38,17 @@ export const validateMemberCreate = [
   body("contact_number")
     .notEmpty()
     .withMessage("Contact number is required")
-    .matches(/^\+94\d{9}$/)
-    .withMessage('Contact number must be in format +94xxxxxxxxx (e.g., +94712345678)'),
+    .trim()
+    .custom((value) => {
+      // Remove spaces, parentheses, and dashes for validation
+      const cleaned = value.replace(/[\s\-()]/g, '');
+      // Accept both local (07xxxxxxxx) and international formats (+94xxxxxxxxx)
+      const isValid = /^(\+94\d{9}|0\d{9})$/.test(cleaned);
+      if (!isValid) {
+        throw new Error('Contact number must be a valid Sri Lankan phone number');
+      }
+      return true;
+    }),
   
   body("nic")
     .optional()
@@ -196,8 +205,19 @@ export const validateMemberUpdate = [
   
   body("contact_number")
     .optional({ checkFalsy: true })
-    .matches(/^\+94\d{9}$/)
-    .withMessage('Contact number must be in format +94xxxxxxxxx (e.g., +94712345678)'),
+    .trim()
+    .custom((value) => {
+      if (value) {
+        // Remove spaces, parentheses, and dashes for validation
+        const cleaned = value.replace(/[\s\-()]/g, '');
+        // Accept both local (07xxxxxxxx) and international formats (+94xxxxxxxxx)
+        const isValid = /^(\+94\d{9}|0\d{9})$/.test(cleaned);
+        if (!isValid) {
+          throw new Error('Contact number must be a valid Sri Lankan phone number');
+        }
+      }
+      return true;
+    }),
   
   body("nic")
     .optional()
