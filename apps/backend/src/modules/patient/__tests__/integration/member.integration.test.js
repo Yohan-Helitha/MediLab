@@ -119,7 +119,7 @@ describe('Member Module Integration Tests', () => {
         .send({
           full_name: `TestMember${Date.now()}`,
           email: `member${Date.now()}@test.com`,
-          contact_number: `071${Math.floor(Math.random() * 10000000)}`,
+          contact_number: `071${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`,
           household_id: householdId,
           address: '456 Test Avenue',
           password_hash: 'SecurePass@123',

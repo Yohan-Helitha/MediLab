@@ -76,7 +76,7 @@ describe('Past Medical History Integration Tests', () => {
         member_id: memberId,
         full_name: `TestUser${Date.now()}`,
         email: `pmh${Date.now()}@test.com`,
-        contact_number: `071${Math.floor(Math.random() * 10000000)}`,
+        contact_number: `071${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`,
         household_id: household._id,
         nic: `${Math.floor(Math.random() * 900000000) + 100000000}V`,
         date_of_birth: '1980-03-10',
