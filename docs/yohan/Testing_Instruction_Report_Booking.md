@@ -142,12 +142,3 @@ Important:
 There is no booking-dedicated Artillery YAML committed yet.
 To load test booking endpoints, copy an existing Artillery scenario and add flows for booking routes (e.g., `POST /api/bookings`, `GET /api/bookings/...`).
 
----
-
-## 6. Optional: API-level integration testing via Postman
-If you want module integration checks without writing code, run a Postman collection via Newman:
-```bash
-npx newman run medilab-booking-inventory.postman_collection.json
-```
-
-(Requires the backend to be running and the collection variables to match your local URLs.)

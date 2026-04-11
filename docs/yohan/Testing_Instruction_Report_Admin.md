@@ -102,11 +102,4 @@ Notes:
 - `npm run perf:test` runs `perf/test-management-perf.yml` (admin-adjacent, not a full admin suite).
 - Update `src/modules/__tests__/api.performance.config.yaml` `config.target` to match your backend port if needed.
 
----
 
-## 6. Optional: API-level integration testing via Postman
-```bash
-npx newman run MediLab.postman_collection.json
-```
-
-(Requires backend running + collection variables configured.)

@@ -115,11 +115,12 @@ Notes:
 - Update `config.target` as needed (backend commonly runs on `http://localhost:5000`).
 - For a payment-specific load test, extend the Artillery flows with `POST /api/payments/payhere/checkout` (requires auth token + a valid booking).
 
----
+--- To test the payment scenario in frontend(from the medilab.dev domain)
+you have to use these credentials for card number.(this is configured from payhere originally)
 
-## 6. Optional: API-level integration testing via Postman
-```bash
-npx newman run MediLab.postman_collection.json
-```
+You can use following test card numbers to test simulated successful payments.
 
-(Requires backend running + collection variables configured.)
+Visa : 4916217501611292
+MasterCard : 5307732125531191
+AMEX : 346781005510225
+For ‘Name on Card’, ‘CVV’ & ‘Expiry date’ you can enter any valid data.

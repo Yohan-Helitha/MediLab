@@ -116,11 +116,4 @@ There is no finance-specific Artillery scenario committed yet.
 Recommended approach:
 - Duplicate an existing Artillery YAML and add finance flows (e.g., list payments, record cash payment).
 
----
 
-## 6. Optional: API-level integration testing via Postman
-```bash
-npx newman run MediLab.postman_collection.json
-```
-
-(Requires backend running and valid environment variables/collection variables.)

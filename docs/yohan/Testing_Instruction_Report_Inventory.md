@@ -102,11 +102,4 @@ Important:
 There is no inventory-specific Artillery scenario committed yet.
 For grading against “various loads” requirement, extend an existing Artillery config with inventory routes.
 
----
 
-## 6. Optional: API-level integration testing via Postman
-```bash
-npx newman run medilab-booking-inventory.postman_collection.json
-```
-
-(Requires backend running and the collection variables set correctly.)
