@@ -79,12 +79,14 @@ export const notificationHistoryQueryValidation = [
       "result_ready",
       "unviewed_result_reminder",
       "routine_checkup_reminder",
+      "hard_copy_ready_for_pickup",
+      "hard_copy_collection_reminder",
     ])
     .withMessage("Invalid notification type"),
   query("channel")
     .optional()
-    .isIn(["sms", "email"])
-    .withMessage("Invalid channel. Must be 'sms' or 'email'"),
+    .isIn(["sms", "email", "whatsapp"])
+    .withMessage("Invalid channel. Must be 'sms', 'email', or 'whatsapp'"),
   query("status")
     .optional()
     .isIn(["sent", "failed"])
@@ -150,6 +152,16 @@ export const updateSubscriptionValidation = [
       }
       return true;
     }),
+];
+
+/**
+ * Validate send hard copy ready notification request
+ * POST /api/notifications/send/hard-copy-ready
+ */
+export const sendHardCopyReadyValidation = [
+  body("resultId")
+    .isMongoId()
+    .withMessage("resultId must be a valid MongoDB ObjectId"),
 ];
 
 /**

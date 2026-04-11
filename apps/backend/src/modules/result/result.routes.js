@@ -7,8 +7,20 @@ import {
   isHealthOfficer,
   checkRole,
 } from "../auth/auth.middleware.js";
+import resultUpload from "../../middlewares/resultUploadMiddleware.js";
 
 const router = express.Router();
+
+// File upload endpoint — Health Officer uploads a single file and receives
+// back { fileName, filePath (Cloudinary URL), fileSize, mimeType }.
+// The client includes this object in uploadedFiles[] when submitting a result.
+router.post(
+  "/upload-file",
+  authenticate,
+  isHealthOfficer,
+  resultUpload.single("file"),
+  resultController.uploadResultFile,
+);
 
 // Create/Submit Routes (Lab Staff only)
 router.post(
@@ -74,12 +86,36 @@ router.get(
   resultController.downloadTestResultPDF,
 );
 
+// Download individual uploaded file (Patient own released + Health Officer) — must come before /:id
+router.get(
+  "/:id/file/:fileIndex",
+  authenticate,
+  resultController.downloadUploadedFile,
+);
+
 // Status history route - must come before generic /:id (Patient own released + Health Officer)
 router.get(
   "/:id/status-history",
   authenticate,
   resultValidation.idParamValidation,
   resultController.getStatusHistory,
+);
+
+// Uncollected hard copy reports (Health Officer only) — MUST be before /:id
+router.get(
+  "/uncollected",
+  authenticate,
+  isHealthOfficer,
+  resultValidation.uncollectedQueryValidation,
+  resultController.getUncollectedReports,
+);
+
+// All results across health centers (Admin only) — MUST be before /:id
+router.get(
+  "/admin",
+  authenticate,
+  checkRole(["Admin"]),
+  resultController.getAllResultsAdmin,
 );
 
 // Generic ID route last to avoid conflicts (Patient own released + Health Officer all)
@@ -118,6 +154,24 @@ router.patch(
   resultValidation.idParamValidation,
   resultValidation.markViewedValidation,
   resultController.markAsViewed,
+);
+
+// Hard copy: mark as printed (Health Officer only)
+router.patch(
+  "/:id/mark-printed",
+  authenticate,
+  isHealthOfficer,
+  resultValidation.idParamValidation,
+  resultController.markAsPrinted,
+);
+
+// Hard copy: mark as collected by patient (Health Officer only)
+router.patch(
+  "/:id/mark-collected",
+  authenticate,
+  isHealthOfficer,
+  resultValidation.idParamValidation,
+  resultController.markAsCollected,
 );
 
 // Delete Routes

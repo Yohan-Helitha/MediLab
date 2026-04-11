@@ -100,7 +100,7 @@ const corsOptions = {
 
     return callback(null, isAllowed);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 };
@@ -128,6 +128,7 @@ app.use("/api/auth", authRoutes);
 // Consultation module (AI Doctor)
 app.use("/api/consultation", consultationRoutes);
 app.use("/api/ai", geminiRoutes);
+app.use("/api/translation", translationRoutes);
 
 // Translation module (Google Cloud Translation API)
 app.use("/api/translation", translationRoutes);

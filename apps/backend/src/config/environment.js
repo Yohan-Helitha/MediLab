@@ -25,6 +25,9 @@ const config = {
     accountSid: env.TWILIO_ACCOUNT_SID || "",
     authToken: env.TWILIO_AUTH_TOKEN || "",
     phoneNumber: env.TWILIO_PHONE_NUMBER || "",
+    // WhatsApp sandbox number — defaults to Twilio sandbox (+14155238886)
+    // Set TWILIO_WHATSAPP_NUMBER for a dedicated production WhatsApp Business number
+    whatsappNumber: env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+14155238886",
   },
   sendgrid: {
     apiKey: env.SENDGRID_API_KEY || "",
