@@ -20,7 +20,8 @@ const healthOfficerSchema = new mongoose.Schema(
 
     contactNumber: {
       type: String,
-      required: true
+      required: true,
+      maxlength: 20
     },
     email: {
       type: String,
@@ -65,6 +66,20 @@ healthOfficerSchema.index({ assignedArea: 1 });
 
 // Pre-save middleware to auto-generate employee ID
 healthOfficerSchema.pre('save', async function() {
+  // Normalize and validate contactNumber to +94xxxxxxxxx
+  if (this.contactNumber) {
+    let v = String(this.contactNumber).trim();
+    if (/^0\d{9}$/.test(v)) {
+      v = `+94${v.slice(1)}`;
+    }
+    if (/^\d{9}$/.test(v)) {
+      v = `+94${v}`;
+    }
+    if (!/^\+94\d{9}$/.test(v)) {
+      throw new Error('Invalid contact number format. Expected +94xxxxxxxxx');
+    }
+    this.contactNumber = v;
+  }
   if (!this.employeeId) {
     const currentYear = new Date().getFullYear();
     const prefix = this.role === 'Lab_Technician' ? 'LAB' : 'HO';

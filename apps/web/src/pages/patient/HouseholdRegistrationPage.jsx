@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
-import { getSafeErrorMessage } from "../../utils/errorHandler";
+import { getSafeErrorMessage, formatValidationError } from "../../utils/errorHandler";
 import { generateHouseholdPDF } from "../../utils/pdfGenerator";
 import { 
     createHousehold,
@@ -294,7 +294,7 @@ const HouseholdRegistrationPage = () => {
                 let displayMsg = "Operation failed";
                 
                 if (res.errors && Array.isArray(res.errors)) {
-                    displayMsg = res.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
+                    displayMsg = res.errors.map(e => formatValidationError(e)).join(", ");
                 } else if (res.message) {
                     displayMsg = getSafeErrorMessage(new Error(res.message), "household");
                 } else {
@@ -312,9 +312,9 @@ const HouseholdRegistrationPage = () => {
             
             // If the error object has a structured 'errors' array inside its context/response
             if (err.errors && Array.isArray(err.errors)) {
-                displayMsg = err.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
+                displayMsg = err.errors.map(e => formatValidationError(e)).join(", ");
             } else if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
-                displayMsg = err.response.data.errors.map(e => `${e.path || e.param}: ${e.msg}`).join(", ");
+                displayMsg = err.response.data.errors.map(e => formatValidationError(e)).join(", ");
             } else if (err.response?.data?.message) {
                 displayMsg = getSafeErrorMessage(new Error(err.response.data.message), "household");
             } else {
@@ -508,7 +508,8 @@ const HouseholdRegistrationPage = () => {
                                                 <span className="text-[10px] text-teal-600 font-bold uppercase tracking-wider block leading-none">Household ID</span>
                                                 <span className="text-sm font-bold text-teal-900 leading-none">{currentHousehold.household_id}</span>
                                             </div>
-                                            <button 
+                                            {/* Delete Button - Hidden */}
+                                            {/* <button 
                                                 type="button"
                                                 onClick={() => {
                                                     setCurrentHousehold(null);
@@ -521,7 +522,7 @@ const HouseholdRegistrationPage = () => {
                                                 title="Reset form"
                                             >
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
+                                            </button> */}
                                         </div>
                                     )}
                                 </div>
@@ -841,7 +842,6 @@ const HouseholdRegistrationPage = () => {
                                         {loading ? (
                                             <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
                                         ) : null}
-                                        {loading ? t("household.button.processing") : t("household.button.register")}
                                         {loading ? "Processing..." : (currentHousehold?._id ? "Update" : "Register")}
                                     </button>
                                 </div>

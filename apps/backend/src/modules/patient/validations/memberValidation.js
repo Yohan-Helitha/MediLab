@@ -38,8 +38,17 @@ export const validateMemberCreate = [
   body("contact_number")
     .notEmpty()
     .withMessage("Contact number is required")
-    .matches(/^[0-9]{10}$/)
-    .withMessage("Contact number must be exactly 10 digits with no symbols or letters"),
+    .trim()
+    .custom((value) => {
+      // Remove spaces, parentheses, and dashes for validation
+      const cleaned = value.replace(/[\s\-()]/g, '');
+      // Accept both local (07xxxxxxxx) and international formats (+94xxxxxxxxx)
+      const isValid = /^(\+94\d{9}|0\d{9})$/.test(cleaned);
+      if (!isValid) {
+        throw new Error('Contact number must be a valid Sri Lankan phone number');
+      }
+      return true;
+    }),
   
   body("nic")
     .optional()
@@ -195,9 +204,20 @@ export const validateMemberUpdate = [
     .withMessage("Diseases must be an array of strings"),
   
   body("contact_number")
-    .optional()
-    .matches(/^[0-9]{10}$/)
-    .withMessage("Contact number must be exactly 10 digits with no symbols or letters"),
+    .optional({ checkFalsy: true })
+    .trim()
+    .custom((value) => {
+      if (value) {
+        // Remove spaces, parentheses, and dashes for validation
+        const cleaned = value.replace(/[\s\-()]/g, '');
+        // Accept both local (07xxxxxxxx) and international formats (+94xxxxxxxxx)
+        const isValid = /^(\+94\d{9}|0\d{9})$/.test(cleaned);
+        if (!isValid) {
+          throw new Error('Contact number must be a valid Sri Lankan phone number');
+        }
+      }
+      return true;
+    }),
   
   body("nic")
     .optional()

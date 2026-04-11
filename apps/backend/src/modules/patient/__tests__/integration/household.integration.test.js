@@ -42,7 +42,7 @@ describe('Household Module Integration Tests', () => {
       member_id: memberId,
       full_name: `HouseholdTestUser${Date.now()}`,
       email: `household${Date.now()}@test.com`,
-      contact_number: `071${Math.floor(Math.random() * 10000000)}`,
+      contact_number: `071${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`,
       nic: `${Math.floor(Math.random() * 900000000) + 100000000}V`,
       date_of_birth: '1987-11-22',
       ...defaultMemberData

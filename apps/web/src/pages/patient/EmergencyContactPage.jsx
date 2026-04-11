@@ -26,7 +26,7 @@ import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../layout/PublicLayout";
 import { toast } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import { getSafeErrorMessage } from "../../utils/errorHandler";
+import { getSafeErrorMessage, formatValidationError } from "../../utils/errorHandler";
 import { generateEmergencyContactPDF } from "../../utils/pdfGenerator";
 
 const FORM_SECTIONS = ["basic", "location", "availability", "permissions"];
@@ -161,8 +161,8 @@ const EmergencyContactPage = () => {
       // Show specific field validation errors if available
       if (error.errors && error.errors.length > 0) {
         console.error("Validation errors:", error.errors);
-        const messages = error.errors.map(e => `${e.path}: ${e.msg}`).join("\n");
-        toast.error(`Validation errors:\n${messages}`, { duration: 6000 });
+        const messages = error.errors.map(e => formatValidationError(e)).join("\n");
+        toast.error(`Please check the following:\n${messages}`, { duration: 6000 });
       } else {
         toast.error(getSafeErrorMessage(error, "contact"));
       }

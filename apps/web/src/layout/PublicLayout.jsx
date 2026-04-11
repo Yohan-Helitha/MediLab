@@ -245,7 +245,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                 title={t("navbar.appointments")}
                 items={[
                   { label: t("navbar.appointments.book"), to: "/booking" },
-                  { label: t("navbar.appointments.visitsReferrals"), to: "/visits-referrals" },
+                 // { label: t("navbar.appointments.visitsReferrals"), to: "/visits-referrals" },
                 ]}
               />
 
@@ -296,7 +296,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
               </Link>
             )}
 
-            <button
+            {/* <button
               type="button"
               className="inline-flex h-9 w-9 items-center justify-center text-slate-600 transition-all active:scale-95 group relative"
               title="Notifications"
@@ -316,7 +316,7 @@ function PublicLayout({ children, onNavigate, onLanguageChange }) {
                 />
               </svg>
               <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-rose-500 border-2 border-white" />
-            </button>
+            </button> */}
 
             <div className="relative" ref={langMenuRef}>
               <button

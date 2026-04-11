@@ -3,6 +3,15 @@ import { Link } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 
+function normalizeContact(input) {
+	if (!input) return input;
+	const v = String(input).trim();
+	if (/^\+94\d{9}$/.test(v)) return v;
+	if (/^0\d{9}$/.test(v)) return `+94${v.slice(1)}`;
+	if (/^\d{9}$/.test(v)) return `+94${v}`;
+	throw new Error('Phone number must be in +94xxxxxxxxx format');
+}
+
 function StaffRegisterPage() {
 	const { login } = useAuth();
 	const [step, setStep] = useState(1);
@@ -39,7 +48,7 @@ function StaffRegisterPage() {
 				fullName: `${formData.firstName} ${formData.lastName}`,
 				email: formData.email,
 				password: formData.password,
-				contactNumber: formData.phone,
+				contactNumber: normalizeContact(formData.phone),
 				role: formData.role
 			};
 			
@@ -120,7 +129,7 @@ function StaffRegisterPage() {
 											onChange={handleChange}
 											className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-sm"
 										>
-											<option value="HealthOfficer">Health Officer</option>
+											<option value="HealthOfficer">Health Officer</option>*
 											<option value="Lab_Technician">Lab Technician</option>
 											<option value="Staff">Staff</option>
 										</select>

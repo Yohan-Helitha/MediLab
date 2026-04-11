@@ -64,7 +64,7 @@ const FamilyMemberNode = ({ data, selected }) => {
 
             <div className='flex-1 min-w-0 flex flex-col justify-center h-full'>
                 <div className='flex items-center gap-2 mb-1.5'>
-                    <span className='font-extrabold text-slate-800 text-[13px] truncate uppercase tracking-tight'>{data.label}</span>
+                    <span className='font-extrabold text-slate-800 text-[13px] truncate uppercase'>{data.label}</span>
                     {data.isUser && (
                       <span className='px-1.5 py-0.5 bg-teal-500 text-white text-[8px] font-bold rounded-md uppercase shadow-sm shrink-0'>{t('familyTree.node.me')}</span>
                     )}
@@ -74,7 +74,7 @@ const FamilyMemberNode = ({ data, selected }) => {
 
                 <div className='space-y-1'>
                     <div className='flex items-center justify-between'>
-                    <span className='text-[9px] font-bold text-slate-500 uppercase tracking-wider'>{t('familyTree.node.healthProfile')}</span>
+                    <span className='text-[9px] font-bold text-slate-500 uppercase '>{t('familyTree.node.healthProfile')}</span>
                         {extraCount > 0 && (
                       <span className='text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 rounded-full'>{t('familyTree.node.more', { count: extraCount })}</span>
                         )}
@@ -252,26 +252,26 @@ function FamilyTreePage() {
         console.log('Grandchildren In-Laws:', grandchildrenInLaws.length, grandchildrenInLaws.map(g => g.relatedMember.full_name));
         console.log('Great-grandkids:', greatGrandkids.length, greatGrandkids.map(g => g.relatedMember.full_name));
 
-// Grandparents (Resident Parents) - Symmetrical around P.M. Niranjan
+// Grandparents (Resident Parents) - Symmetrical around head or single parent
         if (parents.length > 0) {
             const mil = parents.find(p => p.relatedMember.gender?.toLowerCase() === 'female');
             const fil = parents.find(p => p.relatedMember.gender?.toLowerCase() === 'male');
             const resParentJuncId = 'junc-res-parents';
             
-            // Junction should be centered in the gap between Aachchi and Seeya inner edges
+            // Create junction if both parents exist, or direct connection if only one
+            let junctionExists = false;
             if (mil && fil) {
-                // Aachchi right edge: (headX - 280) + 280 = headX
-                // Seeya left edge: headX + 280
-                // Center between them: (headX + (headX + 280)) / 2 = headX + 140
+                // Both parents: use junction
                 const juncX = headX + 140;
                 const juncY = headY - vGap + (cardHeight / 2);
                 newNodes.push({ id: resParentJuncId, type: 'junction', position: { x: juncX, y: juncY }, draggable: false, data: {} });
                 newEdges.push({ id: 'e-res-p-to-head', source: resParentJuncId, target: headNodeId, sourceHandle: 'bottom', targetHandle: 'top', type: 'smoothstep', style: { stroke: '#64748b', strokeWidth: 3 } });
+                junctionExists = true;
             }
 
             parents.forEach(p => {
                 const isF = p.relatedMember.gender?.toLowerCase() === 'female';
-                // Symmetrical positioning: Female LEFT, Male RIGHT, both 280px from center junction at headX
+                // Position: Female LEFT, Male RIGHT, both 280px from center at headX
                 const pX = headX + (isF ? -280 : 280);
                 const pY = headY - vGap;
                 const pNodeId = 'node-' + p.relatedMember.family_member_id;
@@ -280,8 +280,12 @@ function FamilyTreePage() {
                     data: { label: p.relatedMember.full_name, gender: p.relatedMember.gender, diseases: p.relatedMember.diseases || [], id: p.relatedMember.family_member_id, onAddDisease: (name) => setTargetMemberName(name) },
                     draggable: false
                 });
-                if (mil && fil) {
+                // Connect to junction if it exists, otherwise connect directly to head
+                if (junctionExists) {
                     newEdges.push({ id: 'e-res-p-' + pNodeId, source: pNodeId, target: resParentJuncId, sourceHandle: isF ? 'r' : 'l', targetHandle: isF ? 'l' : 'r', type: 'straight', style: { stroke: '#94a3b8', strokeWidth: 3 } });
+                } else {
+                    // Single parent: connect directly to head
+                    newEdges.push({ id: 'e-res-p-' + pNodeId, source: pNodeId, target: headNodeId, sourceHandle: 'bottom', targetHandle: 'top', type: 'smoothstep', style: { stroke: '#64748b', strokeWidth: 3 } });
                 }
             });
         }
@@ -303,23 +307,25 @@ function FamilyTreePage() {
             newEdges.push({ id: 'e-h-junc', source: headNodeId, target: mainJunctionId, sourceHandle: 'r', targetHandle: 'l', type: 'straight', style: { stroke: '#94a3b8', strokeWidth: 3 } });
             newEdges.push({ id: 'e-s-junc', source: spouseId, target: mainJunctionId, sourceHandle: 'l', targetHandle: 'r', type: 'straight', style: { stroke: '#94a3b8', strokeWidth: 3 } });
 
-            // Spouse Parents - Symmetrical around Thushari (spouseX)
+            // Spouse Parents - Symmetrical around spouse or single parent
             if (spouseParents.length > 0) {
                 const smil = spouseParents.find(p => p.relatedMember.gender?.toLowerCase() === 'female');
                 const sfil = spouseParents.find(p => p.relatedMember.gender?.toLowerCase() === 'male');
                 const spJuncId = 'junc-sp-parents';
+                
+                // Create junction if both spouse parents exist, or direct connection if only one
+                let spouseParentJunctionExists = false;
                 if (smil && sfil) {
-                    // Aththamma right edge: (spouseX - 280) + 280 = spouseX
-                    // Attha left edge: spouseX + 280
-                    // Center between them: (spouseX + (spouseX + 280)) / 2 = spouseX + 140
                     const juncX = spouseX + 140;
                     const juncY = headY - vGap + (cardHeight / 2);
                     newNodes.push({ id: spJuncId, type: 'junction', position: { x: juncX, y: juncY }, draggable: false, data: {} });
                     newEdges.push({ id: 'e-sp-p-to-spouse', source: spJuncId, target: spouseId, sourceHandle: 'bottom', targetHandle: 'top', type: 'smoothstep', style: { stroke: '#64748b', strokeWidth: 3 } });
+                    spouseParentJunctionExists = true;
                 }
+                
                 spouseParents.forEach(sp => {
                     const isF = sp.relatedMember.gender?.toLowerCase() === 'female';
-                    // Symmetrical: Female LEFT, Male RIGHT, both 280px from center junction at spouseX
+                    // Position: Female LEFT, Male RIGHT, both 280px from center at spouseX
                     const spPX = spouseX + (isF ? -280 : 280);
                     const spPY = headY - vGap;
                     const spNodeId = 'node-' + sp.relatedMember.family_member_id;
@@ -328,8 +334,12 @@ function FamilyTreePage() {
                         data: { label: sp.relatedMember.full_name, gender: sp.relatedMember.gender, diseases: sp.relatedMember.diseases || [], id: sp.relatedMember.family_member_id, onAddDisease: (name) => setTargetMemberName(name) },
                         draggable: false
                     });
-                    if (smil && sfil) {
+                    // Connect to junction if it exists, otherwise connect directly to spouse
+                    if (spouseParentJunctionExists) {
                         newEdges.push({ id: 'e-sp-p-' + spNodeId, source: spNodeId, target: spJuncId, sourceHandle: isF ? 'r' : 'l', targetHandle: isF ? 'l' : 'r', type: 'straight', style: { stroke: '#94a3b8', strokeWidth: 3 } });
+                    } else {
+                        // Single spouse parent: connect directly to spouse
+                        newEdges.push({ id: 'e-sp-p-' + spNodeId, source: spNodeId, target: spouseId, sourceHandle: 'bottom', targetHandle: 'top', type: 'smoothstep', style: { stroke: '#64748b', strokeWidth: 3 } });
                     }
                 });
             }
@@ -591,7 +601,7 @@ function FamilyTreePage() {
         {/* Header - Static at top */}
         <div className='flex items-center justify-between px-6 py-4'>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('familyTree.title')}</h1>
+              <h1 className="text-2xl font-bold text-slate-900">{t('familyTree.title')}</h1>
               <p className="text-slate-400 text-[15px] font-bold mt-0.5 ">
                 {loading
                   ? t('familyTree.loading')
@@ -599,35 +609,7 @@ function FamilyTreePage() {
               </p>
             </div>
 
-            {/* Instructions Bar pushed to the right */}
-            <div className="hidden md:flex items-center gap-5 bg-teal-600 backdrop-blur-md px-5 py-2 rounded-xl border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
-                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.scroll')}</span>
-                </div>
-                <div className="w-px h-3 bg-slate-200" />
-                <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white/60  shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
-                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.drag')}</span>
-                </div>
-                <div className="w-px h-3 bg-slate-200" />
-                <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white/60  shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
-                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.addDisease')}</span>
-                </div>
-                <h1 className='text-2xl font-bold text-slate-800 flex items-center gap-3'>
-                  <div className='w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center text-white'>
-                    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2.5' d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' />
-                    </svg>
-                  </div>
-                  {t('familyTree.map.title')}
-                </h1>
-                <p className='text-[11px] font-bold text-slate-500 mt-1 flex items-center gap-2'>
-                    <span className='w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse' />
-                    {t('familyTree.map.subtitle')}
-                </p>
-            </div>
+            {/* Instructions bar removed as requested */}
             <button onClick={loadRealFamilyTree} className='bg-white border-2 border-slate-200 p-3 rounded-2xl text-slate-600 hover:border-teal-500 hover:text-teal-600 transition-all shadow-lg'>
                 <svg className={'w-5 h-5 ' + (loading ? 'animate-spin' : '')} fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' />
@@ -684,7 +666,7 @@ function FamilyTreePage() {
             <div className='fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4'>
                 <div className='bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300'>
                     <div className='flex justify-between items-center px-8 py-6 border-b border-slate-100'>
-                        <h2 className='text-xl font-bold uppercase tracking-tight text-slate-800'>{t('familyTree.modal.title', { name: targetMemberName })}</h2>
+                        <h2 className='text-xl font-bold uppercase text-slate-800'>{t('familyTree.modal.title', { name: targetMemberName })}</h2>
                         <button onClick={() => setTargetMemberName(null)} className='text-slate-400 hover:text-slate-600'><svg className='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='3' d='M6 18L18 6M6 6l12 12' /></svg></button>
                     </div>
 
@@ -702,7 +684,7 @@ function FamilyTreePage() {
                               return (
                                 <button key={disease} onClick={() => toggleDiseaseOnNode(disease)} className={`group relative p-3 rounded-2xl border-2 text-left transition-all duration-200 ${isSelected ? 'bg-rose-50/50 border-rose-500 text-rose-700 shadow-sm scale-[1.01]' : 'bg-white border-slate-100 text-slate-600 hover:border-rose-500 hover:bg-rose-50/20 shadow-sm'}`}>
                                   <div className='flex items-center justify-between pointer-events-none gap-2'>
-                                    <span className='font-bold text-[11.5px] tracking-tight leading-tight'>{disease}</span>
+                                    <span className='font-bold text-[11.5px] leading-tight'>{disease}</span>
                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${isSelected ? 'bg-rose-500 border-rose-500 text-white' : 'border-slate-200 group-hover:border-rose-300'}`}>
                                       {isSelected && <svg className='w-3 h-3' fill='currentColor' viewBox='0 0 20 20'><path fillRule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clipRule='evenodd' /></svg>}
                                     </div>
@@ -724,7 +706,7 @@ function FamilyTreePage() {
                               return (
                                 <button key={disease} onClick={() => toggleDiseaseOnNode(disease)} className={`group relative p-3 rounded-2xl border-2 text-left transition-all duration-200 ${isSelected ? 'bg-purple-50/50 border-purple-500 text-purple-700 shadow-sm scale-[1.01]' : 'bg-white border-slate-100 text-slate-600 hover:border-purple-500 hover:bg-purple-50/20 shadow-sm'}`}>
                                   <div className='flex items-center justify-between pointer-events-none gap-2'>
-                                    <span className='font-bold text-[11.5px] tracking-tight leading-tight'>{disease}</span>
+                                    <span className='font-bold text-[11.5px] leading-tight'>{disease}</span>
                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${isSelected ? 'bg-purple-500 border-purple-500 text-white' : 'border-slate-200 group-hover:border-purple-300'}`}>
                                       {isSelected && <svg className='w-3 h-3' fill='currentColor' viewBox='0 0 20 20'><path fillRule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clipRule='evenodd' /></svg>}
                                     </div>
@@ -746,7 +728,7 @@ function FamilyTreePage() {
                               return (
                                 <button key={disease} onClick={() => toggleDiseaseOnNode(disease)} className={`group relative p-3 rounded-2xl border-2 text-left transition-all duration-200 ${isSelected ? 'bg-blue-50/50 border-blue-500 text-blue-700 shadow-sm scale-[1.01]' : 'bg-white border-slate-100 text-slate-600 hover:border-blue-500 hover:bg-blue-50/20 shadow-sm'}`}>
                                   <div className='flex items-center justify-between pointer-events-none gap-2'>
-                                    <span className='font-bold text-[11.5px] tracking-tight leading-tight'>{disease}</span>
+                                    <span className='font-bold text-[11.5px] leading-tight'>{disease}</span>
                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-slate-200 group-hover:border-blue-300'}`}>
                                       {isSelected && <svg className='w-3 h-3' fill='currentColor' viewBox='0 0 20 20'><path fillRule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clipRule='evenodd' /></svg>}
                                     </div>

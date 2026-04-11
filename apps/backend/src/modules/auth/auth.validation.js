@@ -21,10 +21,17 @@ export const validatePatientRegister = [
   body('contact_number')
     .notEmpty()
     .withMessage('Contact number is required')
-    .matches(/^[0-9+\-() ]+$/)
-    .withMessage('Invalid contact number format')
-    .isLength({ min: 9, max: 20 })
-    .withMessage('Contact number must be between 9 and 20 characters'),
+    .trim()
+    .custom((value) => {
+      // Remove spaces, parentheses, and dashes for validation
+      const cleaned = value.replace(/[\s\-()]/g, '');
+      // Accept both local (07xxxxxxxx) and international formats (+94xxxxxxxxx)
+      const isValid = /^(\+94\d{9}|0\d{9})$/.test(cleaned);
+      if (!isValid) {
+        throw new Error('Contact number must be a valid Sri Lankan phone number');
+      }
+      return true;
+    }),
 
   body('password')
     .notEmpty()
@@ -70,10 +77,17 @@ export const validateHealthOfficerRegister = [
   body('contactNumber')
     .notEmpty()
     .withMessage('Contact number is required')
-    .matches(/^[0-9+\-() ]+$/)
-    .withMessage('Invalid contact number format')
-    .isLength({ min: 9, max: 20 })
-    .withMessage('Contact number must be between 9 and 20 characters'),
+    .trim()
+    .custom((value) => {
+      // Remove spaces, parentheses, and dashes for validation
+      const cleaned = value.replace(/[\s\-()]/g, '');
+      // Accept both local (07xxxxxxxx) and international formats (+94xxxxxxxxx)
+      const isValid = /^(\+94\d{9}|0\d{9})$/.test(cleaned);
+      if (!isValid) {
+        throw new Error('Contact number must be a valid Sri Lankan phone number');
+      }
+      return true;
+    }),
 
   body('role')
     .notEmpty()

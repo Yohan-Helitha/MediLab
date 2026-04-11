@@ -5,14 +5,14 @@ class MemberService {
   async getAllMembers(query = {}) {
     const { page = 1, limit = 10, ...filter } = query;
     const skip = (page - 1) * limit;
-    
+
     const members = await Member.find(filter)
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
-    
+
     const total = await Member.countDocuments(filter);
-    
+
     return {
       members,
       pagination: {
@@ -60,11 +60,11 @@ class MemberService {
 
       // Only check for conflicts if the NIC is actually being changed
       if (currentMember.nic !== updateData.nic) {
-        const existingMember = await Member.findOne({ 
+        const existingMember = await Member.findOne({
           nic: updateData.nic,
           _id: { $ne: id } // Exclude the current member being updated
         });
-        
+
         if (existingMember) {
           throw new Error(`NIC ${updateData.nic} is already registered to another member`);
         }
@@ -76,7 +76,7 @@ class MemberService {
       updateData,
       { new: true, runValidators: true }
     );
-    
+
     if (!member) {
       throw new Error("Member not found");
     }
@@ -110,10 +110,10 @@ class MemberService {
     await Promise.all(modelsToClean.map(async (modelName) => {
       try {
         const Model = mongoose.model(modelName);
-        
+
         // Delete records where this member is the owner/patient
         await Model.deleteMany({ member_id: memberId });
-        
+
         // Delete records submitted by this member (for snapshots, notes, etc.)
         await Model.deleteMany({ submitted_by: memberId });
       } catch (error) {
@@ -137,16 +137,16 @@ class MemberService {
           { profileId: id, onModel: 'Member' },
           { systemId: member.member_id }
         ];
-        
+
         // Add email condition if member has an email address
         if (memberEmail) {
           deleteConditions.push({ email: memberEmail });
         }
-        
-        await mongoose.model("Auth").deleteMany({ 
+
+        await mongoose.model("Auth").deleteMany({
           $or: deleteConditions
         });
-        
+
         console.log(`Deleted Auth records for member ${memberId} (email: ${memberEmail})`);
       }
     } catch (authError) {
@@ -155,7 +155,7 @@ class MemberService {
 
     // Finally delete the member itself
     await Member.findByIdAndDelete(id);
-    
+
     return member;
   }
 }
