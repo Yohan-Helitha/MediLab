@@ -4,6 +4,16 @@ import { authApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
 
+// Normalize phone input to +94XXXXXXXXX. Accepts local formats like 07XXXXXXXX and converts them.
+function normalizeContact(input) {
+  if (!input) return input;
+  const v = String(input).trim();
+  if (/^\+94\d{9}$/.test(v)) return v;
+  if (/^0\d{9}$/.test(v)) return `+94${v.slice(1)}`;
+  if (/^\d{9}$/.test(v)) return `+94${v}`;
+  throw new Error('Phone number must be in +94xxxxxxxxx format');
+}
+
 function RegisterPage() {
 const { login } = useAuth();
 const { t } = useTranslation();
@@ -41,7 +51,7 @@ const patientData = {
 full_name: `${formData.firstName} ${formData.lastName}`,
 email: formData.email,
 password: formData.password,
-contact_number: formData.phone
+contact_number: normalizeContact(formData.phone)
 };
 
 const response = await authApi.registerPatient(patientData);
