@@ -371,6 +371,51 @@ export const findResultsByHealthCenter = async (
 };
 
 /**
+ * Find all test results across health centers (Admin only)
+ * Supports optional filters: healthCenterId, status, startDate, endDate,
+ *   includeDeleted, limit, page
+ */
+export const findAllResultsAdmin = async (filters = {}) => {
+  const query = {};
+
+  if (!filters.includeDeleted) {
+    query.isDeleted = false;
+  }
+
+  if (filters.healthCenterId) {
+    query.healthCenterId = filters.healthCenterId;
+  }
+
+  if (filters.status) {
+    query.currentStatus = filters.status;
+  }
+
+  if (filters.startDate || filters.endDate) {
+    query.createdAt = {};
+    if (filters.startDate) query.createdAt.$gte = new Date(filters.startDate);
+    if (filters.endDate) query.createdAt.$lte = new Date(filters.endDate);
+  }
+
+  const limit = parseInt(filters.limit) || 50;
+  const page = parseInt(filters.page) || 1;
+  const skip = (page - 1) * limit;
+
+  const [results, total] = await Promise.all([
+    TestResult.find(query)
+      .populate("patientProfileId", "full_name")
+      .populate("testTypeId", "name code category")
+      .populate("healthCenterId", "name")
+      .populate("enteredBy", "fullName")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip),
+    TestResult.countDocuments(query),
+  ]);
+
+  return { results, total, page, limit };
+};
+
+/**
  * Find all test results by test type
  * @param {String} testTypeId - Test type ID
  * @returns {Promise<Array>} Array of test results
@@ -410,6 +455,15 @@ export const softDeleteTestResult = async (id, deleteReason, deletedBy) => {
   result.deleteReason = deleteReason;
 
   await result.save();
+
+  // Revert booking status to PENDING so a replacement result can be submitted.
+  // The booking was set to COMPLETED when the original result was created.
+  // Now that result is soft-deleted, the booking must reappear in the pending list.
+  if (result.bookingId) {
+    await Booking.findByIdAndUpdate(result.bookingId, {
+      $set: { status: "PENDING" },
+    });
+  }
 
   // Log for audit purposes
   console.log(`✨ SOFT DELETE AUDIT LOG:
@@ -467,14 +521,14 @@ export const hardDeleteTestResult = async (id, deleteReason, deletedBy) => {
     ═══════════════════════════════════════════════════════════
   `);
 
-  // Revert booking status to "processing" (if booking exists)
+  // Revert booking status to PENDING (if booking exists)
   if (result.bookingId) {
     try {
       await Booking.findByIdAndUpdate(result.bookingId._id, {
-        status: "processing",
+        $set: { status: "PENDING" },
       });
       console.log(
-        `🔄 Reverted booking ${result.bookingId._id} to "processing" status`,
+        `🔄 Reverted booking ${result.bookingId._id} to "PENDING" status`,
       );
     } catch (bookingError) {
       console.error(`⚠️ Error updating booking: ${bookingError.message}`);

@@ -6,6 +6,7 @@ import {
 	HiAdjustmentsVertical,
 	HiDocumentText,
 	HiClipboardDocumentList,
+	HiTableCells,
 } from "react-icons/hi2";
 
 function AdminSidebar() {
@@ -62,6 +63,11 @@ function AdminSidebar() {
 					to="/admin/users"
 					label="Users"
 					Icon={HiDocumentText}
+				/>
+				<AdminNavItem
+					to="/admin/results"
+					label="Test Results"
+					Icon={HiTableCells}
 				/>
 			</nav>
 

@@ -689,6 +689,40 @@ export const getResultsByTestType = async (req, res, next) => {
 };
 
 /**
+ * Get all test results across health centers (Admin only)
+ * GET /api/results/admin
+ * Query params: healthCenterId, status, startDate, endDate, includeDeleted, limit, page
+ */
+export const getAllResultsAdmin = async (req, res, next) => {
+  try {
+    const filters = {
+      healthCenterId: req.query.healthCenterId,
+      status: req.query.status,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      includeDeleted: req.query.includeDeleted === "true",
+      limit: req.query.limit,
+      page: req.query.page,
+    };
+
+    const { results, total, page, limit } =
+      await resultService.findAllResultsAdmin(filters);
+
+    res.status(200).json({
+      success: true,
+      message: "Admin results retrieved successfully",
+      total,
+      page,
+      limit,
+      count: results.length,
+      data: results,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Soft delete test result (primary method - recommended)
  * DELETE /api/results/:id
  * Body: { deleteReason }

@@ -163,3 +163,25 @@ export const softDeleteResult = (id, deleteReason) =>
     method: "DELETE",
     body: JSON.stringify({ deleteReason }),
   });
+
+// ---------------------------------------------------------------------------
+// Hard delete result (Admin only — permanent)
+// ---------------------------------------------------------------------------
+export const hardDeleteResult = (id, deleteReason) =>
+  apiRequest(`/api/results/${id}/permanent`, {
+    method: "DELETE",
+    body: JSON.stringify({ deleteReason }),
+  });
+
+// ---------------------------------------------------------------------------
+// Get all results across health centers (Admin only)
+// params: { healthCenterId, status, startDate, endDate, includeDeleted, limit, page }
+// ---------------------------------------------------------------------------
+export const getAllResultsAdmin = (params = {}) => {
+  const qs = new URLSearchParams(
+    Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v != null && v !== ""),
+    ),
+  ).toString();
+  return apiRequest(`/api/results/admin${qs ? `?${qs}` : ""}`);
+};

@@ -110,6 +110,14 @@ router.get(
   resultController.getUncollectedReports,
 );
 
+// All results across health centers (Admin only) — MUST be before /:id
+router.get(
+  "/admin",
+  authenticate,
+  checkRole(["Admin"]),
+  resultController.getAllResultsAdmin,
+);
+
 // Generic ID route last to avoid conflicts (Patient own released + Health Officer all)
 router.get(
   "/:id",

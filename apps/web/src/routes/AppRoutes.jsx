@@ -21,6 +21,7 @@ import AdminInventoryDashboard from "../pages/AdminInventoryDashboard";
 import AdminEquipmentCatalog from "../pages/AdminEquipmentCatalog";
 import AdminTestEquipmentRequirements from "../pages/AdminTestEquipmentRequirements";
 import AdminUsers from "../pages/AdminUsers";
+import AdminResultsPage from "../pages/AdminResultsPage";
 import BookingCreatePage from "../pages/BookingCreatePage";
 import BookingUpdatePage from "../pages/BookingUpdatePage";
 import PayHereReturnPage from "../pages/PayHereReturnPage";
@@ -220,6 +221,14 @@ const AppRoutes = () => {
 					element={
 						<AdminDashboardLayout title="Users" onLogout={logout}>
 							<AdminUsers />
+						</AdminDashboardLayout>
+					}
+				/>
+				<Route
+					path="/admin/results"
+					element={
+						<AdminDashboardLayout title="Test Results" onLogout={logout}>
+							<AdminResultsPage />
 						</AdminDashboardLayout>
 					}
 				/>
