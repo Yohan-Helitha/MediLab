@@ -6,7 +6,6 @@ import {
 	findAllTestTypes,
 	findTestTypeById,
 	updateTestType,
-	softDeleteTestType,
 	findByCategory,
 	hardDeleteTestType,
 	findByEntryMethod,
@@ -77,20 +76,6 @@ describe("test.service", () => {
 		expect(TestType.findByIdAndUpdate).toHaveBeenCalledWith(
 			"tt1",
 			{ name: "Updated" },
-			{ new: true },
-		);
-		expect(result).toBe(updated);
-	});
-
-	it("softDeleteTestType should set isActive to false", async () => {
-		const updated = { _id: "tt1", isActive: false };
-		TestType.findByIdAndUpdate.mockResolvedValue(updated);
-
-		const result = await softDeleteTestType("tt1");
-
-		expect(TestType.findByIdAndUpdate).toHaveBeenCalledWith(
-			"tt1",
-			{ isActive: false },
 			{ new: true },
 		);
 		expect(result).toBe(updated);

@@ -65,6 +65,16 @@ function BookingCreatePage() {
 	const [translatedNames, setTranslatedNames] = useState({});
 	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
+	const bookingCreatedSuccessText = t("booking.create.toast.created", {
+		defaultValue: "Booking created successfully.",
+	});
+
+	const minBookingDate = useMemo(() => {
+		const d = new Date();
+		d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+		return d.toISOString().slice(0, 10);
+	}, []);
+
 	const selectedOperatingHours = useMemo(() => {
 		const hours = lab?.operatingHours;
 		if (!Array.isArray(hours) || hours.length === 0) return null;
@@ -163,6 +173,14 @@ function BookingCreatePage() {
 			setError(t("booking.create.error.noDate"));
 			return;
 		}
+		if (formData.bookingDate < minBookingDate) {
+			setError(
+				t("booking.create.error.pastDate", {
+					defaultValue: "Please select today or a future date.",
+				}),
+			);
+			return;
+		}
 		if (formData.timeSlot && !validateTimeSlot(formData.timeSlot)) {
 			setError("Selected time is outside lab opening hours.");
 			return;
@@ -191,7 +209,7 @@ function BookingCreatePage() {
 			if (!isWalkIn && formData.paymentMethod === "ONLINE" && continueToPayment) {
 				setToastMessage({
 					type: "success",
-					text: t("booking.create.toast.createdRedirecting"),
+					text: bookingCreatedSuccessText,
 				});
 				const checkout = await createPayHereCheckout({ bookingId });
 				if (!checkout?.checkoutUrl || !checkout?.fields) {
@@ -201,11 +219,14 @@ function BookingCreatePage() {
 				return;
 			}
 
-			setToastMessage({
-				type: "success",
-				text: t("booking.create.toast.createdCash"),
+			navigate("/booking", {
+				state: {
+					toastMessage: {
+						type: "success",
+						text: bookingCreatedSuccessText,
+					},
+				},
 			});
-			navigate("/booking");
 		} catch (err) {
 			setError(err?.message || t("booking.create.error.generic"));
 			setToastMessage({
@@ -315,6 +336,7 @@ function BookingCreatePage() {
 									type="date"
 									value={formData.bookingDate}
 									onChange={(e) => setField("bookingDate", e.target.value)}
+									min={minBookingDate}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 									required
 								/>

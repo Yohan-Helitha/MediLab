@@ -37,13 +37,6 @@ export const updateTestType = async (id, updateData) => {
   return testType;
 };
 
-export const softDeleteTestType = async (id) => {
-  const testType = await TestType.findByIdAndUpdate(id, { isActive: false }, { new: true });
-  if (!testType) {
-		throw createNotFoundError("Test type is not found");
-	}
-  return testType;
-};
 
 export const findByCategory = async (category) => {
   const docs = await TestType.find({ category: { $regex: category, $options: "i" } });

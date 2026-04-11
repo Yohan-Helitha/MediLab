@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import { useAuth } from "../context/AuthContext";
 import { getBookingsByPatientId, updateBooking, createPayHereCheckout } from "../api/bookingApi";
+import ToastMessage from "../components/ToastMessage";
 
 function postToPayHere(checkoutUrl, fields) {
 	const form = document.createElement("form");
@@ -26,6 +27,15 @@ function BookingUpdatePage() {
 	const location = useLocation();
 	const params = useParams();
 	const { user } = useAuth();
+
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
+	const bookingUpdatedSuccessText = "Booking updated successfully.";
+
+	const minBookingDate = useMemo(() => {
+		const d = new Date();
+		d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+		return d.toISOString().slice(0, 10);
+	}, []);
 
 	function normalizeTimeSlotValue(value) {
 		if (!value || typeof value !== "string") return "";
@@ -186,6 +196,10 @@ function BookingUpdatePage() {
 			setError("Please select a booking date.");
 			return;
 		}
+		if (formData.bookingDate < minBookingDate) {
+			setError("Please select today or a future date.");
+			return;
+		}
 		if (formData.timeSlot && !validateTimeSlot(formData.timeSlot)) {
 			setError("Selected time is outside lab opening hours.");
 			return;
@@ -202,6 +216,7 @@ function BookingUpdatePage() {
 			};
 
 			await updateBooking(bookingId, payload);
+			setToastMessage({ type: "success", text: bookingUpdatedSuccessText });
 
 			// Continue to PayHere ONLY when the user chose the payment flow.
 			if (continueToPayment && !isWalkIn && formData.paymentMethod === "ONLINE") {
@@ -213,9 +228,18 @@ function BookingUpdatePage() {
 				return;
 			}
 
-			navigate("/booking", { replace: true });
+			navigate("/booking", {
+				replace: true,
+				state: {
+					toastMessage: { type: "success", text: bookingUpdatedSuccessText },
+				},
+			});
 		} catch (err) {
 			setError(err?.message || "Failed to update booking");
+			setToastMessage({
+				type: "error",
+				text: err?.message || "Failed to update booking",
+			});
 		} finally {
 			setLoading(false);
 		}
@@ -226,6 +250,11 @@ function BookingUpdatePage() {
 
 	return (
 		<PublicLayout onNavigate={onNavigate}>
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<div className="space-y-6">
 				<div className="rounded-2xl bg-white shadow-md border border-slate-200 overflow-hidden">
 					<div className="h-1 w-full bg-gradient-to-r from-teal-500 to-emerald-400" />
@@ -292,6 +321,7 @@ function BookingUpdatePage() {
 									type="date"
 									value={formData.bookingDate}
 									onChange={(e) => setField("bookingDate", e.target.value)}
+									min={minBookingDate}
 									className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
 									required
 								/>

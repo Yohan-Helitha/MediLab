@@ -64,23 +64,6 @@ export const updateTestType = async (req, res, next) => {
     }
 };
 
-export const softDeleteTestType = async (req, res, next) => {
-  try {
-    const testType = await TestService.softDeleteTestType(req.params.id);
-    res.json({message:"Test type currently inactive"});
-  }catch(error){
-    if (error.name === 'NotFoundError') {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
-    }
-    res.status(400).json({
-      success: false,
-      message:error.message,
-    });
-  }
-};
 
 export const hardDeleteTestType = async (req, res, next) => {
   try {

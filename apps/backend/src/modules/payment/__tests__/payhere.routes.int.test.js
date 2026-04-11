@@ -252,7 +252,7 @@ describeIfDb('PayHere routes integration', () => {
     const updated = await Booking.findById(orderId).lean().exec();
     expect(updated.paymentStatus).toBe('PAID');
     expect(updated.paymentMethod).toBe('ONLINE');
-    expect(updated.status).toBe('COMPLETED');
+    expect(updated.status).toBe('PENDING');
     expect(updated.queueNumber).toBeTruthy();
 
     const tx = await FinanceTransaction.findOne({

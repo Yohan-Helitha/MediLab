@@ -136,19 +136,7 @@ Success response:
 
 ---
 
-## 5) Soft delete (mark inactive)
-- **Method:** `PATCH`
-- **Path:** `/api/test-types/:id/soft-delete`
-- **Auth:** Staff only
-
-Success response:
-```json
-{ "message": "Test type currently inactive" }
-```
-
----
-
-## 6) Hard delete
+## 5) Hard delete
 - **Method:** `DELETE`
 - **Path:** `/api/test-types/:id`
 - **Auth:** Staff only
@@ -160,7 +148,7 @@ Success response:
 
 ---
 
-## 7) Filter endpoints
+## 6) Filter endpoints
 
 ### 7.1 Get by category (path param)
 - **Method:** `GET`
