@@ -1,5 +1,13 @@
 import TestType from "./testType.model.js";
 
+// Helper to create a consistent NotFound-style error that controllers can
+// recognize and convert into a 404 response.
+const createNotFoundError = (message) => {
+	const error = new Error(message);
+	error.name = "NotFoundError";
+	return error;
+};
+
 export const createTestType = async (testTypeData) => {
   const testType = new TestType(testTypeData);
   return testType.save();
@@ -14,33 +22,69 @@ export const findAllTestTypes = async (filters = {}) => {
 };
 
 export const findTestTypeById = async (id) => {
-  return TestType.findById(id);
+  const testType = await TestType.findById(id);
+  if (!testType) {
+		throw createNotFoundError("Test type not found");
+	}
+  return testType;
 };
 
 export const updateTestType = async (id, updateData) => {
-  return TestType.findByIdAndUpdate(id, updateData, { new: true });
+  const testType = await TestType.findByIdAndUpdate(id, updateData, { new: true });
+  if (!testType) {
+		throw createNotFoundError("Test type not found");
+	}
+  return testType;
 };
 
 export const softDeleteTestType = async (id) => {
-  return TestType.findByIdAndUpdate(id, { isActive: false }, { new: true });
+  const testType = await TestType.findByIdAndUpdate(id, { isActive: false }, { new: true });
+  if (!testType) {
+		throw createNotFoundError("Test type is not found");
+	}
+  return testType;
 };
 
 export const findByCategory = async (category) => {
-  return await TestType.find({ category: { $regex: category, $options: "i" } });
+  const docs = await TestType.find({ category: { $regex: category, $options: "i" } });
+  if (!docs || docs.length === 0) {
+		throw createNotFoundError("Test category not found");
+	}
+  return docs;
 };
 
 export const hardDeleteTestType = async (id) => {
-  return TestType.findByIdAndDelete(id);
+  const deleted = await TestType.findByIdAndDelete(id);
+  if (!deleted) {
+		throw createNotFoundError("Test type is not found");
+	}
+  return deleted;
 };
 
 export const findByEntryMethod = async (entryMethod) => {
-  return await TestType.find({
+  const docs = await TestType.find({
     entryMethod: { $regex: entryMethod, $options: "i" },
   });
+
+	if (!docs || docs.length === 0) {
+		let message = "Tests are not found";
+		if (/form/i.test(entryMethod)) {
+			message = "Form based tests are not found";
+		} else if (/upload/i.test(entryMethod)) {
+			message = "Upload based tests are not found";
+		}
+		throw createNotFoundError(message);
+	}
+
+  return docs;
 };
 
 export const findMonitoringTests = async () => {
-  return await TestType.find({ isMonitoringRecommended: true });
+  const docs = await TestType.find({ isMonitoringRecommended: true });
+  if (!docs || docs.length === 0) {
+		throw createNotFoundError("Monitoring tests are not found");
+	}
+  return docs;
 };
 
 export const findByDiscriminatorType = async (discriminatorType) => {

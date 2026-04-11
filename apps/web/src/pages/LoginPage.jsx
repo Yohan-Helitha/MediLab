@@ -2,9 +2,11 @@
 import { Link } from "react-router-dom";
 import { authApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 function LoginPage() {
 const { login } = useAuth();
+const { t } = useTranslation();
 const [formData, setFormData] = useState({
 email: "",
 password: "",
@@ -35,7 +37,7 @@ login(userWithRole, response.data.token);
 setError("Invalid patient credentials");
 }
 } catch (err) {
-setError(err.message || "An error occurred during login");
+setError(err.message || t("login.errorGeneric"));
 } finally {
 setLoading(false);
 }
@@ -77,7 +79,7 @@ Service Provider Portal
 MediLab Portal
 </h2>
 <p className="text-slate-500 text-sm font-medium">
-Sign in to your patient account
+{t("login.subtitle")}
 </p>
 </div>
 </div>
@@ -85,7 +87,7 @@ Sign in to your patient account
 <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
 <div className="space-y-3">
 <div className="space-y-1">
-<label htmlFor="email" className="text-[11px] font-bold text-slate-700 ml-1 uppercase text-left block">Email address</label>
+<label htmlFor="email" className="text-[11px] font-bold text-slate-700 ml-1 uppercase text-left block">{t("login.emailLabel")}</label>
 <input
 id="email"
 name="email"
@@ -94,11 +96,11 @@ required
 value={formData.email}
 onChange={handleChange}
 className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-500/10 transition-all font-medium text-sm"
-placeholder="Enter your Email"
+placeholder={t("login.emailPlaceholder")}
 />
 </div>
 <div className="space-y-1">
-<label htmlFor="password" className="text-[11px] font-bold text-slate-700 ml-1 uppercase text-left block">Password</label>
+<label htmlFor="password" className="text-[11px] font-bold text-slate-700 ml-1 uppercase text-left block">{t("login.passwordLabel")}</label>
 <input
 id="password"
 name="password"
@@ -133,16 +135,16 @@ className="group relative flex w-48 justify-center rounded-xl bg-teal-600 px-6 p
 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
 </svg>
-Signing in...
+{t("login.buttonLoading")}
 </span>
-) : "Sign in"}
+) : t("login.button")}
 </button>
 
 <div className="text-center">
 <p className="text-slate-500 font-medium text-sm">
-Don\'t have an account?{" "}
+{t("login.noAccount")} {""}
 <Link to="/register" className="text-teal-600 font-bold hover:text-teal-800 transition-colors">
-Register now
+{t("login.registerNow")}
 </Link>
 </p>
 </div>

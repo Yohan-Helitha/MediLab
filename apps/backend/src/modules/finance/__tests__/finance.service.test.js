@@ -1,8 +1,8 @@
 import { jest } from "@jest/globals";
 import mongoose from "mongoose";
 
-import Booking from "../booking/booking.model.js";
-import FinanceTransaction from "./financeTransaction.model.js";
+import Booking from "../../booking/booking.model.js";
+import FinanceTransaction from "../financeTransaction.model.js";
 
 import {
   recordPayment,
@@ -10,7 +10,7 @@ import {
   getRecentPayments,
   listPayments,
   listUnpaidBookings,
-} from "./finance.service.js";
+} from "../finance.service.js";
 
 function mockSession() {
   return {

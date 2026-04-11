@@ -11,6 +11,17 @@ import {
 } from "../api/labTestApi";
 import ToggleSwitch from "../components/ToggleSwitch";
 import Modal from "../components/Modal";
+import ToastMessage from "../components/ToastMessage";
+
+function getLabTestErrorMessage(error) {
+	if (error && Array.isArray(error.errors) && error.errors.length > 0) {
+		return error.errors.map((e) => e.msg).join("; ");
+	}
+	return (
+		(error && error.message) ||
+		"Failed to save lab test details. Please check the form and try again."
+	);
+}
 
 function TestAvailabilityPage() {
 	const [labs, setLabs] = useState([]);
@@ -34,6 +45,7 @@ function TestAvailabilityPage() {
 		price: "",
 		estimatedResultTimeHours: "",
 	});
+	const [toastMessage, setToastMessage] = useState({ type: "", text: "" });
 
 	useEffect(() => {
 		const loadLabs = async () => {
@@ -141,11 +153,20 @@ function TestAvailabilityPage() {
 				estimatedResultTimeHours: hours,
 			});
 			setLabTests((prev) =>
-				prev.map((t) => (t._id === updated._id ? { ...t, ...updated } : t))
+				prev.map((t) =>
+					t._id === updated._id
+						? {
+							...t,
+							price: updated.price,
+							estimatedResultTimeHours: updated.estimatedResultTimeHours,
+						}
+						: t
+				)
 			);
 			closeEditModal();
+			setToastMessage({ type: "success", text: "Lab test details updated." });
 		} catch (err) {
-			setError(err.message || "Failed to update test details");
+			setError(getLabTestErrorMessage(err));
 		}
 	};
 
@@ -198,8 +219,9 @@ function TestAvailabilityPage() {
 			const refreshed = await fetchLabTestsByLab(selectedLabId);
 			setLabTests(refreshed);
 			setIsAddModalOpen(false);
+			setToastMessage({ type: "success", text: "Test added to lab." });
 		} catch (err) {
-			setError(err.message || "Failed to add test to lab");
+			setError(getLabTestErrorMessage(err));
 		}
 	};
 
@@ -215,8 +237,15 @@ function TestAvailabilityPage() {
 						: t
 				)
 			);
+			setToastMessage({
+				type: "success",
+				text:
+					newStatus === "AVAILABLE"
+						? "Test marked as available."
+						: "Test marked as unavailable.",
+			});
 		} catch (err) {
-			setError(err.message || "Failed to update availability");
+			setError(getLabTestErrorMessage(err));
 		}
 	};
 
@@ -228,8 +257,9 @@ function TestAvailabilityPage() {
 		try {
 			await deleteLabTest(labTest._id);
 			setLabTests((prev) => prev.filter((t) => t._id !== labTest._id));
+			setToastMessage({ type: "success", text: "Test removed from lab." });
 		} catch (err) {
-			setError(err.message || "Failed to delete lab test");
+			setError(getLabTestErrorMessage(err));
 		}
 	};
 
@@ -248,6 +278,11 @@ function TestAvailabilityPage() {
 
 	return (
 		<div className="space-y-6">
+			<ToastMessage
+				type={toastMessage.type}
+				text={toastMessage.text}
+				onClose={() => setToastMessage({ type: "", text: "" })}
+			/>
 			<header className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-slate-900">

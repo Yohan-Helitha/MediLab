@@ -22,14 +22,14 @@ export const createLabTest = async (req, res, next) => {
 export const updateLabTestStatus = async (req, res, next) => {
     try {
         const labTest = await LabTestService.updateStatus(req.params.id, req.body.status);
-        if (!labTest) {
-            return res.status(404).json({
-                success: false,
-                message: "Lab test is not found",
-            });
-        }
         res.json(labTest);
     } catch (error) {
+        if (error.name === 'NotFoundError') {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
         res.status(400).json({
             success: false,
             message: error.message,
@@ -40,14 +40,14 @@ export const updateLabTestStatus = async (req, res, next) => {
 export const getTestsAvailabilityById = async (req, res, next) => {
     try {
         const labTest = await LabTestService.getTestsAvailabilityById(req.params.id);
-        if (!labTest) {
-            return res.status(404).json({
-                success: false,
-                message: "Lab test not found",
-            });
-        }
         res.json(labTest);
     } catch (error) {
+        if (error.name === 'NotFoundError') {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
         res.status(400).json({
             success: false,
             message: error.message,
@@ -58,14 +58,14 @@ export const getTestsAvailabilityById = async (req, res, next) => {
 export const getTestsByLabId = async (req, res, next) => {
     try {
         const labTest = await LabTestService.getTestsByLab(req.params.labId);
-        if (!labTest || labTest.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No tests found for this lab",
-            });
-        }
         res.json(labTest);
     } catch (error) {
+        if (error.name === 'NotFoundError') {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
         res.status(400).json({
             success: false,
             message: error.message,
@@ -76,14 +76,14 @@ export const getTestsByLabId = async (req, res, next) => {
 export const getTestsByStatus = async (req, res, next) => {
     try {
         const labTest = await LabTestService.getTestsByStatus(req.query.status);
-        if (!labTest || labTest.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No test found with this status",
-            });
-        }
         res.json(labTest);
     } catch (error) {
+        if (error.name === 'NotFoundError') {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
         res.status(400).json({
             success: false,
             message: error.message,
@@ -94,14 +94,14 @@ export const getTestsByStatus = async (req, res, next) => {
 export const getTestsByName = async (req, res, next) => {
     try {
         const labTest = await LabTestService.findTestByName(req.query.name);
-        if (!labTest || labTest.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No test found with this name",
-            });
-        }
         res.json(labTest);
     } catch (error) {
+        if (error.name === 'NotFoundError') {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
         res.status(400).json({
             success: false,
             message: error.message,
@@ -112,14 +112,14 @@ export const getTestsByName = async (req, res, next) => {
 export const updateLabTestDetails = async (req, res, next) => {
     try {
         const labTest = await LabTestService.updateLabTest(req.params.id, req.body);
-        if (!labTest) {
-            return res.status(404).json({
-                success: false,
-                message: "Lab test is not found",
-            });
-        }
         res.json(labTest);
     } catch (error) {
+        if (error.name === 'NotFoundError') {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
         res.status(400).json({
             success: false,
             message: error.message,
@@ -130,14 +130,14 @@ export const updateLabTestDetails = async (req, res, next) => {
 export const deleteLabTest = async (req, res, next) => {
     try {
         const deleted = await LabTestService.deleteLabTest(req.params.id);
-        if (!deleted) {
-            return res.status(404).json({
-                success: false,
-                message: "Lab test is not found",
-            });
-        }
         res.status(204).send();
     } catch (error) {
+        if (error.name === 'NotFoundError') {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
         res.status(400).json({
             success: false,
             message: error.message,

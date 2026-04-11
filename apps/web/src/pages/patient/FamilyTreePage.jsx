@@ -11,11 +11,13 @@ import {
 import '@xyflow/react/dist/style.css';
 import PublicLayout from '../../layout/PublicLayout';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { fetchFamilyMembers, fetchFamilyTree, fetchHouseholdBySubmittedBy, updateFamilyMember } from '../../api/patientApi';
 import { toast } from 'react-hot-toast';
 import { getSafeErrorMessage } from '../../utils/errorHandler';
 
 const FamilyMemberNode = ({ data, selected }) => {
+  const { t } = useTranslation();
   const isMale = data.gender?.toLowerCase() === 'male';
   const displayDiseases = data.diseases?.slice(0, 2) || [];
   const extraCount = (data.diseases?.length || 0) - 2;
@@ -64,7 +66,7 @@ const FamilyMemberNode = ({ data, selected }) => {
                 <div className='flex items-center gap-2 mb-1.5'>
                     <span className='font-extrabold text-slate-800 text-[13px] truncate uppercase tracking-tight'>{data.label}</span>
                     {data.isUser && (
-                        <span className='px-1.5 py-0.5 bg-teal-500 text-white text-[8px] font-bold rounded-md uppercase shadow-sm shrink-0'>ME</span>
+                      <span className='px-1.5 py-0.5 bg-teal-500 text-white text-[8px] font-bold rounded-md uppercase shadow-sm shrink-0'>{t('familyTree.node.me')}</span>
                     )}
                 </div>
 
@@ -72,9 +74,9 @@ const FamilyMemberNode = ({ data, selected }) => {
 
                 <div className='space-y-1'>
                     <div className='flex items-center justify-between'>
-                        <span className='text-[9px] font-bold text-slate-500 uppercase tracking-wider'>Health Profile</span>
+                    <span className='text-[9px] font-bold text-slate-500 uppercase tracking-wider'>{t('familyTree.node.healthProfile')}</span>
                         {extraCount > 0 && (
-                            <span className='text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 rounded-full'>+ {extraCount} More</span>
+                      <span className='text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 rounded-full'>{t('familyTree.node.more', { count: extraCount })}</span>
                         )}
                     </div>
                     
@@ -86,7 +88,7 @@ const FamilyMemberNode = ({ data, selected }) => {
                                 </span>
                             ))
                         ) : (
-                            <span className='text-[9px] text-slate-400 font-medium italic'>Clear history</span>
+                          <span className='text-[9px] text-slate-400 font-medium italic'>{t('familyTree.node.clearHistory')}</span>
                         )}
                     </div>
                 </div>
@@ -115,6 +117,8 @@ const nodeTypes = {
 
 function FamilyTreePage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const [isLocked, setIsLocked] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [targetMemberName, setTargetMemberName] = useState(null); 
@@ -132,12 +136,14 @@ function FamilyTreePage() {
         let currentHouseholdId = user?.household_id;
         const currentUserId = user?.systemId || user?.member_id || user?.employeeId;
 
+        let fetchedHousehold = null;
         if (!currentHouseholdId) {
-            const houseRes = await fetchHouseholdBySubmittedBy(currentUserId || 'me');
-            if (houseRes.success && houseRes.data) {
-                currentHouseholdId = houseRes.data.household_id;
-                setHousehold(houseRes.data); // Store household for head_member_name reference
-            }
+          const houseRes = await fetchHouseholdBySubmittedBy(currentUserId || 'me');
+          if (houseRes.success && houseRes.data) {
+            fetchedHousehold = houseRes.data;
+            currentHouseholdId = fetchedHousehold.household_id;
+            setHousehold(fetchedHousehold); // Store household for head_member_name reference
+          }
         }
 
         if (!currentHouseholdId) {
@@ -146,7 +152,7 @@ function FamilyTreePage() {
         }
 
         const membersRes = await fetchFamilyMembers('?household_id=' + currentHouseholdId);
-        if (!membersRes.success || !membersRes.data.familyMembers.length) {
+        if (!membersRes.success || !membersRes.data?.familyMembers?.length) {
             setLoading(false);
             return;
         }
@@ -155,10 +161,11 @@ function FamilyTreePage() {
         
         // Find the head - prioritize member with isHead:true, then match against household head name
         let primaryResident = familyMembers.find(m => m.isHead === true);
-        
-        if (!primaryResident && household?.head_member_name) {
-            // Fallback: match by household head name
-            primaryResident = familyMembers.find(m => m.full_name === household.head_member_name);
+
+        const headMemberName = household?.head_member_name || fetchedHousehold?.head_member_name;
+        if (!primaryResident && headMemberName) {
+          // Fallback: match by household head name
+          primaryResident = familyMembers.find(m => m.full_name === headMemberName);
         }
         
         // Last resort: take the first member (should not happen if isHead is set correctly)
@@ -515,7 +522,7 @@ function FamilyTreePage() {
         if (!targetNode) return;
         const res = await updateFamilyMember(targetNode.data.id, { diseases: diseaseList });
         if (res.success) {
-            toast.success('Health profile updated');
+          toast.success(t('familyTree.toast.updated'));
             setTargetMemberName(null);
             loadRealFamilyTree();
         }
@@ -554,7 +561,7 @@ function FamilyTreePage() {
       const targetNode = nodes.find(n => n.data?.label === targetMemberName);
       if (!targetNode) {
         console.error('Target node not found');
-        toast.error(getSafeErrorMessage(new Error('Member not found'), "contact"));
+        toast.error(t('familyTree.error.memberNotFound'));
         return;
       }
       
@@ -563,7 +570,7 @@ function FamilyTreePage() {
       console.log('API Response:', res);
       
       if (res && res.success) {
-        toast.success('Health profile updated');
+        toast.success(t('familyTree.toast.updated'));
         setTargetMemberName(null);
         loadRealFamilyTree();
       } else {
@@ -584,17 +591,41 @@ function FamilyTreePage() {
         {/* Header - Static at top */}
         <div className='flex items-center justify-between px-6 py-4'>
             <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('familyTree.title')}</h1>
+              <p className="text-slate-400 text-[15px] font-bold mt-0.5 ">
+                {loading
+                  ? t('familyTree.loading')
+                  : `${t('familyTree.residentLabel')}: ${user?.full_name || t('familyTree.anonymous')}`}
+              </p>
+            </div>
+
+            {/* Instructions Bar pushed to the right */}
+            <div className="hidden md:flex items-center gap-5 bg-teal-600 backdrop-blur-md px-5 py-2 rounded-xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.scroll')}</span>
+                </div>
+                <div className="w-px h-3 bg-slate-200" />
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/60  shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.drag')}</span>
+                </div>
+                <div className="w-px h-3 bg-slate-200" />
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/60  shadow-[0_0_8px_rgba(20,184,166,0.3)]" />
+                  <span className="text-[12px] font-bold text-white whitespace-nowrap tracking-wide">{t('familyTree.instructions.addDisease')}</span>
+                </div>
                 <h1 className='text-2xl font-bold text-slate-800 flex items-center gap-3'>
                   <div className='w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center text-white'>
                     <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2.5' d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' />
                     </svg>
                   </div>
-                  Genetic Health Map
+                  {t('familyTree.map.title')}
                 </h1>
                 <p className='text-[11px] font-bold text-slate-500 mt-1 flex items-center gap-2'>
                     <span className='w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse' />
-                    Tracking Chronic History Across Generations
+                    {t('familyTree.map.subtitle')}
                 </p>
             </div>
             <button onClick={loadRealFamilyTree} className='bg-white border-2 border-slate-200 p-3 rounded-2xl text-slate-600 hover:border-teal-500 hover:text-teal-600 transition-all shadow-lg'>
@@ -604,14 +635,56 @@ function FamilyTreePage() {
             </button>
         </div>
 
-        {/* React Flow Canvas - Takes remaining space */}
-        <div className='flex-1 relative overflow-hidden'>
+        <div className="flex-1 bg-white rounded-[32px] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden relative group">
+          {loading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-50">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-600 font-bold animate-pulse">{t('familyTree.loading')}</p>
+                </div>
+            </div>
+          ) : nodes.length === 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center p-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <div className="text-5xl mb-4">🌳</div>
+                <h3 className="text-xl font-bold text-slate-800">{t('familyTree.empty.title')}</h3>
+                <p className="text-slate-500 max-w-xs mx-auto mt-2">{t('familyTree.empty.body')}</p>
+                </div>
+            </div>
+          ) : null}
+          
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            nodeTypes={nodeTypes}
+            fitView
+            connectionMode="loose"
+            maxZoom={1.5}
+            minZoom={0.2}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={true}
+            panOnDrag={!isLocked}
+            zoomOnScroll={!isLocked}
+            zoomOnPinch={!isLocked}
+            zoomOnDoubleClick={!isLocked}
+            preventScrolling={true}
+          >
+            <Background color="#cbd5e1" gap={30} size={1} variant="dots" />
+            <Controls 
+              className="!bg-white/80 backdrop-blur-md !border-none !shadow-2xl !rounded-full p-2" 
+              onInteractiveChange={(interactive) => setIsLocked(!interactive)}
+            />
+          </ReactFlow>
+        </div>
 
         {targetMemberName && (
             <div className='fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4'>
                 <div className='bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300'>
                     <div className='flex justify-between items-center px-8 py-6 border-b border-slate-100'>
-                        <h2 className='text-xl font-bold uppercase tracking-tight text-slate-800'>Update {targetMemberName} - Health Profile</h2>
+                        <h2 className='text-xl font-bold uppercase tracking-tight text-slate-800'>{t('familyTree.modal.title', { name: targetMemberName })}</h2>
                         <button onClick={() => setTargetMemberName(null)} className='text-slate-400 hover:text-slate-600'><svg className='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='3' d='M6 18L18 6M6 6l12 12' /></svg></button>
                     </div>
 
@@ -620,7 +693,7 @@ function FamilyTreePage() {
                           {/* Category 1 */}
                           <div className='mb-4 flex items-center gap-3'>
                             <div className='w-1 h-4 bg-rose-500 rounded-full' />
-                            <h3 className='text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]'>Chronic & Family-Linked</h3>
+                            <h3 className='text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]'>{t('familyTree.modal.category1')}</h3>
                           </div>
 
                           <div className='grid grid-cols-3 gap-3 mb-8'>
@@ -642,7 +715,7 @@ function FamilyTreePage() {
                           {/* Category 2 */}
                           <div className='mb-4 flex items-center gap-3'>
                             <div className='w-1 h-4 bg-purple-500 rounded-full' />
-                            <h3 className='text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]'>Genetic Disorders (Sri Lanka)</h3>
+                            <h3 className='text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]'>{t('familyTree.modal.category2')}</h3>
                           </div>
 
                           <div className='grid grid-cols-3 gap-3 mb-8'>
@@ -664,7 +737,7 @@ function FamilyTreePage() {
                           {/* Category 3 */}
                           <div className='mb-4 flex items-center gap-3'>
                             <div className='w-1 h-4 bg-blue-500 rounded-full' />
-                            <h3 className='text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]'>Global Genetic & Chromosomal</h3>
+                            <h3 className='text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]'>{t('familyTree.modal.category3')}</h3>
                           </div>
 
                           <div className='grid grid-cols-3 gap-3 mb-8'>
@@ -686,18 +759,12 @@ function FamilyTreePage() {
                     </div>
 
                     <div className='px-8 py-4 border-t border-slate-100 flex gap-3'>
-                        <button onClick={() => setTargetMemberName(null)} className='flex-1 px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all'>Cancel</button>
-                        <button onClick={saveDiseases} className='flex-1 px-6 py-3 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-all'>Save Profile</button>
+                        <button onClick={() => setTargetMemberName(null)} className='flex-1 px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all'>{t('familyTree.modal.cancel')}</button>
+                        <button onClick={saveDiseases} className='flex-1 px-6 py-3 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-all'>{t('familyTree.modal.save')}</button>
                     </div>
                 </div>
             </div>
         )}
-
-        <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} nodeTypes={nodeTypes} fitView minZoom={0.2} maxZoom={1.5} className='bg-slate-50 w-full h-full' nodesConnectable={false}>
-          <Background color='#cbd5e1' gap={30} size={1.5} />
-          <Controls className='!bg-white !shadow-2xl !border-0 !rounded-2xl !overflow-hidden' />
-        </ReactFlow>
-        </div>
       </div>
     </PublicLayout>
   );

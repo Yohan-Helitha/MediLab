@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import Modal from "../../components/Modal";
 import { useAuth } from "../../context/AuthContext";
+import React from "react";
+import { useTranslation } from "react-i18next";
 import PublicLayout from "../../layout/PublicLayout";
 import {
   downloadResultPDF,

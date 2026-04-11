@@ -9,11 +9,14 @@ import {
 import TestCard from "../components/patient/TestCard";
 import { formatHours } from "../utils/format";
 import Modal from "../components/Modal";
+import { translateTexts } from "../api/translationApi";
+import { useTranslation } from "react-i18next";
 
 function LabDetailsPage({ labId, navigate }) {
   const routerNavigate = useNavigate();
   const params = useParams();
   const effectiveLabId = useMemo(() => labId || params.labId, [labId, params.labId]);
+  const { t, i18n } = useTranslation();
 
   const onNavigate = (name, navParams = {}) => {
     if (navigate) return navigate(name, navParams);
@@ -42,6 +45,7 @@ function LabDetailsPage({ labId, navigate }) {
   const [tests, setTests] = useState([]);
   const [instructionsByDiagnosticId, setInstructionsByDiagnosticId] = useState({});
   const [unavailableTest, setUnavailableTest] = useState(null);
+  const [dynamicTranslations, setDynamicTranslations] = useState({});
 
   useEffect(() => {
     const load = async () => {
@@ -85,6 +89,45 @@ function LabDetailsPage({ labId, navigate }) {
     load();
   }, [effectiveLabId]);
 
+  // Dynamic translation for lab/test names & descriptions
+  useEffect(() => {
+    const loadTranslations = async () => {
+      const lang = (i18n.language || "en").toLowerCase();
+      if (!lab || !tests.length || lang === "en") {
+        setDynamicTranslations({});
+        return;
+      }
+
+      try {
+        const texts = [];
+        if (lab.name) texts.push(lab.name);
+
+        tests.forEach((t) => {
+          const diagnostic = t.diagnosticTestId || {};
+          if (diagnostic.name) texts.push(diagnostic.name);
+          if (diagnostic.description) texts.push(diagnostic.description);
+
+          const instr = instructionsByDiagnosticId[diagnostic._id] || null;
+          if (instr) {
+            (instr.preTestInstructions || []).forEach((item) => {
+              if (item) texts.push(item);
+            });
+            (instr.postTestInstructions || []).forEach((item) => {
+              if (item) texts.push(item);
+            });
+          }
+        });
+
+        const map = await translateTexts(texts, lang, "en");
+        setDynamicTranslations(map);
+      } catch {
+        setDynamicTranslations({});
+      }
+    };
+
+    loadTranslations();
+  }, [lab, tests, instructionsByDiagnosticId, i18n.language]);
+
   const handleBookTest = (labTest) => {
     const status = (labTest.availabilityStatus || "").toUpperCase();
     const isUnavailable = status && status !== "AVAILABLE";
@@ -117,13 +160,20 @@ function LabDetailsPage({ labId, navigate }) {
       <div className="p-6 md:p-7">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">{lab.name}</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">
+              {dynamicTranslations[lab.name] || lab.name}
+            </h1>
             <div className="mt-1 inline-flex items-center gap-2 text-xs text-slate-600">
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 font-medium">
-                {lab.isActive ? "Active" : "Inactive"}
+                {lab.isActive ? t("labs.status.active") : t("labs.status.inactive")}
               </span>
               <span className="text-[11px] uppercase tracking-wide">
-                {lab.operationalStatus || ""}
+                {(() => {
+                  const raw = (lab.operationalStatus || "").toUpperCase();
+                  if (raw === "OPEN") return t("labs.status.open");
+                  if (raw === "CLOSED") return t("labs.status.closed");
+                  return raw;
+                })()}
               </span>
             </div>
           </div>
@@ -153,9 +203,11 @@ function LabDetailsPage({ labId, navigate }) {
             </svg>
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Location
+                {t("labs.card.label.location")}
               </div>
-              <div>{lab.addressLine1} {lab.addressLine2}</div>
+              <div>
+                {lab.addressLine1} {lab.addressLine2}
+              </div>
             </div>
           </div>
 
@@ -176,7 +228,7 @@ function LabDetailsPage({ labId, navigate }) {
             </svg>
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Contact
+                {t("labs.card.label.contact")}
               </div>
               <div>{lab.phoneNumber || "Not provided"}</div>
             </div>
@@ -199,12 +251,12 @@ function LabDetailsPage({ labId, navigate }) {
             </svg>
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Hours
+                {t("labs.card.label.hours")}
               </div>
               <div>
                 {lab.operatingHours && lab.operatingHours.length
                     ? formatHours(lab.operatingHours)
-                  : "Hours not set"}
+                  : t("labs.card.label.hoursNotSet")}
               </div>
             </div>
           </div>
@@ -213,31 +265,40 @@ function LabDetailsPage({ labId, navigate }) {
     </div>
 
         <section>
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Available Tests</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">{t("labs.details.availableTests")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {tests.map((t) => {
               const diagnostic = t.diagnosticTestId || {};
               const instruction =
                 instructionsByDiagnosticId[diagnostic._id] || null;
 
+              const rawPre = instruction?.preTestInstructions || [];
+              const rawPost = instruction?.postTestInstructions || [];
+
+              const translatedPre = rawPre.map(
+                (item) => dynamicTranslations[item] || item,
+              );
+              const translatedPost = rawPost.map(
+                (item) => dynamicTranslations[item] || item,
+              );
+
               return (
                 <TestCard
                   key={t._id}
                   test={{
-                    name: diagnostic.name,
+                    name:
+                      dynamicTranslations[diagnostic.name] || diagnostic.name,
                     category: diagnostic.category,
-                    description: diagnostic.description,
+                    description:
+                      dynamicTranslations[diagnostic.description] ||
+                      diagnostic.description,
                     price: t.price,
                     estimatedResultTimeHours:
                       t.estimatedResultTimeHours,
                   }}
                   availabilityStatus={t.availabilityStatus}
-                  preInstructions={
-                    instruction?.preTestInstructions || []
-                  }
-                  postInstructions={
-                    instruction?.postTestInstructions || []
-                  }
+                  preInstructions={translatedPre}
+                  postInstructions={translatedPost}
                   onBookTest={() => handleBookTest(t)}
                 />
               );
@@ -248,13 +309,15 @@ function LabDetailsPage({ labId, navigate }) {
 
       <Modal
         isOpen={!!unavailableTest}
-        title="Test not available"
+        title={t("labs.details.testNotAvailable.title")}
         onClose={() => setUnavailableTest(null)}
       >
         <p className="text-sm text-slate-700">
           {unavailableTest?.diagnosticTestId?.name
-            ? `${unavailableTest.diagnosticTestId.name} is not currently available. Please check another lab for this test.`
-            : "This test is not currently available. Please check another lab for this test."}
+            ? t("labs.details.testNotAvailable.body.withName", {
+                name: unavailableTest.diagnosticTestId.name,
+              })
+            : t("labs.details.testNotAvailable.body.generic")}
         </p>
       </Modal>
     </PublicLayout>

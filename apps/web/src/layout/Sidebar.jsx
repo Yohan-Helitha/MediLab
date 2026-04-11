@@ -61,13 +61,6 @@ function Sidebar() {
 					/>
 				)}
 
-				<SidebarItem
-					label="Household Registration"
-					Icon={HiHome}
-					isActive={location.pathname === "/household-registration"}
-					to="/household-registration"
-				/>
-
 				{isStaffUser && (
 					<>
 						<SidebarItem
@@ -96,13 +89,6 @@ function Sidebar() {
 						/>
 					</>
 				)}
-
-				<SidebarItem
-					label="Language Management"
-					Icon={HiGlobeAlt}
-					isActive={false}
-					to="#"
-				/>
 			</nav>
 
 			{/* User summary at bottom */}
