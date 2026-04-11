@@ -23,6 +23,15 @@ import {
 } from "../../api/patientApi";
 import { generateHealthProfilePDF } from "../../utils/pdfGenerator";
 
+function normalizeContact(input) {
+    if (!input) return input;
+    const v = String(input).trim();
+    if (/^\+94\d{9}$/.test(v)) return v;
+    if (/^0\d{9}$/.test(v)) return `+94${v.slice(1)}`;
+    if (/^\d{9}$/.test(v)) return `+94${v}`;
+    throw new Error('Phone number must be in +94xxxxxxxxx format');
+}
+
 const HealthProfilePage = () => {
     const { user, login, loading: authLoading } = useAuth();
     const { t } = useTranslation();
@@ -779,23 +788,36 @@ const HealthProfilePage = () => {
         setLoading(true);
         setMessage({ type: "", text: "" });
 
+        // Normalize contact number to +94 format before submitting
+        let formSource = { ...personalData };
+        try {
+            if (personalData.contact_number) {
+                const normalized = normalizeContact(personalData.contact_number);
+                formSource.contact_number = normalized;
+            }
+        } catch (err) {
+            setMessage({ type: "error", text: err.message });
+            setLoading(false);
+            return;
+        }
+
         const form = new FormData();
-        Object.keys(personalData).forEach(key => {
+        Object.keys(formSource).forEach(key => {
             if (key === 'photo') {
-                if (personalData.photo instanceof File) {
-                    form.append('photo', personalData.photo);
+                if (formSource.photo instanceof File) {
+                    form.append('photo', formSource.photo);
                 }
             } else if (key === 'disability_status' || key === 'pregnancy_status') {
                 // Backend expects actual booleans. FormData sends everything as strings.
                 // We convert "Yes"/"No" strings from UI to the string "true"/"false" 
                 // but express-validator .isBoolean() will correctly parse these strings as boolean values.
-                const boolValue = (personalData[key] === "Yes" || personalData[key] === true);
+                const boolValue = (formSource[key] === "Yes" || formSource[key] === true);
                 form.append(key, String(boolValue));
             } else if (key === 'nic' && (personalData[key] === null || personalData[key] === undefined || personalData[key].toString().trim() === '')) {
                 // If NIC is missing, send "N/A" to satisfy backend logic for adults
                 form.append('nic', 'N/A');
             } else if (personalData[key] !== null && personalData[key] !== undefined && personalData[key] !== "") {
-                form.append(key, personalData[key]);
+                form.append(key, formSource[key]);
             }
         });
 
@@ -815,9 +837,14 @@ const HealthProfilePage = () => {
             }
         } catch (err) {
             console.error("Error updating profile:", err);
+            let errorText = getSafeErrorMessage(err, "general") || t("healthProfile.alert.genericError");
+            // If the error has detailed validation errors, display them
+            if (err.errors && Array.isArray(err.errors)) {
+                errorText = err.errors.map(e => `${e.path}: ${e.msg}`).join(", ");
+            }
             setMessage({
                 type: "error",
-                text: getSafeErrorMessage(err, "general") || t("healthProfile.alert.genericError"),
+                text: errorText,
             });
         } finally {
             setLoading(false);
@@ -1357,7 +1384,14 @@ const HealthProfilePage = () => {
                                                                     </td>
                                                                     <td className="px-6 py-4 text-right">
                                                                         <button
-                                                                            onClick={() => setActiveAddForms(prev => ({...prev, [item.id]: !prev[item.id]}))}
+                                                                            onClick={() => {
+                                                                                const willExpand = !activeAddForms[item.id];
+                                                                                setActiveAddForms(prev => ({...prev, [item.id]: willExpand}));
+                                                                                // When opening the form for a new allergy, set the type to the selected category
+                                                                                if (willExpand && !editingAllergyId) {
+                                                                                    setAllergyData(prev => ({ ...prev, type: item.id }));
+                                                                                }
+                                                                            }}
                                                                             className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all border ${
                                                                                 isExpanded 
                                                                                 ? "bg-white text-slate-600 border-slate-200 shadow-sm" 
@@ -1403,7 +1437,7 @@ const HealthProfilePage = () => {
                                                                                         type="text"
                                                                                         value={allergyData.allergen_name}
                                                                                         onChange={(e) => setAllergyData({...allergyData, allergen_name: e.target.value})}
-                                                                                        placeholder="e.g. Peanuts, Penicillin"
+                                                                                        placeholder=""
                                                                                         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-1 focus:ring-teal-500 outline-none bg-white"
                                                                                         required
                                                                                     />
@@ -1932,8 +1966,8 @@ const HealthProfilePage = () => {
                                                         {prescriptionPhotoPreview && (
                                                             <div className="h-16 w-16 rounded-lg bg-slate-100 border border-teal-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                                                                 {prescriptionPhotoPreview.toLowerCase().endsWith('.pdf') ? (
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                                                     </svg>
                                                                 ) : (
                                                                     <img src={prescriptionPhotoPreview} alt="Prescription" className="h-full w-full object-cover"/>
