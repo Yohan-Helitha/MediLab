@@ -1,11 +1,122 @@
+import axios from "axios";
 import { validationResult } from "express-validator";
 import * as resultService from "./result.service.js";
 import TestType from "../test/testType.model.js";
-import fs from "fs";
-import path from "path";
+import Booking from "../booking/booking.model.js";
+import { uploadToCloudinary, getSignedDownloadUrl } from "../../utils/cloudinaryUpload.js";
+import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
+import { sendHardCopyReadyNotification, sendResultReadyNotification } from "../notification/notification.service.js";
+import TestResult from "./testResult.model.js";
 
 // Test Result Controller
 // Handles test result submission, viewing, and management
+
+// ===== UPLOAD-TYPE DISCRIMINATORS =====
+const UPLOAD_DISCRIMINATORS = ["XRay", "ECG", "Ultrasound", "AutomatedReport"];
+
+/**
+ * Validate discriminator-specific fields for upload-type test results.
+ * Returns an array of error objects (empty if valid).
+ */
+const validateUploadDiscriminatorFields = (discriminatorType, body) => {
+  if (!UPLOAD_DISCRIMINATORS.includes(discriminatorType)) return [];
+
+  const errors = [];
+  const files = body.uploadedFiles;
+
+  // uploadedFiles array
+  if (!Array.isArray(files) || files.length === 0) {
+    errors.push({ path: "uploadedFiles", msg: "uploadedFiles must be a non-empty array" });
+    return errors; // no point continuing
+  }
+
+  const maxFiles = { XRay: 5, ECG: 3, Ultrasound: 5, AutomatedReport: 1 };
+  if (files.length > maxFiles[discriminatorType]) {
+    errors.push({ path: "uploadedFiles", msg: `Maximum ${maxFiles[discriminatorType]} file(s) allowed for ${discriminatorType}` });
+  }
+
+  files.forEach((f, i) => {
+    if (!f.fileName) errors.push({ path: `uploadedFiles[${i}].fileName`, msg: "fileName is required" });
+    if (!f.filePath) errors.push({ path: `uploadedFiles[${i}].filePath`, msg: "filePath is required" });
+    if (!f.fileSize || f.fileSize < 1) errors.push({ path: `uploadedFiles[${i}].fileSize`, msg: "fileSize must be a positive number" });
+    if (!f.mimeType) errors.push({ path: `uploadedFiles[${i}].mimeType`, msg: "mimeType is required" });
+    if (discriminatorType === "AutomatedReport" && f.mimeType !== "application/pdf") {
+      errors.push({ path: `uploadedFiles[${i}].mimeType`, msg: "AutomatedReport files must be PDFs" });
+    }
+  });
+
+  // Type-specific required fields
+  if (discriminatorType === "XRay") {
+    if (!body.bodyPart) errors.push({ path: "bodyPart", msg: "bodyPart is required" });
+    if (!body.clinicalIndication) errors.push({ path: "clinicalIndication", msg: "clinicalIndication is required" });
+    if (!Array.isArray(body.views) || body.views.length === 0) errors.push({ path: "views", msg: "at least one view is required" });
+    if (!body.findings) errors.push({ path: "findings", msg: "findings is required" });
+    if (!body.impression) errors.push({ path: "impression", msg: "impression is required" });
+    if (!body.interpretation) errors.push({ path: "interpretation", msg: "interpretation is required" });
+  }
+
+  if (discriminatorType === "ECG") {
+    if (!body.ecgType) errors.push({ path: "ecgType", msg: "ecgType is required" });
+    if (!body.clinicalIndication) errors.push({ path: "clinicalIndication", msg: "clinicalIndication is required" });
+    if (!body.findings) errors.push({ path: "findings", msg: "findings is required" });
+    if (!body.interpretation) errors.push({ path: "interpretation", msg: "interpretation is required" });
+  }
+
+  if (discriminatorType === "Ultrasound") {
+    if (!body.studyType) errors.push({ path: "studyType", msg: "studyType is required" });
+    if (!body.clinicalIndication) errors.push({ path: "clinicalIndication", msg: "clinicalIndication is required" });
+    if (!body.findings) errors.push({ path: "findings", msg: "findings is required" });
+    if (!body.impression) errors.push({ path: "impression", msg: "impression is required" });
+    if (!body.interpretation) errors.push({ path: "interpretation", msg: "interpretation is required" });
+  }
+
+  if (discriminatorType === "AutomatedReport") {
+    if (!body.testPanelName) errors.push({ path: "testPanelName", msg: "testPanelName is required" });
+    if (!body.testCategory) errors.push({ path: "testCategory", msg: "testCategory is required" });
+    if (!body.sampleType) errors.push({ path: "sampleType", msg: "sampleType is required" });
+    if (!body.sampleCollectionTime) errors.push({ path: "sampleCollectionTime", msg: "sampleCollectionTime is required" });
+    if (!body.analysisCompletedTime) errors.push({ path: "analysisCompletedTime", msg: "analysisCompletedTime is required" });
+  }
+
+  return errors;
+};
+
+/**
+ * Upload a single test result file (image or PDF) to Cloudinary.
+ * The client receives { fileName, filePath, fileSize, mimeType } and includes
+ * it in the uploadedFiles[] array when submitting the result form.
+ * POST /api/results/upload-file
+ */
+export const uploadResultFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded. Use field name \"file\" in multipart/form-data.",
+      });
+    }
+
+    // Always upload as resource_type "image" — Cloudinary supports PDFs natively
+    // under the image CDN and serves them without access restrictions.
+    // resource_type "raw" causes CDN-level 401s that cannot be bypassed.
+    const uploadOptions = { folder: "medilab/results", resourceType: "image" };
+
+    const { url } = await uploadToCloudinary(req.file.buffer, uploadOptions);
+
+    res.status(200).json({
+      success: true,
+      message: "File uploaded successfully",
+      data: {
+        fileName: req.file.originalname,
+        filePath: url,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * Submit a new test result with discriminator support
@@ -40,11 +151,29 @@ export const submitTestResult = async (req, res, next) => {
       });
     }
 
+    // Validate discriminator-specific fields (upload types: XRay, ECG, Ultrasound, AutomatedReport)
+    const discriminatorErrors = validateUploadDiscriminatorFields(
+      testType.discriminatorType,
+      req.body,
+    );
+    if (discriminatorErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: discriminatorErrors,
+      });
+    }
+
     // Create test result using appropriate discriminator
     const result = await resultService.createTestResult(
       testType.discriminatorType,
       req.body,
     );
+
+    // Mark the booking as COMPLETED so it no longer appears in the pending list
+    await Booking.findByIdAndUpdate(req.body.bookingId, {
+      $set: { status: "COMPLETED" },
+    });
 
     res.status(201).json({
       success: true,
@@ -82,7 +211,7 @@ export const getTestResultById = async (req, res, next) => {
 
     // AUTHORIZATION: Patients can only view their own released results
     if (req.user.userType === "patient") {
-      if (result.patientProfileId.toString() !== req.user.id) {
+      if (result.patientProfileId._id.toString() !== req.user.profileId) {
         return res.status(403).json({
           success: false,
           message: "Access denied. You can only view your own test results.",
@@ -132,7 +261,7 @@ export const getPatientTestResults = async (req, res, next) => {
     const { patientId } = req.params;
 
     // AUTHORIZATION: Patients can only view their own results
-    if (req.user.userType === "patient" && req.user.id !== patientId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== patientId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You can only view your own test results.",
@@ -228,6 +357,30 @@ export const updateTestResultStatus = async (req, res, next) => {
       changedBy,
     );
 
+    // Auto-fire result-ready notification when status changes to released
+    if (status === "released") {
+      const patient = result.patientProfileId;
+      const testType = result.testTypeId;
+      const healthCenter = result.healthCenterId;
+
+      if (patient && testType && healthCenter) {
+        // Fire-and-forget — do not block the response on notification failures
+        sendResultReadyNotification({
+          testResult: { _id: result._id, releasedAt: result.releasedAt },
+          patient: {
+            _id: patient._id,
+            fullName: patient.full_name || "Patient",
+            contactNumber: patient.contact_number,
+            email: patient.email,
+          },
+          testType: { name: testType.name },
+          healthCenter: { name: healthCenter.name },
+        }).catch((err) =>
+          console.error("[notification] result-ready send failed:", err.message),
+        );
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Test result status updated successfully",
@@ -297,7 +450,7 @@ export const getStatusHistory = async (req, res, next) => {
       });
     }
 
-    const result = await resultService.findById(req.params.id);
+    const result = await resultService.findTestResultById(req.params.id);
 
     if (!result) {
       return res.status(404).json({
@@ -308,7 +461,7 @@ export const getStatusHistory = async (req, res, next) => {
 
     // AUTHORIZATION: Patients can only view their own results' history
     if (req.user.userType === "patient") {
-      if (result.patientProfileId.toString() !== req.user.id) {
+      if (result.patientProfileId.toString() !== req.user.profileId) {
         return res.status(403).json({
           success: false,
           message: "Access denied. You can only view your own test results.",
@@ -324,6 +477,29 @@ export const getStatusHistory = async (req, res, next) => {
       }
     }
 
+    // Synthesize hard copy lifecycle events from hardCopyCollection
+    const hardCopyHistory = [];
+    if (
+      result.hardCopyCollection?.isPrinted &&
+      result.hardCopyCollection.printedAt
+    ) {
+      hardCopyHistory.push({
+        event: "printed",
+        timestamp: result.hardCopyCollection.printedAt,
+        performedBy: result.hardCopyCollection.handedOverBy || null,
+      });
+    }
+    if (
+      result.hardCopyCollection?.isCollected &&
+      result.hardCopyCollection.collectedAt
+    ) {
+      hardCopyHistory.push({
+        event: "collected",
+        timestamp: result.hardCopyCollection.collectedAt,
+        performedBy: result.hardCopyCollection.handedOverBy || null,
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Status history retrieved successfully",
@@ -332,6 +508,8 @@ export const getStatusHistory = async (req, res, next) => {
         bookingId: result.bookingId,
         currentStatus: result.currentStatus,
         statusHistory: result.statusHistory,
+        hardCopyCollection: result.hardCopyCollection || null,
+        hardCopyHistory,
       },
     });
   } catch (error) {
@@ -364,7 +542,7 @@ export const markAsViewed = async (req, res, next) => {
     const { userId } = req.body;
 
     // AUTHORIZATION: Patients can only mark their own results as viewed
-    if (req.user.userType === "patient" && req.user.id !== userId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== userId) {
       return res.status(403).json({
         success: false,
         message:
@@ -377,7 +555,7 @@ export const markAsViewed = async (req, res, next) => {
     // Double-check ownership after fetching result
     if (
       req.user.userType === "patient" &&
-      result.patientProfileId.toString() !== req.user.id
+      result.patientProfileId._id?.toString() !== req.user.profileId
     ) {
       return res.status(403).json({
         success: false,
@@ -419,7 +597,7 @@ export const getUnviewedResults = async (req, res, next) => {
     const { patientId } = req.params;
 
     // AUTHORIZATION: Patients can only view their own unviewed results
-    if (req.user.userType === "patient" && req.user.id !== patientId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== patientId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You can only view your own test results.",
@@ -502,6 +680,40 @@ export const getResultsByTestType = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Test results retrieved successfully",
+      count: results.length,
+      data: results,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get all test results across health centers (Admin only)
+ * GET /api/results/admin
+ * Query params: healthCenterId, status, startDate, endDate, includeDeleted, limit, page
+ */
+export const getAllResultsAdmin = async (req, res, next) => {
+  try {
+    const filters = {
+      healthCenterId: req.query.healthCenterId,
+      status: req.query.status,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      includeDeleted: req.query.includeDeleted === "true",
+      limit: req.query.limit,
+      page: req.query.page,
+    };
+
+    const { results, total, page, limit } =
+      await resultService.findAllResultsAdmin(filters);
+
+    res.status(200).json({
+      success: true,
+      message: "Admin results retrieved successfully",
+      total,
+      page,
+      limit,
       count: results.length,
       data: results,
     });
@@ -646,7 +858,7 @@ export const downloadTestResultPDF = async (req, res, next) => {
 
     // AUTHORIZATION: Patients can only download their own released results
     if (req.user.userType === "patient") {
-      if (result.patientProfileId.toString() !== req.user.id) {
+      if (result.patientProfileId._id.toString() !== req.user.profileId) {
         return res.status(403).json({
           success: false,
           message:
@@ -662,42 +874,32 @@ export const downloadTestResultPDF = async (req, res, next) => {
       }
     }
 
-    // Check if PDF has been generated
-    if (!result.generatedReportPath) {
-      return res.status(404).json({
+    // Gate on released status — PDF is generated on-demand, never stored
+    if (result.currentStatus !== "released") {
+      return res.status(403).json({
         success: false,
-        message: "PDF report not yet generated. Result must be released first.",
+        message: "PDF report is only available for released results.",
       });
     }
 
-    // Check if file exists
-    if (!fs.existsSync(result.generatedReportPath)) {
-      return res.status(404).json({
-        success: false,
-        message: "PDF report file not found on server",
-      });
-    }
+    // Fetch fully populated result for PDF generation
+    const resultForPDF = await resultService.findTestResultForPDF(req.params.id);
 
-    // Get filename for download
-    const fileName = path.basename(result.generatedReportPath);
+    // Generate PDF in-memory and stream directly to client
+    const pdfBuffer = await generateTestResultPDF(resultForPDF);
 
-    // Set headers for PDF download
+    // Build a descriptive filename: e.g. MediLab_Blood_Glucose_Test_<id>.pdf
+    const testTypeName = resultForPDF.testTypeId?.name
+      ? resultForPDF.testTypeId.name.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "")
+      : resultForPDF.constructor.modelName;
+    const fileName = `MediLab_${testTypeName}_${result._id}.pdf`;
+
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-
-    // Stream the PDF file
-    const fileStream = fs.createReadStream(result.generatedReportPath);
-    fileStream.pipe(res);
-
-    fileStream.on("error", (error) => {
-      console.error("Error streaming PDF:", error);
-      if (!res.headersSent) {
-        res.status(500).json({
-          success: false,
-          message: "Error streaming PDF file",
-        });
-      }
-    });
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${fileName}"`,
+    );
+    res.send(pdfBuffer);
   } catch (error) {
     if (error.statusCode === 404) {
       return res.status(404).json({
@@ -705,6 +907,236 @@ export const downloadTestResultPDF = async (req, res, next) => {
         message: error.message,
       });
     }
+    next(error);
+  }
+};
+
+/**
+ * Download a specific uploaded file from a test result (proxied through backend)
+ * GET /api/results/:id/file/:fileIndex
+ */
+export const downloadUploadedFile = async (req, res, next) => {
+  try {
+    const { id, fileIndex } = req.params;
+    const idx = parseInt(fileIndex, 10);
+    if (isNaN(idx) || idx < 0) {
+      return res.status(400).json({ success: false, message: "Invalid file index." });
+    }
+
+    const result = await resultService.findTestResultById(id);
+    if (!result) {
+      return res.status(404).json({ success: false, message: "Test result not found." });
+    }
+
+    // AUTHORIZATION: Patients can only access their own released results
+    if (req.user.userType === "patient") {
+      if (result.patientProfileId._id.toString() !== req.user.profileId) {
+        return res.status(403).json({ success: false, message: "Access denied." });
+      }
+      if (result.currentStatus !== "released") {
+        return res.status(403).json({ success: false, message: "This result has not been released yet." });
+      }
+    }
+
+    const files = result.uploadedFiles || [];
+    if (idx >= files.length) {
+      return res.status(404).json({ success: false, message: "File not found at this index." });
+    }
+
+    const file = files[idx];
+
+    // Cloudinary restricts PDF delivery even on the image CDN by default.
+    // Generating a signed URL embeds an HMAC signature that Cloudinary
+    // validates at the edge — this bypasses delivery restrictions for
+    // all file types including PDFs. Falls back to the raw URL for images
+    // that are served publicly without restrictions.
+    const fetchUrl = getSignedDownloadUrl(file.filePath) || file.filePath;
+    console.log(`[downloadUploadedFile] idx=${idx} mimeType=${file.mimeType} fetchUrl=${fetchUrl}`);
+
+    let cloudRes;
+    try {
+      cloudRes = await axios.get(fetchUrl, { responseType: "stream" });
+    } catch (fetchErr) {
+      const cloudStatus = fetchErr.response?.status ?? "no-response";
+      console.error(
+        `[downloadUploadedFile] Cloudinary fetch FAILED. HTTP=${cloudStatus} err="${fetchErr.message}" url="${fetchUrl}"`,
+      );
+      return res.status(502).json({
+        success: false,
+        message: "Unable to retrieve file from storage.",
+      });
+    }
+
+    res.setHeader("Content-Type", file.mimeType || "application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${file.fileName || `file-${idx}`}"`,
+    );
+    if (cloudRes.headers["content-length"]) {
+      res.setHeader("Content-Length", cloudRes.headers["content-length"]);
+    }
+    cloudRes.data.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ===== HARD COPY MANAGEMENT CONTROLLERS =====
+
+/**
+ * Mark a test result hard copy as printed and notify the patient
+ * PATCH /api/results/:id/mark-printed
+ */
+export const markAsPrinted = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const result = await resultService.markResultAsPrinted(
+      req.params.id,
+      req.user.id,
+    );
+
+    // Fetch full populated result for notification
+    const populatedResult = await TestResult.findById(result._id)
+      .populate("patientProfileId", "full_name email contact_number")
+      .populate("testTypeId", "name")
+      .populate(
+        "healthCenterId",
+        "name addressLine1 addressLine2 district phoneNumber operatingHours",
+      );
+
+    // Send notification (non-blocking — do not fail the request if notification fails)
+    if (
+      populatedResult.patientProfileId &&
+      populatedResult.testTypeId &&
+      populatedResult.healthCenterId
+    ) {
+      const center = populatedResult.healthCenterId;
+      const addressParts = [
+        center.addressLine1,
+        center.addressLine2,
+        center.district,
+      ].filter(Boolean);
+      const operatingHoursSummary =
+        center.operatingHours?.length > 0
+          ? center.operatingHours
+              .map((h) => `${h.day}: ${h.openTime} - ${h.closeTime}`)
+              .join(", ")
+          : null;
+
+      const notificationData = {
+        testResult: { _id: result._id, bookingCode: null },
+        patient: {
+          _id: populatedResult.patientProfileId._id,
+          fullName: populatedResult.patientProfileId.full_name,
+          contactNumber: populatedResult.patientProfileId.contact_number,
+          email: populatedResult.patientProfileId.email,
+        },
+        testType: {
+          _id: populatedResult.testTypeId._id,
+          name: populatedResult.testTypeId.name,
+        },
+        healthCenter: {
+          name: center.name,
+          address: addressParts.join(", ") || null,
+          contactNumber: center.phoneNumber || null,
+          operatingHours: operatingHoursSummary,
+        },
+      };
+
+      sendHardCopyReadyNotification(notificationData).catch((err) =>
+        console.error("⚠️ Hard copy notification failed:", err.message),
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Hard copy marked as printed. Patient notification sent.",
+      data: result,
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Mark a test result hard copy as collected by the patient
+ * PATCH /api/results/:id/mark-collected
+ */
+export const markAsCollected = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const result = await resultService.markResultAsCollected(
+      req.params.id,
+      req.user.id,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Hard copy marked as collected by patient.",
+      data: result,
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Get all printed but uncollected hard copy reports
+ * GET /api/results/uncollected
+ */
+export const getUncollectedReports = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors.array(),
+      });
+    }
+
+    const { centerId, daysThreshold } = req.query;
+
+    const results = await resultService.findUncollectedReports(
+      centerId || null,
+      daysThreshold ? parseInt(daysThreshold, 10) : 0,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Uncollected hard copy reports retrieved",
+      count: results.length,
+      data: results,
+    });
+  } catch (error) {
     next(error);
   }
 };

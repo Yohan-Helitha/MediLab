@@ -184,9 +184,140 @@ export const formatPhoneNumberSriLanka = (phoneNumber) => {
   return "+" + cleaned;
 };
 
+/**
+ * Send WhatsApp message via Twilio WhatsApp sandbox
+ *
+ * WHY: Twilio carrier SMS does not reach Sri Lankan phone numbers.
+ * WhatsApp via Twilio works in Sri Lanka and is confirmed by testing.
+ *
+ * SETUP REQUIRED (one-time per patient/tester):
+ *   Patient must send "join <sandbox-keyword>" to the Twilio WhatsApp sandbox number.
+ *   Sandbox number: +1 415 523 8886 (WhatsApp it to join).
+ *   Sandbox keyword: found in Twilio Console → Messaging → Try it out → Send a WhatsApp message.
+ *
+ * PRODUCTION NOTE:
+ *   For production, request a Twilio WhatsApp Business number and an approved message template.
+ *   Sandbox is suitable for development/demo only.
+ *
+ * @param {string} to - Recipient phone number in E.164 format (e.g., +94771234567)
+ * @param {string} message - Message body
+ * @returns {Promise<Object>} { success: boolean, sid?: string, error?: string }
+ */
+export const sendWhatsAppMessage = async (to, message) => {
+  if (!isTwilioConfigured()) {
+    return {
+      success: false,
+      error: "Twilio credentials not configured",
+      provider: "twilio-whatsapp",
+    };
+  }
+
+  if (!to || !message) {
+    return {
+      success: false,
+      error: "Recipient phone number and message are required",
+      provider: "twilio-whatsapp",
+    };
+  }
+
+  if (!to.startsWith("+")) {
+    return {
+      success: false,
+      error: "Phone number must be in E.164 format (e.g., +94771234567)",
+      provider: "twilio-whatsapp",
+    };
+  }
+
+  try {
+    // Twilio WhatsApp sandbox number. Set TWILIO_WHATSAPP_NUMBER in .env for production.
+    const whatsappFrom =
+      config.twilio.whatsappNumber || "whatsapp:+14155238886";
+
+    const response = await twilioClient.messages.create({
+      body: message,
+      from: whatsappFrom.startsWith("whatsapp:")
+        ? whatsappFrom
+        : `whatsapp:${whatsappFrom}`,
+      to: `whatsapp:${to}`,
+    });
+
+    console.log(`✅ WhatsApp message sent successfully: ${response.sid}`);
+
+    return {
+      success: true,
+      sid: response.sid,
+      status: response.status,
+      to: response.to,
+      provider: "twilio-whatsapp",
+      dateSent: response.dateCreated,
+    };
+  } catch (error) {
+    console.error("❌ Twilio WhatsApp error:", error.message);
+
+    const errorMessage =
+      error.code === 63016
+        ? "Recipient has not joined the WhatsApp sandbox. They must send 'join <keyword>' to +14155238886 on WhatsApp first."
+        : error.code === 21211
+          ? "Invalid phone number"
+          : error.code === 21608
+            ? "Phone number not verified (Twilio trial account)"
+            : error.message;
+
+    return {
+      success: false,
+      error: errorMessage,
+      errorCode: error.code,
+      provider: "twilio-whatsapp",
+    };
+  }
+};
+
+/**
+ * Send WhatsApp message with retry logic
+ * @param {string} to - Recipient phone number in E.164 format
+ * @param {string} message - Message body
+ * @param {number} retries - Retry attempts (default: 1)
+ * @returns {Promise<Object>} Result of sending
+ */
+export const sendWhatsAppWithRetry = async (to, message, retries = 1) => {
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const result = await sendWhatsAppMessage(to, message);
+
+    if (result.success) {
+      if (attempt > 0) {
+        console.log(`✅ WhatsApp sent successfully on retry attempt ${attempt}`);
+      }
+      return result;
+    }
+
+    lastError = result;
+
+    // Don't retry on permanent errors
+    if (
+      result.error?.includes("required") ||
+      result.error?.includes("format") ||
+      result.error?.includes("not joined")
+    ) {
+      break;
+    }
+
+    if (attempt < retries) {
+      const waitTime = Math.pow(2, attempt) * 1000;
+      console.log(`⏳ Retrying WhatsApp in ${waitTime}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
+  }
+
+  return lastError;
+};
+
 export default {
   sendSMS,
   sendSMSWithRetry,
+  sendWhatsAppMessage,
+  sendWhatsAppWithRetry,
   isValidPhoneNumber,
   formatPhoneNumberSriLanka,
   isTwilioConfigured,

@@ -2,16 +2,16 @@ import { jest } from "@jest/globals";
 import request from "supertest";
 import mongoose from "mongoose";
 
-import app from "../../app.js";
-import { connectDB } from "../../config/db.js";
+import app from "../../../app.js";
+import { connectDB } from "../../../config/db.js";
 
-import authService from "../auth/auth.service.js";
-import HealthOfficer from "../auth/healthOfficer.model.js";
+import authService from "../../auth/auth.service.js";
+import HealthOfficer from "../../auth/healthOfficer.model.js";
 
-import Lab from "../lab/lab.model.js";
-import TestType from "../test/testType.model.js";
-import Booking from "../booking/booking.model.js";
-import FinanceTransaction from "./financeTransaction.model.js";
+import Lab from "../../lab/lab.model.js";
+import TestType from "../../test/testType.model.js";
+import Booking from "../../booking/booking.model.js";
+import FinanceTransaction from "../financeTransaction.model.js";
 
 const hasDatabaseUrl = !!process.env.DATABASE_URL;
 const describeIfDb = hasDatabaseUrl ? describe : describe.skip;
@@ -150,6 +150,15 @@ describeIfDb("Finance routes integration", () => {
     expect(res.body.transaction.paymentMethod).toBe("CASH");
     expect(res.body.transaction.paymentStatus).toBe("PAID");
     expect(res.body.booking.paymentStatus).toBe("PAID");
+
+    const unpaidAfterRes = await request(app)
+      .get("/api/finance/unpaid-bookings?paymentMethod=CASH")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(unpaidAfterRes.status).toBe(200);
+    expect(
+      unpaidAfterRes.body.items.some((row) => String(row.bookingId) === bookingId),
+    ).toBe(false);
   });
 
   it("does not include booking in unpaid CASH list after payment is recorded", async () => {

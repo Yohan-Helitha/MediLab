@@ -33,6 +33,19 @@ router.post(
   notificationController.sendRoutineCheckupReminder,
 );
 router.post(
+  "/send/hard-copy-ready",
+  authenticate,
+  isHealthOfficer,
+  validation.sendHardCopyReadyValidation,
+  notificationController.sendHardCopyReadyNotification,
+);
+router.post(
+  "/send/hard-copy-reminder",
+  authenticate,
+  isHealthOfficer,
+  notificationController.sendUncollectedHardCopyReminder,
+);
+router.post(
   "/:id/resend",
   authenticate,
   isHealthOfficer,
@@ -41,6 +54,12 @@ router.post(
 );
 
 // Get notification logs (Patient can view own, Health Officer can view all)
+router.get(
+  "/",
+  authenticate,
+  isHealthOfficer,
+  notificationController.getAllNotifications,
+);
 router.get(
   "/patient/:patientId",
   authenticate,

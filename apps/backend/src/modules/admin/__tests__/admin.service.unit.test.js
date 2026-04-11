@@ -1,6 +1,6 @@
 /**
  * Run this test file with:
- * npm test -- src/modules/admin/admin.service.unit.test.js
+ * npm test -- src/modules/admin/__tests__/admin.service.unit.test.js
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
@@ -38,35 +38,35 @@ const mockHealthOfficerModel = {
   find: jest.fn(),
 };
 
-jest.unstable_mockModule('../booking/booking.model.js', () => ({
+jest.unstable_mockModule('../../booking/booking.model.js', () => ({
   default: mockBookingModel,
 }));
 
-jest.unstable_mockModule('../finance/financeTransaction.model.js', () => ({
+jest.unstable_mockModule('../../finance/financeTransaction.model.js', () => ({
   default: mockFinanceTransactionModel,
 }));
 
-jest.unstable_mockModule('../inventory/inventoryStock.model.js', () => ({
+jest.unstable_mockModule('../../inventory/inventoryStock.model.js', () => ({
   default: mockInventoryStockModel,
 }));
 
-jest.unstable_mockModule('../inventory/equipment.model.js', () => ({
+jest.unstable_mockModule('../../inventory/equipment.model.js', () => ({
   default: mockEquipmentModel,
 }));
 
-jest.unstable_mockModule('../auth/auth.model.js', () => ({
+jest.unstable_mockModule('../../auth/auth.model.js', () => ({
   default: mockAuthModel,
 }));
 
-jest.unstable_mockModule('../patient/models/Member.js', () => ({
+jest.unstable_mockModule('../../patient/models/Member.js', () => ({
   default: mockMemberModel,
 }));
 
-jest.unstable_mockModule('../auth/healthOfficer.model.js', () => ({
+jest.unstable_mockModule('../../auth/healthOfficer.model.js', () => ({
   default: mockHealthOfficerModel,
 }));
 
-const { listHealthOfficers } = await import('./admin.service.js');
+const { listHealthOfficers } = await import('../admin.service.js');
 
 function makeExecQuery(result) {
   return {

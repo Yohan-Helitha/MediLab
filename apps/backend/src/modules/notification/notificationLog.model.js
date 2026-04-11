@@ -7,7 +7,7 @@ const notificationLogSchema = new Schema(
     // Patient reference
     patientProfileId: {
       type: Schema.Types.ObjectId,
-      ref: "PatientProfile",
+      ref: "Member",
       required: true,
       index: true,
     },
@@ -19,6 +19,8 @@ const notificationLogSchema = new Schema(
         "result_ready",
         "unviewed_result_reminder",
         "routine_checkup_reminder",
+        "hard_copy_ready_for_pickup",
+        "hard_copy_collection_reminder",
       ],
       required: true,
       index: true,
@@ -27,7 +29,7 @@ const notificationLogSchema = new Schema(
     // Communication channel
     channel: {
       type: String,
-      enum: ["sms", "email"],
+      enum: ["sms", "email", "whatsapp"],
       required: true,
     },
 

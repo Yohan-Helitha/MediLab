@@ -105,9 +105,8 @@ Base URL (local): `http://localhost:5000/api`
 The full request/response formats, auth requirements, and examples are documented in:
 - `files/lakni/AUTH_API_DOCUMENTATION.md`
 - `files/lakni/PATIENT_API_DOCUMENTATION.md`
-- `PAYHERE_INTEGRATION.md`
-- `BOOKING_FRONTEND_SETUP.md`
-- `PAYMENT_TO_FINANCE_FLOW.md`
+- `docs/yohan/PAYHERE_INTEGRATION.md`
+- `docs/yohan/PAYMENT_TO_FINANCE_FLOW.md`
 
 Also included:
 - Postman collection: `docs/Afham/MediLab_Test_Management_COMPLETE.postman_collection.json`
@@ -194,3 +193,4 @@ Additional references:
 - `files/lakni/tests/TESTING.md`
 - `files/lakni/tests/TEST_EXECUTION_GUIDE.md`
 - `files/lakni/tests/TEST_QUICKSTART.md`
+

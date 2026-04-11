@@ -1,15 +1,15 @@
 import { jest } from "@jest/globals";
 import request from "supertest";
 import mongoose from "mongoose";
-import app from "../../app.js";
-import { connectDB } from "../../config/db.js";
-import authService from "../auth/auth.service.js";
-import HealthOfficer from "../auth/healthOfficer.model.js";
-import Lab from "../lab/lab.model.js";
-import TestType from "../test/testType.model.js";
-import Equipment from "./equipment.model.js";
-import InventoryStock from "./inventoryStock.model.js";
-import TestEquipmentRequirement from "./testEquipmentRequirement.model.js";
+import app from "../../../app.js";
+import { connectDB } from "../../../config/db.js";
+import authService from "../../auth/auth.service.js";
+import HealthOfficer from "../../auth/healthOfficer.model.js";
+import Lab from "../../lab/lab.model.js";
+import TestType from "../../test/testType.model.js";
+import Equipment from "../equipment.model.js";
+import InventoryStock from "../inventoryStock.model.js";
+import TestEquipmentRequirement from "../testEquipmentRequirement.model.js";
 
 const hasDatabaseUrl = !!process.env.DATABASE_URL;
 

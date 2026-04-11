@@ -66,7 +66,7 @@ export const sendResultReadyNotification = async (req, res, next) => {
       success: true,
       message: "Result ready notification sent",
       data: {
-        sms: results.sms,
+        whatsapp: results.whatsapp,
         email: results.email,
       },
     });
@@ -82,8 +82,11 @@ export const sendResultReadyNotification = async (req, res, next) => {
  */
 export const sendUnviewedResultReminder = async (req, res, next) => {
   try {
-    const daysThreshold = parseInt(req.body.daysThreshold) || 3;
-    const maxReminders = parseInt(req.body.maxReminders) || 2;
+    // Use != null so daysThreshold=0 is treated as 0, not coerced to default
+    const daysThreshold =
+      req.body.daysThreshold != null ? parseInt(req.body.daysThreshold) : 3;
+    const maxReminders =
+      req.body.maxReminders != null ? parseInt(req.body.maxReminders) : 2;
 
     // Find unviewed results
     const unviewedResults = await notificationService.findUnviewedResults(
@@ -100,7 +103,7 @@ export const sendUnviewedResultReminder = async (req, res, next) => {
         const results =
           await notificationService.sendUnviewedResultReminder(data);
 
-        if (results.sms?.success || results.email?.success) {
+        if (results.whatsapp?.success || results.email?.success) {
           successCount++;
         } else {
           failCount++;
@@ -129,6 +132,29 @@ export const sendUnviewedResultReminder = async (req, res, next) => {
 };
 
 /**
+ * Get all notification logs (staff only)
+ * GET /api/notifications?limit=50&status=&type=&channel=
+ */
+export const getAllNotifications = async (req, res, next) => {
+  try {
+    const filters = {
+      status: req.query.status,
+      type: req.query.type,
+      channel: req.query.channel,
+    };
+    const limit = req.query.limit || 50;
+    const notifications = await notificationService.findAllNotifications(filters, limit);
+    res.status(200).json({
+      success: true,
+      count: notifications.length,
+      data: notifications,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get notification history for a patient
  * GET /api/notifications/patient/:patientId?type=&channel=&status=&startDate=&endDate=
  */
@@ -137,7 +163,7 @@ export const getNotificationHistory = async (req, res, next) => {
     const { patientId } = req.params;
 
     // AUTHORIZATION: Patients can only view their own notifications
-    if (req.user.userType === "patient" && req.user.id !== patientId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== patientId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You can only view your own notifications.",
@@ -272,7 +298,7 @@ export const subscribeToReminder = async (req, res, next) => {
     // AUTHORIZATION: Patients can only create subscriptions for themselves
     if (
       req.user.userType === "patient" &&
-      req.user.id !== req.body.patientProfileId
+      req.user.profileId?.toString() !== req.body.patientProfileId
     ) {
       return res.status(403).json({
         success: false,
@@ -314,7 +340,7 @@ export const unsubscribeFromReminder = async (req, res, next) => {
     // AUTHORIZATION: Patients can only unsubscribe their own subscriptions
     if (
       req.user.userType === "patient" &&
-      req.user.id !== subscription.patientProfileId.toString()
+      req.user.profileId?.toString() !== subscription.patientProfileId._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -344,7 +370,7 @@ export const getPatientSubscriptions = async (req, res, next) => {
     const { patientId } = req.params;
 
     // AUTHORIZATION: Patients can only view their own subscriptions
-    if (req.user.userType === "patient" && req.user.id !== patientId) {
+    if (req.user.userType === "patient" && req.user.profileId?.toString() !== patientId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. You can only view your own subscriptions.",
@@ -384,7 +410,7 @@ export const getSubscriptionById = async (req, res, next) => {
     // AUTHORIZATION: Patients can only view their own subscriptions
     if (
       req.user.userType === "patient" &&
-      req.user.id !== subscription.patientProfileId.toString()
+      req.user.profileId?.toString() !== subscription.patientProfileId._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -422,7 +448,7 @@ export const updateSubscription = async (req, res, next) => {
     // AUTHORIZATION: Patients can only update their own subscriptions
     if (
       req.user.userType === "patient" &&
-      req.user.id !== subscription.patientProfileId.toString()
+      req.user.profileId?.toString() !== subscription.patientProfileId._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -451,9 +477,158 @@ export const updateSubscription = async (req, res, next) => {
  * Send routine checkup reminder (usually triggered by scheduled job)
  * POST /api/notifications/send/routine-reminder
  */
+/**
+ * Manual trigger for hard copy ready-for-pickup notification
+ * POST /api/notifications/send/hard-copy-ready
+ * Body: { resultId }
+ */
+export const sendHardCopyReadyNotification = async (req, res, next) => {
+  try {
+    const { resultId } = req.body;
+
+    if (!resultId) {
+      return res.status(400).json({
+        success: false,
+        message: "resultId is required",
+      });
+    }
+
+    const populatedResult = await TestResult.findById(resultId)
+      .populate("patientProfileId", "full_name email contact_number")
+      .populate("testTypeId", "name")
+      .populate(
+        "healthCenterId",
+        "name addressLine1 addressLine2 district phoneNumber operatingHours",
+      );
+
+    if (!populatedResult) {
+      return res.status(404).json({
+        success: false,
+        message: "Test result not found",
+      });
+    }
+
+    if (!populatedResult.hardCopyCollection?.isPrinted) {
+      return res.status(400).json({
+        success: false,
+        message: "Hard copy has not been printed yet. Call mark-printed first.",
+      });
+    }
+
+    const center = populatedResult.healthCenterId;
+    const addressParts = [
+      center.addressLine1,
+      center.addressLine2,
+      center.district,
+    ].filter(Boolean);
+    const operatingHoursSummary =
+      center.operatingHours?.length > 0
+        ? center.operatingHours
+            .map((h) => `${h.day}: ${h.openTime} - ${h.closeTime}`)
+            .join(", ")
+        : null;
+
+    const notificationData = {
+      testResult: { _id: populatedResult._id, bookingCode: null },
+      patient: {
+        _id: populatedResult.patientProfileId._id,
+        fullName: populatedResult.patientProfileId.full_name,
+        contactNumber: populatedResult.patientProfileId.contact_number,
+        email: populatedResult.patientProfileId.email,
+      },
+      testType: {
+        _id: populatedResult.testTypeId._id,
+        name: populatedResult.testTypeId.name,
+      },
+      healthCenter: {
+        name: center.name,
+        address: addressParts.join(", ") || null,
+        contactNumber: center.phoneNumber || null,
+        operatingHours: operatingHoursSummary,
+      },
+    };
+
+    const results =
+      await notificationService.sendHardCopyReadyNotification(notificationData);
+
+    res.status(200).json({
+      success: true,
+      message: "Hard copy ready notification sent",
+      data: {
+        whatsapp: results.whatsapp,
+        email: results.email,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Manual trigger for uncollected hard copy collection reminders
+ * POST /api/notifications/send/hard-copy-reminder
+ * Body: { daysThreshold: 3, maxReminders: 2 } (optional, defaults provided)
+ */
+export const sendUncollectedHardCopyReminder = async (req, res, next) => {
+  try {
+    // Use != null so daysThreshold=0 is treated as 0, not coerced to default
+    const daysThreshold =
+      req.body.daysThreshold != null ? parseInt(req.body.daysThreshold) : 3;
+    const maxReminders =
+      req.body.maxReminders != null ? parseInt(req.body.maxReminders) : 2;
+
+    const uncollectedResults =
+      await notificationService.findUncollectedHardCopies(
+        daysThreshold,
+        maxReminders,
+      );
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const data of uncollectedResults) {
+      try {
+        const results =
+          await notificationService.sendUncollectedHardCopyReminder(data);
+
+        if (results.whatsapp?.success || results.email?.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        failCount++;
+        console.error(
+          `Error sending hard copy reminder for result ${data.testResult._id}:`,
+          error.message,
+        );
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Hard copy collection reminders sent",
+      data: {
+        totalFound: uncollectedResults.length,
+        sent: successCount,
+        failed: failCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sendRoutineCheckupReminder = async (req, res, next) => {
   try {
     const { subscriptionId } = req.body;
+
+    if (!subscriptionId) {
+      return res.status(400).json({
+        success: false,
+        message: "subscriptionId is required in request body",
+      });
+    }
 
     const subscription =
       await notificationService.findSubscriptionById(subscriptionId);
@@ -465,9 +640,15 @@ export const sendRoutineCheckupReminder = async (req, res, next) => {
       });
     }
 
-    // Get patient and test type data
-    const patient = subscription.patientProfileId; // Assuming populated
-    const testType = subscription.testTypeId; // Assuming populated
+    // Map populated patientProfileId (snake_case Mongoose doc) to camelCase for service
+    const patientDoc = subscription.patientProfileId;
+    const patient = {
+      _id: patientDoc._id,
+      fullName: patientDoc.full_name,
+      contactNumber: patientDoc.contact_number,
+      email: patientDoc.email,
+    };
+    const testType = subscription.testTypeId;
 
     const results = await notificationService.sendRoutineCheckupReminder({
       subscription,
@@ -479,7 +660,7 @@ export const sendRoutineCheckupReminder = async (req, res, next) => {
       success: true,
       message: "Routine checkup reminder sent",
       data: {
-        sms: results.sms,
+        whatsapp: results.whatsapp,
         email: results.email,
       },
     });

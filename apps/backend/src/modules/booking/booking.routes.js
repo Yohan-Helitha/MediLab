@@ -5,6 +5,7 @@ import express from 'express';
 import {
   createBookingController,
   getBookings,
+  getBookingById,
   getBookingByPatientId,
   getBookingByHealthCenterId,
   getBookingByDate,
@@ -79,6 +80,9 @@ router.get('/createdBy/:createdBy', protect, isHealthOfficer, getBookingByCreate
 // Status / type: patients OR health officers
 router.get('/status/:status', protect, isPatientOrHealthOfficer, getBookingByStatus);
 router.get('/type/:type', protect, isPatientOrHealthOfficer, getBookingByType);
+
+// Get single booking by ID - patients OR health officers
+router.get('/:id', protect, isPatientOrHealthOfficer, getBookingById);
 
 // Update booking - patients OR health officers
 router.put('/:id', protect, isPatientOrHealthOfficer, updateBookingValidation, updateBookingController);

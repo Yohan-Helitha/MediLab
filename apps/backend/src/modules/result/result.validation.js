@@ -727,3 +727,15 @@ export const hardDeleteValidation = [
       "Deletion reason contains invalid characters. Use only letters, numbers, and basic punctuation.",
     ),
 ];
+
+// Validation for GET /uncollected query filters
+export const uncollectedQueryValidation = [
+  query("centerId")
+    .optional()
+    .isMongoId()
+    .withMessage("centerId must be a valid MongoDB ObjectId"),
+  query("daysThreshold")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("daysThreshold must be an integer of at least 1"),
+];

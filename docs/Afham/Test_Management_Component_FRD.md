@@ -5,8 +5,8 @@
 **Project:** Rural Health Diagnostic Test Management System  
 **Component Owner:** [Your Name]  
 **SDG Goal:** Good Health and Well-being  
-**Version:** 1.0  
-**Date:** February 11, 2026
+**Version:** 1.1  
+**Date:** February 11, 2026 (Updated: April 9, 2026)
 
 ---
 
@@ -21,8 +21,9 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 - Test result data entry using validated forms
 - Manual report file uploads for imaging/complex tests
 - Test status tracking through workflow stages
-- Automated patient notifications via SMS and email
+- Automated patient notifications via WhatsApp and email
 - Routine checkup reminder subscriptions
+- Hard copy report printing and patient collection workflow
 
 ### 1.3 Integration Points
 
@@ -34,7 +35,7 @@ This module manages the lifecycle of diagnostic test results, from sample collec
     - Notification Management: References TestType model for test information in notifications
   - **Responsibility:** TestType CRUD operations (create, read, update, delete) are managed by the Lab Operations Component
 - **Health Center Module:** Accesses center details for report auto-population
-- **Third-Party APIs:** Twilio (SMS), SendGrid/NodeMailer (Email)
+- **Third-Party APIs:** Twilio (WhatsApp), SendGrid (Email)
 
 ---
 
@@ -94,7 +95,7 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 9. System saves structured data to database
 10. System generates PDF report using template
 11. System stores PDF and updates booking status to "released"
-12. System sends notifications to patient (SMS and Email)
+12. System sends notifications to patient (WhatsApp and Email)
 
 **Validation Rules:**
 
@@ -110,7 +111,7 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 - Data saved to database with complete information
 - PDF report generated and stored
 - Booking status updated to "released"
-- Patient notified via SMS and Email
+- Patient notified via WhatsApp and Email
 - Result immediately visible to patient
 
 **Applicable Test Types (Phase 1):**
@@ -175,7 +176,7 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 8. System uploads and stores files
 9. System creates test result record with file references
 10. System updates booking status to "released"
-11. System sends notifications to patient (SMS and Email)
+11. System sends notifications to patient (WhatsApp and Email)
 
 **File Constraints:**
 
@@ -196,7 +197,7 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 - Files uploaded and stored securely
 - Database record created with file metadata
 - Booking status updated to "released"
-- Patient notified via SMS and Email
+- Patient notified via WhatsApp and Email
 - Patient can immediately access and download files
 - Original filenames preserved for reference
 
@@ -368,7 +369,7 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 
 - `sample_received`: No notification
 - `processing`: No notification
-- `released`: **Mandatory notification** to patient via SMS and Email
+- `released`: **Mandatory notification** to patient via WhatsApp and Email
 
 ---
 
@@ -401,16 +402,16 @@ This module manages the lifecycle of diagnostic test results, from sample collec
 
 **Notification Channels:**
 
-1. **SMS via Twilio API**
-2. **Email via SendGrid/NodeMailer**
+1. **WhatsApp via Twilio API** (primary channel)
+2. **Email via SendGrid** (secondary channel)
 
-**Patient receives both SMS and Email (if both provided during registration)**
+**Patient receives both WhatsApp and Email (if contact provided during registration)**
 
-**SMS Template:**
+**WhatsApp Message Template:**
 
 ```
 Rural Health Alert: Your [Test Name] results are now ready.
-Login to view your report: [App URL]
+Login to view your report: [Frontend URL]
 - [Health Center Name]
 ```
 
@@ -448,7 +449,7 @@ Best regards,
 
 **Error Handling:**
 
-- If SMS fails: Log error, retry once, continue with email
+- If WhatsApp fails: Log error, continue with email
 - If email fails: Log error, retry once
 - Both failed: Alert admin, flag for manual contact
 
@@ -464,11 +465,11 @@ Best regards,
 - Checks for results with status "Released"
 - Patient hasn't viewed result within 3 days of release
 
-**Reminder Message (SMS):**
+**Reminder Message (WhatsApp):**
 
 ```
 Reminder: Your [Test Name] results from [Center Name] are still
-pending. Please login to view: [URL]
+pending. Please login to view: [Frontend URL]
 ```
 
 **Frequency:**
@@ -495,8 +496,8 @@ pending. Please login to view: [URL]
 
 - Notification ID
 - Patient (name/ID)
-- Type (result_ready, reminder, status_update)
-- Channel (SMS, Email)
+- Type (result_ready, unviewed_result_reminder, routine_checkup_reminder, hard_copy_ready_for_pickup, hard_copy_collection_reminder)
+- Channel (WhatsApp, Email)
 - Sent timestamp
 - Status (sent, failed)
 - Error message (if failed)
@@ -631,12 +632,12 @@ Would you like to receive reminders for your next checkup?
 - Checks for subscriptions where `nextReminderDate = Today`
 - Sends reminders to eligible patients
 
-**Reminder Message (SMS):**
+**Reminder Message (WhatsApp):**
 
 ```
 Health Reminder: It's time for your routine [Test Name] checkup.
 Last test: [Date]
-Book your appointment: [App URL]
+Book your appointment: [Frontend URL]
 - [System Name]
 ```
 
@@ -676,6 +677,188 @@ Stay healthy!
 
 ---
 
+### 3.5 Hard Copy Report Management
+
+#### FR-3.5.1: Mark Result as Printed (Hard Copy)
+
+**Description:** Lab staff shall be able to mark a released test result as printed when a physical copy of the report has been prepared for patient collection.
+
+**Preconditions:**
+
+- Result exists and has status `released`
+- Report has not already been marked as printed
+- User is authenticated as Lab Staff / Health Officer
+
+**Flow:**
+
+1. Lab staff locates the released result
+2. Lab staff prints the physical report
+3. Lab staff clicks "Mark as Printed" in the system
+4. System validates: status = `released`, not already printed (`isPrinted = false`)
+5. System updates `hardCopyCollection.isPrinted = true` and records `printedAt` timestamp
+6. System automatically sends a "Hard Copy Ready for Pickup" notification to the patient (WhatsApp + Email), non-blocking
+7. System returns success response
+
+**Notification Triggered:**
+
+- Type: `hard_copy_ready_for_pickup`
+- Channels: WhatsApp + Email
+- Message includes: lab center name, address, operating hours
+
+**WhatsApp Message Template:**
+
+```
+Your [Test Name] hard copy report is ready for pickup at [Health Center Name].
+Address: [Full Address]
+Counter Hours: [Operating Hours]
+Please bring a valid ID when collecting your report.
+```
+
+**Email Template:**
+
+```
+Subject: Your [Test Name] Hard Copy Report is Ready for Pickup
+
+Dear [Patient Name],
+
+Your [Test Name] hard copy report is ready for collection at:
+
+[Health Center Name]
+[Address Line 1], [Address Line 2], [District]
+Phone: [Phone Number]
+
+Counter Hours:
+[Operating Hours per Day]
+
+Please bring a valid photo ID when collecting your report.
+
+Best regards,
+[Health Center Name] Laboratory
+```
+
+**Success Criteria:**
+
+- `hardCopyCollection.isPrinted` set to `true`
+- `hardCopyCollection.printedAt` timestamp recorded
+- Patient notified via WhatsApp and Email (non-blocking — failure does not roll back the mark-printed action)
+- Notification logged in NotificationLog as type `hard_copy_ready_for_pickup`
+
+---
+
+#### FR-3.5.2: Mark Result as Collected
+
+**Description:** Lab staff shall be able to mark a printed hard copy report as collected when the patient arrives and picks it up in person.
+
+**Preconditions:**
+
+- Result has been marked as printed (`hardCopyCollection.isPrinted = true`)
+- Result has not already been marked as collected (`isCollected = false`)
+- User is authenticated as Lab Staff / Health Officer
+
+**Flow:**
+
+1. Patient arrives at health center to collect the report
+2. Lab staff locates the result in the system
+3. Lab staff clicks "Mark as Collected"
+4. System validates: `isPrinted = true`, `isCollected = false`
+5. System updates:
+   - `hardCopyCollection.isCollected = true`
+   - `hardCopyCollection.collectedAt` timestamp
+   - `hardCopyCollection.handedOverBy` = current health officer's ID
+6. System returns success response
+
+**Success Criteria:**
+
+- `hardCopyCollection.isCollected` set to `true`
+- `hardCopyCollection.collectedAt` timestamp recorded
+- `hardCopyCollection.handedOverBy` references the health officer who handed over the report
+- No further collection reminders will be sent for this result
+
+---
+
+#### FR-3.5.3: View Uncollected Hard Copy Reports
+
+**Description:** Lab staff shall be able to view a list of printed reports that have not yet been collected by patients.
+
+**Preconditions:**
+
+- User is authenticated as Lab Staff / Health Officer
+
+**Query Parameters:**
+
+- `centerId` (optional) — Filter by health center
+- `daysThreshold` (optional, integer ≥ 1, default: 1) — Minimum number of days since printing
+
+**Response Data:**
+
+- Result ID, test name, patient details
+- Health center name and address
+- Printed date/time
+- Days since printing
+- Patient contact information
+
+**Use Cases:**
+
+- Identify patients who need reminders
+- Track report collection backlog
+- Generate daily uncollected report list for lab counter operations
+
+---
+
+#### FR-3.5.4: Automated Uncollected Hard Copy Reminders
+
+**Description:** System shall automatically send reminder notifications to patients who have not collected their printed hard copy reports within a specified number of days.
+
+**Trigger:**
+
+- Automated cron job runs daily at **3:00 PM**
+- Checks for results where:
+  - `hardCopyCollection.isPrinted = true`
+  - `hardCopyCollection.isCollected = false`
+  - `hardCopyCollection.printedAt` older than threshold (default: 3 days)
+  - Total reminders sent for this result ≤ 2 (capped to avoid spam)
+
+**Reminder Message (WhatsApp):**
+
+```
+Reminder: Your [Test Name] hard copy report at [Health Center Name]
+has not been collected yet.
+Please collect it at your earliest convenience.
+Address: [Center Address]
+```
+
+**Email Template:**
+
+```
+Subject: Reminder: Your Hard Copy Report Awaits Collection
+
+Dear [Patient Name],
+
+Your [Test Name] hard copy report at [Health Center Name] is still
+waiting to be collected.
+
+Please visit the health center at your earliest convenience:
+[Health Center Name]
+[Address]
+Counter Hours: [Operating Hours]
+
+Best regards,
+[Health Center Name] Laboratory
+```
+
+**After Sending:**
+
+- Log notification as type `hard_copy_collection_reminder`
+- Count of reminders capped at 2 per result — no further reminders after 2nd
+- Notification logged and stored for audit
+
+**Stop Conditions:**
+
+- Patient collects the report (`isCollected = true`)
+- 2 reminders already sent for this result
+
+---
+
 ## 4. Non-Functional Requirements
 
 ### 4.1 Performance
@@ -709,7 +892,7 @@ Stay healthy!
 ### 4.4 Reliability
 
 - Failed notifications retried once automatically
-- SMS/Email service fallback (if one fails, ensure other works)
+- WhatsApp/Email service fallback (if WhatsApp fails, email is sent automatically)
 - Database transaction rollback on errors
 - File upload with chunk support for large files
 - Scheduled job monitoring for reminder automation
@@ -749,6 +932,9 @@ Stay healthy!
 - `PUT /api/results/:id` - Update result data (Health Officer only)
 - `PATCH /api/results/:id/status` - Update test status
 - `PATCH /api/results/:id/mark-viewed` - Mark result as viewed (Patient)
+- `GET /api/results/uncollected` - Get uncollected hard copy reports (Health Officer)
+- `PATCH /api/results/:id/mark-printed` - Mark result as printed for hard copy collection (Health Officer)
+- `PATCH /api/results/:id/mark-collected` - Mark hard copy report as collected by patient (Health Officer)
 - `DELETE /api/results/:id` - Soft delete result (Health Officer) - Primary method
 - `DELETE /api/results/:id/permanent` - Hard delete result (Admin only)
 
@@ -895,8 +1081,8 @@ The following features are **NOT** included in this component:
 ✅ Status history tracked and viewable (GET /api/results/:id/status-history)  
 ✅ Notifications automatically sent when result is released
 
-✅ SMS sent via Twilio successfully  
-✅ Email sent successfully  
+✅ WhatsApp message sent via Twilio successfully  
+✅ Email sent via SendGrid successfully  
 ✅ Notifications triggered on status change  
 ✅ Failed notifications logged  
 ✅ Notification logs viewable by admin
@@ -915,6 +1101,18 @@ The following features are **NOT** included in this component:
 ✅ Status history tracked and viewable  
 ✅ Notifications automatically sent when result is released
 
+### 8.7 Hard Copy Management
+
+✅ Lab staff can mark a released result as printed (`mark-printed` endpoint)  
+✅ Patient notified via WhatsApp and Email when hard copy is ready for pickup  
+✅ Notification includes health center address and operating hours  
+✅ Lab staff can mark a printed report as collected (`mark-collected` endpoint)  
+✅ `handedOverBy` health officer ID recorded on collection  
+✅ Uncollected reports list available for lab staff (`GET /uncollected` endpoint)  
+✅ Automated daily cron (3:00 PM) sends reminders for uncollected reports  
+✅ Reminders capped at 2 per result to avoid spamming  
+✅ Both `hard_copy_ready_for_pickup` and `hard_copy_collection_reminder` types logged in NotificationLog
+
 ---
 
 ## 9. Testing Requirements
@@ -931,9 +1129,10 @@ The following features are **NOT** included in this component:
 
 - End-to-end result creation flow (form → database → PDF → notification)
 - File upload and retrieval
-- Third-party API calls (Twilio, SendGrid)
+- Third-party API calls (Twilio WhatsApp, SendGrid)
 - Inter-module data fetching (patient, booking, test type)
 - Notification sending and logging
+- Hard copy workflow (mark-printed → notification → mark-collected)
 
 ### 9.3 Performance Testing (Artillery.io)
 
@@ -991,9 +1190,12 @@ The following features are **NOT** included in this component:
 
 - Complete form-based entry (4 test types: add Blood Pressure, Pregnancy Test)
 - Routine checkup reminder subscription system
+- Hard copy report management (mark-printed, mark-collected, uncollected reports list)
+- Automated uncollected hard copy reminder job (daily 3 PM cron)
+- WhatsApp notifications via Twilio (primary channel, replacing SMS)
 - Comprehensive testing (unit, integration, performance)
 - Performance optimization
-- Full API documentation (Swagger)
+- Full API documentation (Postman collection)
 - Complete user documentation
 - Deployment to cloud platforms
 
@@ -1004,7 +1206,7 @@ The following features are **NOT** included in this component:
 1. Patient contact information (phone, email) available in Patient Management module
 2. Booking system provides necessary booking details
 3. Test types pre-configured in Test Catalog module
-4. Twilio and SendGrid accounts provided for API integration
+4. Twilio account with WhatsApp sandbox/production enabled provided for API integration; SendGrid account for email
 5. File storage infrastructure available (local or cloud)
 6. PDF generation library available (e.g., PDFKit, Puppeteer)
 7. Automated job scheduler available (node-cron, Agenda)
@@ -1015,7 +1217,7 @@ The following features are **NOT** included in this component:
 
 | Risk                                       | Impact              | Mitigation                                                |
 | ------------------------------------------ | ------------------- | --------------------------------------------------------- |
-| Third-party API downtime (Twilio/SendGrid) | Notifications fail  | Implement retry mechanism, fallback channel, queue system |
+| Third-party API downtime (Twilio WhatsApp/SendGrid) | Notifications fail  | Implement retry mechanism, fallback to email, log for manual follow-up |
 | Large file uploads slow performance        | Poor UX             | Implement chunked uploads, file size limits, compression  |
 | PDF generation bottleneck                  | Slow response times | Generate PDFs asynchronously, cache templates             |
 | Form schema complexity for tests           | Development delay   | Start with simple tests, add complex ones incrementally   |

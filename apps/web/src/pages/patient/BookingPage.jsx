@@ -250,6 +250,7 @@ const BookingPage = () => {
 									? t("bookings.queue.na")
 									: `#${b.queueNumber}`;
 							const canEdit = (b?.status || "").toString().toUpperCase() !== "COMPLETED";
+							const isCompleted = (b?.status || "").toString().toUpperCase() === "COMPLETED";
 
 							return (
 								<div
@@ -265,6 +266,15 @@ const BookingPage = () => {
 											</div>
 
 											<div className="flex items-center gap-2">
+												{isCompleted && (
+													<button
+														type="button"
+														onClick={() => navigate("/health-reports")}
+														className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+													>
+														View Results
+													</button>
+												)}
 												<button
 													type="button"
 													disabled={!canEdit}

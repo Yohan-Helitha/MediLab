@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function TopBar() {
+function TopBar({ showNotificationBell = true }) {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
 
@@ -17,10 +17,12 @@ function TopBar() {
 				{user?.role?.replace('_', ' ') || "MediLab Staff"} Dashboard
 			</div>
 			<div className="flex items-center gap-4 text-sm">
-				<button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
-					<span className="text-lg">🔔</span>
-					<span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />
-				</button>
+				{showNotificationBell && (
+					<button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
+						<span className="text-lg">🔔</span>
+						<span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />
+					</button>
+				)}
 				<button
 					onClick={handleLogout}
 					className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"

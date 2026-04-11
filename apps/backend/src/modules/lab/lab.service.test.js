@@ -6,6 +6,7 @@ describe('lab.service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     Lab.prototype.save = jest.fn();
+    Lab.findOne = jest.fn().mockResolvedValue(null);
     Lab.find = jest.fn();
     Lab.findById = jest.fn();
     Lab.findByIdAndUpdate = jest.fn();

@@ -7,8 +7,6 @@ import XRayResult from "./discriminators/xray.result.js";
 import ECGResult from "./discriminators/ecg.result.js";
 import UltrasoundResult from "./discriminators/ultrasound.result.js";
 import AutomatedReportResult from "./discriminators/automatedReport.result.js";
-import { generateTestResultPDF } from "../../utils/pdfGenerator.js";
-import fs from "fs";
 import Booking from "../booking/booking.model.js";
 
 // Business logic for test result operations
@@ -63,7 +61,7 @@ export const createTestResult = async (discriminatorType, resultData) => {
 export const findTestResultById = async (id) => {
   const result = await TestResult.findOne({ _id: id, isDeleted: false })
     .populate("patientProfileId", "full_name contact_number")
-    .populate("testTypeId", "name code category discriminatorType")
+    .populate("testTypeId", "name code category discriminatorType isRoutineMonitoringRecommended recommendedFrequency")
     .populate("healthCenterId", "name location")
     .populate("bookingId")
     .populate("enteredBy", "fullName")
@@ -113,7 +111,7 @@ export const findResultsByPatient = async (patientProfileId, filters = {}) => {
   const skip = (page - 1) * limit;
 
   const results = await TestResult.find(query)
-    .populate("testTypeId", "name code category")
+    .populate("testTypeId", "name code category isRoutineMonitoringRecommended recommendedFrequency")
     .populate("healthCenterId", "name")
     .sort({ releasedAt: -1 })
     .limit(limit)
@@ -156,7 +154,7 @@ export const updateResultStatus = async (id, status, changedBy) => {
   const result = await TestResult.findOne({ _id: id, isDeleted: false })
     .populate(
       "patientProfileId",
-      "full_name date_of_birth gender contact_number",
+      "full_name date_of_birth gender contact_number email",
     )
     .populate("testTypeId", "name code")
     .populate(
@@ -185,17 +183,6 @@ export const updateResultStatus = async (id, status, changedBy) => {
   // Set releasedAt timestamp when status changes to released
   if (status === "released") {
     result.releasedAt = new Date();
-  }
-
-  // Generate PDF report when status is released
-  if (status === "released" && !result.generatedReportPath) {
-    try {
-      const pdfPath = await generateTestResultPDF(result);
-      result.generatedReportPath = pdfPath;
-    } catch (pdfError) {
-      console.error("Error generating PDF report:", pdfError);
-      // Continue without PDF - don't block status update
-    }
   }
 
   await result.save();
@@ -271,48 +258,6 @@ export const updateTestResult = async (id, updateData) => {
 
   // Save changes first to ensure discriminator fields are persisted
   await result.save();
-
-  // Regenerate PDF if form data changed and result is released
-  if (formDataChanged && result.currentStatus === "released") {
-    try {
-      // Delete old PDF if it exists
-      if (
-        result.generatedReportPath &&
-        fs.existsSync(result.generatedReportPath)
-      ) {
-        fs.unlinkSync(result.generatedReportPath);
-      }
-
-      // Fetch the saved result with all populated fields for PDF generation
-      const resultForPdf = await TestResult.findById(result._id)
-        .populate(
-          "patientProfileId",
-          "full_name date_of_birth gender contact_number",
-        )
-        .populate("testTypeId", "name code")
-        .populate(
-          "healthCenterId",
-          "name addressLine1 addressLine2 district province phoneNumber email",
-        )
-        .populate("testingPersonnelId", "fullName name")
-        .populate("bookingId", "bookingDate");
-
-      // Generate new PDF
-      const pdfPath = await generateTestResultPDF(resultForPdf);
-      result.generatedReportPath = pdfPath;
-
-      // Save again with the new PDF path
-      await result.save();
-
-      console.log(
-        "[Result Service] PDF regenerated after data update:",
-        pdfPath,
-      );
-    } catch (pdfError) {
-      console.error("[Result Service] Error regenerating PDF:", pdfError);
-      // Continue without PDF - don't block update
-    }
-  }
 
   return result;
 };
@@ -393,7 +338,10 @@ export const findResultsByHealthCenter = async (
     query.testTypeId = filters.testTypeId;
   }
 
-  if (filters.startDate || filters.endDate) {
+  // For pending results releasedAt is null — applying date range against releasedAt
+  // would always exclude them, so date filters only apply to released results.
+  const isPendingFilter = filters.status === "pending";
+  if (!isPendingFilter && (filters.startDate || filters.endDate)) {
     query.releasedAt = {};
     if (filters.startDate) {
       query.releasedAt.$gte = new Date(filters.startDate);
@@ -408,15 +356,63 @@ export const findResultsByHealthCenter = async (
   const page = parseInt(filters.page) || 1;
   const skip = (page - 1) * limit;
 
+  // Pending results have no releasedAt — sort by createdAt so they appear first
+  const sortField = isPendingFilter ? { createdAt: -1 } : { releasedAt: -1 };
+
   const results = await TestResult.find(query)
     .populate("patientProfileId", "full_name")
     .populate("testTypeId", "name code category")
     .populate("enteredBy", "fullName")
-    .sort({ releasedAt: -1 })
+    .sort(sortField)
     .limit(limit)
     .skip(skip);
 
   return results;
+};
+
+/**
+ * Find all test results across health centers (Admin only)
+ * Supports optional filters: healthCenterId, status, startDate, endDate,
+ *   includeDeleted, limit, page
+ */
+export const findAllResultsAdmin = async (filters = {}) => {
+  const query = {};
+
+  if (!filters.includeDeleted) {
+    query.isDeleted = false;
+  }
+
+  if (filters.healthCenterId) {
+    query.healthCenterId = filters.healthCenterId;
+  }
+
+  if (filters.status) {
+    query.currentStatus = filters.status;
+  }
+
+  if (filters.startDate || filters.endDate) {
+    query.createdAt = {};
+    if (filters.startDate) query.createdAt.$gte = new Date(filters.startDate);
+    if (filters.endDate) query.createdAt.$lte = new Date(filters.endDate);
+  }
+
+  const limit = parseInt(filters.limit) || 50;
+  const page = parseInt(filters.page) || 1;
+  const skip = (page - 1) * limit;
+
+  const [results, total] = await Promise.all([
+    TestResult.find(query)
+      .populate("patientProfileId", "full_name")
+      .populate("testTypeId", "name code category")
+      .populate("healthCenterId", "name")
+      .populate("enteredBy", "fullName")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip),
+    TestResult.countDocuments(query),
+  ]);
+
+  return { results, total, page, limit };
 };
 
 /**
@@ -459,6 +455,15 @@ export const softDeleteTestResult = async (id, deleteReason, deletedBy) => {
   result.deleteReason = deleteReason;
 
   await result.save();
+
+  // Revert booking status to PENDING so a replacement result can be submitted.
+  // The booking was set to COMPLETED when the original result was created.
+  // Now that result is soft-deleted, the booking must reappear in the pending list.
+  if (result.bookingId) {
+    await Booking.findByIdAndUpdate(result.bookingId, {
+      $set: { status: "PENDING" },
+    });
+  }
 
   // Log for audit purposes
   console.log(`✨ SOFT DELETE AUDIT LOG:
@@ -516,25 +521,14 @@ export const hardDeleteTestResult = async (id, deleteReason, deletedBy) => {
     ═══════════════════════════════════════════════════════════
   `);
 
-  // Delete associated PDF file if exists
-  if (result.generatedReportPath && fs.existsSync(result.generatedReportPath)) {
-    try {
-      fs.unlinkSync(result.generatedReportPath);
-      console.log(`📄 Deleted PDF file: ${result.generatedReportPath}`);
-    } catch (fileError) {
-      console.error(`⚠️ Error deleting PDF file: ${fileError.message}`);
-      // Continue with database deletion even if file deletion fails
-    }
-  }
-
-  // Revert booking status to "processing" (if booking exists)
+  // Revert booking status to PENDING (if booking exists)
   if (result.bookingId) {
     try {
       await Booking.findByIdAndUpdate(result.bookingId._id, {
-        status: "processing",
+        $set: { status: "PENDING" },
       });
       console.log(
-        `🔄 Reverted booking ${result.bookingId._id} to "processing" status`,
+        `🔄 Reverted booking ${result.bookingId._id} to "PENDING" status`,
       );
     } catch (bookingError) {
       console.error(`⚠️ Error updating booking: ${bookingError.message}`);
@@ -559,10 +553,30 @@ export const hardDeleteTestResult = async (id, deleteReason, deletedBy) => {
 };
 
 /**
- * Helper function to get the correct discriminator model
- * @param {String} discriminatorType - The discriminator type
- * @returns {Model} Mongoose model for the discriminator
+ * Fetch a test result with all fields needed to generate a PDF report.
+ * @param {string} id - Test result ID
+ * @returns {Promise<Object>} Populated test result
  */
+export const findTestResultForPDF = async (id) => {
+  const result = await TestResult.findOne({ _id: id, isDeleted: false })
+    .populate("patientProfileId", "full_name date_of_birth gender contact_number")
+    .populate("testTypeId", "name code")
+    .populate(
+      "healthCenterId",
+      "name addressLine1 addressLine2 district province phoneNumber email",
+    )
+    .populate("testingPersonnelId", "fullName name")
+    .populate("bookingId", "bookingDate");
+
+  if (!result) {
+    const error = new Error("Test result not found or has been deleted");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return result;
+};
+
 export const getDiscriminatorModel = (discriminatorType) => {
   const models = {
     BloodGlucose: BloodGlucoseResult,
@@ -576,4 +590,117 @@ export const getDiscriminatorModel = (discriminatorType) => {
   };
 
   return models[discriminatorType] || TestResult;
+};
+
+// ===== HARD COPY MANAGEMENT SERVICES =====
+
+/**
+ * Mark a test result's hard copy as printed
+ * @param {string} id - Test result ID
+ * @param {string} staffId - Health officer ID who printed the report
+ * @returns {Promise<Object>} Updated test result
+ */
+export const markResultAsPrinted = async (id, staffId) => {
+  const result = await TestResult.findOne({ _id: id, isDeleted: false });
+
+  if (!result) {
+    const error = new Error("Test result not found or has been deleted");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (result.currentStatus !== "released") {
+    const error = new Error(
+      "Hard copy can only be printed for released results",
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (result.hardCopyCollection?.isPrinted) {
+    const error = new Error("Hard copy has already been marked as printed");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  result.hardCopyCollection = {
+    isPrinted: true,
+    printedAt: new Date(),
+    isCollected: false,
+    handedOverBy: staffId,
+  };
+
+  await result.save();
+  return result;
+};
+
+/**
+ * Mark a test result's hard copy as collected by patient
+ * @param {string} id - Test result ID
+ * @param {string} staffId - Health officer ID who handed over the report
+ * @returns {Promise<Object>} Updated test result
+ */
+export const markResultAsCollected = async (id, staffId) => {
+  const result = await TestResult.findOne({ _id: id, isDeleted: false });
+
+  if (!result) {
+    const error = new Error("Test result not found or has been deleted");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!result.hardCopyCollection?.isPrinted) {
+    const error = new Error(
+      "Hard copy must be marked as printed before marking as collected",
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (result.hardCopyCollection?.isCollected) {
+    const error = new Error("Hard copy has already been marked as collected");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  result.hardCopyCollection.isCollected = true;
+  result.hardCopyCollection.collectedAt = new Date();
+  result.hardCopyCollection.handedOverBy = staffId;
+
+  await result.save();
+  return result;
+};
+
+/**
+ * Find printed but uncollected reports for a health center
+ * @param {string|null} centerId - Health center ID filter (optional)
+ * @param {number} daysThreshold - Only include reports printed at least this many days ago (default: 0 = all)
+ * @returns {Promise<Array>} Array of uncollected test results
+ */
+export const findUncollectedReports = async (
+  centerId = null,
+  daysThreshold = 0,
+) => {
+  const query = {
+    "hardCopyCollection.isPrinted": true,
+    "hardCopyCollection.isCollected": false,
+    isDeleted: false,
+  };
+
+  if (centerId) {
+    query.healthCenterId = centerId;
+  }
+
+  if (daysThreshold > 0) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysThreshold);
+    query["hardCopyCollection.printedAt"] = { $lte: cutoffDate };
+  }
+
+  return await TestResult.find(query)
+    .populate("patientProfileId", "full_name email contact_number")
+    .populate("testTypeId", "name code")
+    .populate("healthCenterId", "name address")
+    .populate("hardCopyCollection.handedOverBy", "full_name")
+    .sort({ "hardCopyCollection.printedAt": 1 });
 };

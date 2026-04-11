@@ -149,7 +149,7 @@ export const getBookings = async (filter = {}, pagination = {}) => {
         // Populate Member document; Member also uses full_name/contact_number
         .populate('patientProfileId', 'full_name contact_number')
         .populate('healthCenterId', 'name')
-        .populate('diagnosticTestId', 'name');
+        .populate('diagnosticTestId', 'name discriminatorType entryMethod');
 
     const total = await Booking.countDocuments(query);
 
@@ -220,6 +220,13 @@ export const updateBooking = async (bookingId, data) => {
     );
 
     return booking;
+};
+
+export const getBookingById = async (bookingId) => {
+    return Booking.findOne({ _id: bookingId, isActive: true })
+        .populate('patientProfileId', 'full_name contact_number')
+        .populate('healthCenterId', 'name')
+        .populate('diagnosticTestId', 'name discriminatorType entryMethod isRoutineMonitoringRecommended recommendedFrequency');
 };
 
 export const softDeleteBooking = async (bookingId) => {

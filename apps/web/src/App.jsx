@@ -1,4 +1,5 @@
 import React from "react";
+import { Toaster } from "react-hot-toast";
 import AppRoutes from "./routes/AppRoutes.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import FloatingChatIcon from "./components/FloatingChatIcon.jsx";
@@ -14,6 +15,7 @@ const AppContent = () => {
 		<>
 			<AppRoutes />
 			<FloatingChatIcon />
+			<Toaster position="top-right" toastOptions={{ duration: 4000 }} />
 		</>
 	);
 };
