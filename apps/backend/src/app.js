@@ -23,6 +23,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 // Consultation module routes (AI Doctor)
 import consultationRoutes from "./modules/consultation/routes/consultationRoutes.js";
 import geminiRoutes from "./modules/consultation/routes/geminiRoutes.js";
+import translationRoutes from "./modules/translation/translation.routes.js";
 //patient module routes
 import memberRoutes from "./modules/patient/routes/memberRoutes.js";
 import householdRoutes from "./modules/patient/routes/householdRoutes.js";
@@ -80,6 +81,7 @@ app.use("/api/auth", authRoutes);
 // Consultation module (AI Doctor)
 app.use("/api/consultation", consultationRoutes);
 app.use("/api/ai", geminiRoutes);
+app.use("/api/translation", translationRoutes);
 
 // Patient module - api routes
 app.use("/api/members", memberRoutes);
