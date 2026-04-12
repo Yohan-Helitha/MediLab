@@ -124,7 +124,7 @@ Authorization: Bearer <token>
       "household_id": "ANU-PADGNDIV-00001",
       "full_name": "Roshan Silva",
       "address": "Tirappane Village, Padaviya, Anuradhapura",
-      "contact_number": "0712345678",
+      "contact_number": "+94712345678",
       "nic": "199512345678",
       "date_of_birth": "1995-12-15",
       "age": 28,
@@ -139,7 +139,7 @@ Authorization: Bearer <token>
       "household_id": "ANU-PADGNDIV-00001",
       "full_name": "Lakshmi Silva",
       "address": "Tirappane Village, Padaviya, Anuradhapura",
-      "contact_number": "0712345679",
+      "contact_number": "+94712345679",
       "nic": "199612345678",
       "date_of_birth": "1996-05-20",
       "age": 27,
@@ -186,7 +186,7 @@ Authorization: Bearer <token>
     "household_id": "ANU-PADGNDIV-00001",
     "full_name": "Roshan Silva",
     "address": "Tirappane Village, Padaviya, Anuradhapura",
-    "contact_number": "0712345678",
+    "contact_number": "+94712345678",
     "nic": "199512345678",
     "date_of_birth": "1995-12-15",
     "age": 28,
@@ -225,7 +225,7 @@ Authorization: Bearer <token>
   "household_id": "ANU-PADGNDIV-00001",
   "full_name": "Roshan Silva",
   "address": "Tirappane Village, Padaviya, Anuradhapura",
-  "contact_number": "0712345678",
+  "contact_number": "+94712345678",
   "nic": "199512345678",
   "date_of_birth": "1995-12-15",
   "gender": "Male",
@@ -240,7 +240,7 @@ Authorization: Bearer <token>
 | `household_id`   | Required, valid format (ANU-PADGNDIV-NNNNN or ObjectId), max 50 chars  | ANU-PADGNDIV-00001         |
 | `full_name`      | Required, max 150 characters                                           | John Doe                   |
 | `address`        | Required                                                               | 123 Main Street, Colombo 7 |
-| `contact_number` | Required, exactly 10 digits                                            | 0701234567                 |
+| `contact_number` | +94equired, exactly 10 digits                                            | +94701234567                 |
 | `nic`            | Optional, format: 9digits+V or 12digits or "N/A", required if age > 18 | 199512345678               |
 | `date_of_birth`  | Required, ISO 8601 format                                              | 1995-12-15                 |
 | `gender`         | Optional, Male/Female/Other                                            | Male                       |
@@ -281,7 +281,7 @@ Content-Type: image/jpeg
     "household_id": "ANU-PADGNDIV-00001",
     "full_name": "Roshan Silva",
     "address": "Tirappane Village, Padaviya, Anuradhapura",
-    "contact_number": "0712345678",
+    "contact_number": "+9494712345678",
     "nic": "199512345678",
     "date_of_birth": "1995-12-15",
     "age": 28,
@@ -306,7 +306,7 @@ Content-Type: image/jpeg
     },
     {
       "field": "contact_number",
-      "message": "Contact number must be exactly 10 digits"
++94    "message": "Contact number must be exactly 10 digits"
     }
   ]
 }
@@ -328,7 +328,7 @@ Content-Type: image/jpeg
 {
   "full_name": "Lakshmi Silva",
   "address": "Senarathdeniya Village, Padaviya, Anuradhapura",
-  "contact_number": "0712345679",
+  "contact_number": "+9494712345679",
   "gender": "Female",
   "occupation": "Teacher"
 }
@@ -345,7 +345,7 @@ Content-Type: image/jpeg
     "household_id": "ANU-PADGNDIV-00001",
     "full_name": "Lakshmi Silva",
     "address": "Senarathdeniya Village, Padaviya, Anuradhapura",
-    "contact_number": "0712345679",
+    "contact_number": "+94712345679",
     "nic": "199512345678",
     "date_of_birth": "1995-12-15",
     "age": 28,
