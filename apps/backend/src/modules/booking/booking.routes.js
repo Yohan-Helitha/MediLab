@@ -94,8 +94,7 @@ router.delete('/:id', protect, isPatientOrHealthOfficer, softDeleteBookingContro
 router.delete(
   '/:id/hard',
   protect,
-  isHealthOfficer,
-  checkRole(['Admin', 'ADMIN']),
+  isPatientOrHealthOfficer,
   hardDeleteBookingController
 );
 

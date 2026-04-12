@@ -44,6 +44,15 @@ export function softDeleteBooking(bookingId) {
 	);
 }
 
+export function hardDeleteBooking(bookingId) {
+	if (!bookingId) {
+		throw new Error("bookingId is required");
+	}
+	return apiRequest(`/api/bookings/${bookingId}/hard`, {
+		method: "DELETE",
+	});
+}
+
 export function getBookingById(bookingId) {
 	if (!bookingId) {
 		throw new Error("bookingId is required");

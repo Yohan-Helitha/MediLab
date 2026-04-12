@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PublicLayout from "../../layout/PublicLayout";
 import { useAuth } from "../../context/AuthContext";
-import { getBookingsByPatientId, softDeleteBooking } from "../../api/bookingApi";
+import { getBookingsByPatientId, hardDeleteBooking } from "../../api/bookingApi";
 import { translateTexts } from "../../api/translationApi";
 import ToastMessage from "../../components/ToastMessage";
 
@@ -168,7 +168,7 @@ const BookingPage = () => {
 
 		setError("");
 		try {
-			await softDeleteBooking(bookingId);
+			await hardDeleteBooking(bookingId);
 			setItems((prev) => (prev || []).filter((x) => x?._id !== bookingId));
 		} catch (err) {
 			setError(err?.message || t("bookings.error.deleteFailed"));
@@ -269,6 +269,7 @@ const BookingPage = () => {
 									: `#${b.queueNumber}`;
 							const canEdit = (b?.status || "").toString().toUpperCase() !== "COMPLETED";
 							const isCompleted = (b?.status || "").toString().toUpperCase() === "COMPLETED";
+							const canDelete = isCompleted;
 
 							return (
 								<div
@@ -309,7 +310,8 @@ const BookingPage = () => {
 												<button
 													type="button"
 													onClick={() => onDelete(b)}
-												className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200"
+													disabled={!canDelete}
+													className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-200 disabled:opacity-50"
 											>
 												{t("bookings.button.delete")}
 											</button>

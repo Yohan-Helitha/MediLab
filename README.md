@@ -133,24 +133,22 @@ Typical access patterns:
 
 Each document below includes HTTP methods, request/response formats, authentication requirements, and examples.
 
-| Area | Base path (prefix `/api`) | Full documentation |
-|---|---|---|
-| Auth | `/auth` | `docs/lakni/AUTH_API_DOCUMENTATION.md` |
-| Patient (members/households/etc.) | multiple (see doc) | `docs/lakni/PATIENT_API_DOCUMENTATION.md` |
-| Labs + Lab Tests + Test Instructions | `/labs`, `/lab-tests`, `/test-instructions` | `docs/arani/LAB_API_DOCUMENTATION.md` |
-| Test Types | `/test-types` | `docs/arani/TEST_API_DOCUMENTATION.md` |
-| Booking | `/bookings` | `docs/yohan/BOOKING_API_DOCUMENTATION.md` |
-| Payments (PayHere) | `/payments/payhere` | `docs/yohan/PAYMENT_API_DOCUMENTATION.md` |
-| Finance | `/finance` | `docs/yohan/FINANCE_API_DOCUMENTATION.md` |
-| Admin | `/admin` | `docs/yohan/ADMIN_API_DOCUMENTATION.md` |
-| Inventory | `/inventory` | `docs/yohan/INVENTORY_API_DOCUMENTATION.md` |
 
+
+ Auth - `/auth` - `docs/lakni/AUTH_API_DOCUMENTATION.md` 
+ Patient -`docs/lakni PATIENT_API_DOCUMENTATION.md` 
+ Labs & Test Management `/labs`, `/lab-tests`, `/test-instructions`, `/test-types` - `docs/arani/LAB_API_DOCUMENTATION.md, TEST_API_DOCUMENTATION.md` 
+ Booking - `/bookings` - `docs/yohan/BOOKING_API_DOCUMENTATION.md` 
+ Payments (PayHere) - `/payments/payhere` - `docs/yohan/PAYMENT_API_DOCUMENTATION.md` 
+ Finance - `/finance` - `docs/yohan/FINANCE_API_DOCUMENTATION.md`
+ Admin - `/admin` - `docs/yohan/ADMIN_API_DOCUMENTATION.md`
+ Inventory - `/inventory` - `docs/yohan/INVENTORY_API_DOCUMENTATION.md`
+ Result & Notification - `/results`, `/notifications` - `docs/Afham/RESULT_NOTIFICATION_API_DOCUMENTATION.md`
+ 
 Also included:
 - PayHere integration notes: `docs/yohan/PAYHERE_INTEGRATION.md`
 - Payment → Finance flow: `docs/yohan/PAYMENT_TO_FINANCE_FLOW.md`
 - Postman collection (Test Management component): `docs/Afham/MediLab_Test_Management_COMPLETE.postman_collection.json`
-
-> Note: a few docs use `http://localhost:3000` in examples. The backend default in this repo is `PORT=5000`. If you set `PORT=3000`, those examples will work unchanged.
 
 ### 2.4 Minimal API examples (cURL)
 
@@ -189,37 +187,139 @@ curl -X POST "http://localhost:5000/api/bookings" \
   -d '{"patientProfileId":"<member_id>","healthCenterId":"<lab_id>","diagnosticTestId":"<test_type_id>","bookingDate":"2026-04-15","bookingType":"PRE_BOOKED","paymentMethod":"ONLINE"}'
 ```
 
-PayHere checkout payload (requires JWT):
 
-```bash
-curl -X POST "http://localhost:5000/api/payments/payhere/checkout" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
-  -d '{"bookingId":"<booking_id>"}'
-```
+# Deployment Report — MediLab
+
+**Project:** MediLab (Medical Laboratory Management System)  
+**Repo type:** Monorepo  
+- Backend: `apps/backend` (Node.js + Express + MongoDB)  
+- Frontend: `apps/web` (React + Vite)  
+
+**Date:** April 2026
 
 ---
 
-## 3. Deployment Report
+## 1. Overview
 
-Deployment report (required): `docs/yohan/Deployment_Report.md`
+This report documents how MediLab is deployed, the platform configuration used for a monorepo, required environment variables, and the verification steps/evidence expected for the deployment submission.
 
-Recommended platforms (easy for demos):
-- Backend: Render (Node Web Service)
-- Frontend: Vercel (Vite/React)
-- Database: MongoDB Atlas
+Recommended deployment (low-friction for university demos):
+- **Backend:** Render (Node Web Service)
+- **Frontend:** Vercel (Vite/React)
+- **Database:** MongoDB Atlas
 
-Monorepo settings:
-- Backend Root Directory: `apps/backend` (build: `npm install`, start: `npm start`)
-- Frontend Root Directory: `apps/web` (build: `npm run build`, output: `dist`)
+---
 
-Cloud environment variables (minimum):
-- Backend: `DATABASE_URL`, `JWT_SECRET`, `APP_URL`, `FRONTEND_URL` (+ PayHere and third-party vars if you demo those features)
-- Frontend: `VITE_API_BASE_URL`
+## 2. Live Deployment (Current)
 
-Live URLs (update if you re-deploy):
-- Backend API: `https://medilab-l74h.onrender.com`
-- Frontend app: `https://medilab.dev` (or the Vercel deployment URL)
+These URLs are based on the latest known deployment details provided during development:
+- Backend (Render): `https://medilab-l74h.onrender.com`
+- Frontend (Vercel): `https://medilab.dev`
+
+If you re-deploy to a new URL, update this section and the corresponding env vars (`APP_URL`, `FRONTEND_URL`, `VITE_API_BASE_URL`).
+
+---
+
+## 3. Backend Deployment (Render)
+
+### 3.1 Create the Render service
+
+1. Render → **New** → **Web Service**
+2. Connect the GitHub repository
+3. Configure monorepo settings:
+   - **Root Directory:** `apps/backend`
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+
+Backend listens on `PORT` (Render provides it) and defaults to `5000` locally.
+
+### 3.2 Backend environment variables
+
+Important note about `.env` location:
+- The backend loads environment variables from the **repo root** `.env` file (see `apps/backend/src/config/environment.js`).
+- In cloud deployments, set variables in the platform’s UI instead of committing `.env`.
+
+**Required (minimum for backend to run):**
+- `DATABASE_URL` — MongoDB connection string (Atlas recommended)
+- `JWT_SECRET` — JWT signing secret
+
+**Recommended:**
+- `NODE_ENV=production`
+- `FRONTEND_URL=<your vercel url>` (used for CORS and redirects in some flows)
+- `APP_URL=<your render backend url>`
+
+**PayHere (required only if demonstrating online payments):**
+- `MERCHANT_ID`
+- `MERCHANT_SECRET`
+- `APP_URL` (public backend URL)
+- `FRONTEND_URL` (public frontend URL)
+- for to get working sandbox payment portal you will need to get a real domain cause payhere is not allowing to get the `MERCHANT_SECRET` for sub domain. If want to test please search medilab.dev to navigate our deployment.   
+
+**PayHere optional:**
+- `PAYHERE_CHECKOUT_URL` (defaults to sandbox)
+- `PAYHERE_CURRENCY` (default: `LKR`)
+- `PAYHERE_COUNTRY` (default: `Sri Lanka`)
+
+**Third-party APIs (optional; features degrade gracefully in dev):**
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
+- `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_FROM_NAME`
+- `GOOGLE_TRANSLATE_API_KEY`
+
+### 3.3 Verification steps
+
+- Health check:
+  - `GET <BACKEND_URL>/api/health`
+- PayHere notify endpoint must be publicly reachable for real sandbox callbacks:
+  - `POST <BACKEND_URL>/api/payments/payhere/notify`
+
+---
+
+## 4. Frontend Deployment (Vercel)
+
+### 4.1 Create the Vercel project
+
+1. Vercel → **New Project** → import GitHub repo
+2. Configure monorepo settings:
+   - **Root Directory:** `apps/web`
+   - Framework preset: Vite (auto-detected)
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+
+### 4.2 Frontend environment variables
+
+**Required:**
+- `VITE_API_BASE_URL=<your render backend url>`
+
+### 4.3 Verification steps
+
+- Load the web app URL
+- Verify the web app can reach backend endpoints through `VITE_API_BASE_URL`
+
+---
+
+## 5. Deployment Evidence Checklist (for submission)
+
+Capture screenshots or paste links:
+- Render: “Deploy succeeded” screen
+- Render: environment variables page (do not show secrets; show names only)
+- Vercel: “Deployment ready” screen
+- Browser: live frontend
+- Browser/Postman: `GET /api/health` response from live backend
+
+---
+
+## 6. Notes for PayHere demo (local vs deployed)
+
+PayHere must reach the backend `notify_url`.
+- If backend is running locally on `localhost`, PayHere cannot call the notify endpoint.
+- For local-only demos, use an HTTP tunnel (e.g., ngrok) and set:
+  - `APP_URL=https://<public-tunnel-url>`
+
+Reference: `PAYHERE_INTEGRATION.md`.
+
+
+Deployed frontend URL - https://medilab.dev/
+Deployed backend URL - https://medilab-l74h.onrender.com
 
 ---
 
