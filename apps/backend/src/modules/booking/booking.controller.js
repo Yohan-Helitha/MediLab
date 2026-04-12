@@ -255,13 +255,47 @@ export const hardDeleteBookingController = async (req, res) => {
 
     try {
 
-        const booking = await hardDeleteBooking(req.params.id);
+        const booking = await getBookingByIdService(req.params.id);
 
         if (!booking) {
             return res.status(404).json({
                 message: 'Booking not found'
             });
         }
+
+        // Authorization rules:
+        // - Patient: can only hard delete own bookings AND only when status is COMPLETED
+        // - Health officer: Admin role only
+        const userType = req.user?.userType;
+
+        if (userType === 'patient') {
+            const ownerId = booking.patientProfileId?._id?.toString();
+            const requesterProfileId = req.user?.profileId?.toString();
+
+            if (!requesterProfileId || ownerId !== requesterProfileId) {
+                return res.status(403).json({
+                    message: 'Access denied. You can only delete your own bookings.'
+                });
+            }
+
+            if (booking.status !== 'COMPLETED') {
+                return res.status(403).json({
+                    message: 'Only completed bookings can be deleted.'
+                });
+            }
+        } else if (['healthOfficer', 'staff'].includes(userType)) {
+            if (!['Admin', 'ADMIN'].includes(req.user?.role)) {
+                return res.status(403).json({
+                    message: 'Access denied. Admin role required to permanently delete bookings.'
+                });
+            }
+        } else {
+            return res.status(403).json({
+                message: 'Access denied.'
+            });
+        }
+
+        await hardDeleteBooking(req.params.id);
 
         res.json({
             message: 'Booking permanently deleted successfully'
